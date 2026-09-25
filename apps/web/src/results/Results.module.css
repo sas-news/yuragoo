@@ -62,18 +62,34 @@
 }
 
 .blob {
-  fill: rgb(120 223 197 / 0.55);
-  stroke: #27a98b;
-  stroke-width: 2;
+  fill: rgb(120 223 197 / 0.72);
 }
 
-.eye {
+.shadow {
+  fill: #72546a;
+  opacity: 0.2;
+}
+
+.highlight {
+  fill: #f4fff9;
+  opacity: 0.7;
+}
+
+.eyeWhite {
+  fill: #f4fff9;
+  opacity: 0.95;
+}
+
+.pupil {
   fill: var(--ink);
 }
 
 .mouth {
-  fill: var(--ink);
-  opacity: 0.8;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  opacity: 0.85;
 }
 
 .panelTitle {
