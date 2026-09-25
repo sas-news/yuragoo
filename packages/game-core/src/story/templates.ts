@@ -11,6 +11,7 @@ export interface StoryCopyContext {
   readonly scenario: string;
   readonly choices: readonly { choiceId: string; label: string }[];
   readonly outcome: GameOutcome;
+  readonly winnerName: string | null;
   readonly leaderLabel: string | null;
   readonly isCompleteRow: boolean;
 }
@@ -45,8 +46,12 @@ const resultCaption = (ctx: StoryCopyContext): string => {
   const outcome = ctx.outcome;
   if (outcome.kind === "winner") {
     const label = clipTrimmed(ctx.choices[outcome.slot]?.label ?? "", 24);
-    if (label.length === 0) return `${outcome.playerId} の かち`;
-    return `${label} が いちばん ひかれた — ${outcome.playerId} の かち`;
+    const name = clipTrimmed(ctx.winnerName ?? "", 20);
+    if (name.length === 0) {
+      return label.length === 0 ? "しょうぶが ついた" : `${label} が いちばん ひかれた`;
+    }
+    if (label.length === 0) return `${name} の かち`;
+    return `${label} が いちばん ひかれた — ${name} の かち`;
   }
   if (outcome.kind === "draw") return "ひきわけ — おもいは どれも おなじくらいだった";
   const reason = NO_CONTEST_REASONS[outcome.reason] ?? "むこう";

@@ -66,6 +66,7 @@ const buildPanel = (
     scenario: source.scenario,
     choices: source.choices,
     outcome: source.outcome,
+    winnerName: source.winnerName,
     leaderLabel: d.leaderLabel,
     isCompleteRow: d.kind === "endgame" && d.landedIndex < 0,
   });

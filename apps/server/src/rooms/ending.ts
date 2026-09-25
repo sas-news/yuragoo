@@ -5,8 +5,9 @@
 // generation slot for the caption upgrade. `panel` holds the serialized
 // EndingStory (protocol/story); `pose` stays NULL — panels embed their
 // canonical pull and blob images never leave the client.
-import { buildStory, type StorySource } from "@yuragoo/game-core";
+import { buildStory, type GameOutcome, type StorySource } from "@yuragoo/game-core";
 import { type EndingStory, parseEndingStory } from "@yuragoo/protocol";
+import { listRoomPlayers } from "./auth-storage";
 import { slotSpent } from "./generation-slots";
 import { runEndingGeneration, type EndingGenHost } from "./generate-ending";
 import type { GenerationDeps } from "./generation-deps";
@@ -68,6 +69,7 @@ export interface EndingHost extends BroadcastHost {
 // ledger. buildStory stays pure; all IO lives here.
 const storySourceFor = (sql: SqlStorage, books: Books): StorySource => {
   const lobby = readLobby(sql);
+  const outcome: GameOutcome = books.state.outcome ?? { kind: "noContest", reason: "timeout" };
   return {
     events: listEvents(sql).map((row) => ({
       seq: row.seq,
@@ -83,8 +85,22 @@ const storySourceFor = (sql: SqlStorage, books: Books): StorySource => {
     roster: books.state.roster,
     choices: lobby.choices.slice(0, books.state.roster.length),
     scenario: lobby.scenario,
-    outcome: books.state.outcome ?? { kind: "noContest", reason: "timeout" },
+    outcome,
+    winnerName: winnerNameFor(sql, outcome),
   };
+};
+
+// The winner display name for the result caption — same resolution the
+// client applies (memberName): displayName else the joinOrder seat label,
+// and "メンバー" once the player row itself is gone. Player ids are wire
+// keys and never readable copy.
+const winnerNameFor = (sql: SqlStorage, outcome: GameOutcome): string | null => {
+  if (outcome.kind !== "winner") return null;
+  const players = listRoomPlayers(sql);
+  const at = players.findIndex((p) => p.playerId === outcome.playerId);
+  if (at < 0) return "メンバー";
+  const display = players[at]?.displayName?.trim();
+  return display !== undefined && display !== "" ? display : `プレイヤー${at + 1}`;
 };
 
 // The finish-time ending drive, single-flight on GameRoom's drive lanes.

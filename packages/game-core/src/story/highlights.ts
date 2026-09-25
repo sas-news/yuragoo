@@ -25,6 +25,9 @@ export interface StorySource {
   readonly choices: readonly { choiceId: string; label: string }[];
   readonly scenario: string;
   readonly outcome: GameOutcome;
+  // Display name of the winning player, resolved by the caller (player
+  // ids are wire keys, never readable copy). null outside a winner.
+  readonly winnerName: string | null;
 }
 
 // One landed decisionUpdated row. revision is the seq of the post the

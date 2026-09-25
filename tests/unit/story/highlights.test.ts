@@ -49,6 +49,7 @@ const source = (
   choices: CHOICES,
   scenario: "よるの もりで いちばん たからものを みつけたい",
   outcome: { kind: "winner", playerId: "ren", slot: 1 },
+  winnerName: "れん",
   ...over,
 });
 
@@ -96,7 +97,7 @@ test("happy: two reversals and grouped coverage pick the max swing", () => {
   // result pull = the last landed distribution, slot order.
   expect(panels[3]?.pull).toEqual([0.2, 0.8]);
   expect(panels[3]?.caption).toContain("みずの おもい");
-  expect(panels[3]?.caption).toContain("ren");
+  expect(panels[3]?.caption).toContain("れん");
 });
 
 test("happy: zero posts still yields the 3-panel floor", () => {
@@ -173,6 +174,7 @@ test("caps: long scenario and labels stay inside the grapheme caps", () => {
         { choiceId: "c2", label: "みずの おもい" },
       ],
       outcome: { kind: "winner", playerId: "aiko", slot: 0 },
+      winnerName: "あいこ",
     }),
   );
   for (const p of panels) {
@@ -185,7 +187,9 @@ test("caps: long scenario and labels stay inside the grapheme caps", () => {
   // The reversal caption carries the new leader's (clipped) label.
   expect(reversal?.caption).toContain("かたむいた");
   const result = panels.find((p) => p.kind === "result");
-  expect(result?.caption).toContain("aiko");
+  expect(result?.caption).toContain("あいこ");
+  // Wire keys never become readable copy — the raw id stays out.
+  expect(result?.caption).not.toContain("aiko");
 });
 
 test("defensive: malformed decisionUpdated rows are skipped entirely", () => {
