@@ -5,7 +5,28 @@
 
 ## 現在地
 
-**W1〜W5（Task 1〜28）完了 + ユーザー目視確認OK済み。**
+**W1〜W6（Task 1〜33）完了。** W6＝紙芝居エンディングは本セッションで実装・検証まで完了。
+
+### 紙芝居エンディング（Task 29〜33）の実装メモ
+
+- 契約: packages/protocol/src/story.ts — panel={kind,eventId=events.seq,postIds,quotes,pull,title,caption}、generatedフラグ。endingReady は wire.ts ROOM_FRAME_TYPES + sync.ts ORDERED + room-sync.test.ts の3箇所登録済み。snapshot.ending でresync heal
+- 抽出: packages/game-core/src/story/ — buildStory が start/reversal/impact/endgame/result を決定的選択（同点はseq早い方、group coverage=(prevRevision,revision]全投稿をquotes化）
+- 姿勢再現: panel.pull=roster slot順の生確率 → クライアント側 canonicalPose（PULL_GAIN=3、random.next()=0.5固定で決定的）でSVG描画。bitmapはサーバーへ送らない
+- 生成: 'post' slot（ControlPlane reserve/consume、10s deadline、all-or-nothing。失敗時template維持・イベントなし）。settle の waitUntil → driveEnding() lane が自動でtemplate→生成を駆動
+- UI: apps/web/src/results/{Results,Kamishibai,Panel}.tsx — 全員同一panel集合、各自ページ送り、backToLobby=rematch準備、closeRoom=host専用＋確認
+- 契約書: docs/story-contract.md
+
+### W6で踏んだ罠（再発防止）
+
+- room-outcome testid が旧結果ダイアログと共に消えて full-flow.spec の playMatch が死んだ — testid削除時は参照側を必ず rg。playMatch は room-results/results-outcome 参照に修正済み（outcome copyは /勝ち|ひきわけ|むこう/）
+- lobbyのchoice行数はメンバー数と一致（ensureChoiceRowsがjoin毎に行を生やす）。arm系ヘルパーは DOM の実在行を読んでから updateLobbyContent — 2人部屋に4ラベルは渡せない
+- injectDecisionJobDeps のキーは fetch（upstreamFetchではない）。apiKey も非空で渡すこと（空ならfail-closedでjob全滅）
+- gameEpoch は room_meta に住む — backToLobby で room_meta ごと消えるので新gameは epoch=1 に戻り得る。「新しいgame」はepoch値ではなく内容（quotes/title）で判別する
+- gen fixture の requests は累積カウンタ — spec内他テストのsendも数える。baseline差分で断言する
+- RoomGame が unmount される間 feed 行は DOM に存在しない（view.feed は保持される）。lobby中の feed assert は不可
+- ページ送りは各クライアントのローカルstate — DOM収集前に必ず page1 へ正規化すること
+
+**W1〜W5の詳細（引き続き有効）:**
 - 生命体描画・変形・引力、Jev sandbox、ローカル対戦（/play）
 - 同期ルーム：WS再接続・ホスト引継ぎ・自動選出・サーバー再起動復旧・空猶予60s
 - ロビー編集（シナリオ/選択肢）、Workers AI選択肢生成、設定、準備/開始
@@ -17,9 +38,9 @@
 - ルーム画面で生きものが傾くようになった（重大バグ修正）
 - ▼ターンマーカー大型化・上位置、座席アイコンの端固定、下トレイのフラット化＋時間バー移動、ロスター右寄せ
 
-## 次にやること — W6（Task 29〜33）：紙芝居エンディング
+## W6完了済み（Task 29〜33）：紙芝居エンディング
 
-計画書 `.omo/plans/yuragoo-development.md` の Task 29以降を読んで着手。
+計画書 `.omo/plans/yuragoo-development.md` の Task 29〜33 は実装・テスト・検証まで完了済み。以下は当時のタスクメモ（実ファイル・テストは全て存在する）:
 
 依存DAG: 28(済) → {29, 30, 31} 並行可 → 32 → 33
 
@@ -29,7 +50,7 @@
 - **Task 32** `apps/web/src/results/{Results,Kamishibai,Panel}.tsx` + `apps/server/src/rooms/ending.ts`: 全員同一panel集合、各自ページ送り、rematch準備、closeRoom確認。download/share機能は作らない。現在の簡易結果ダイアログ（`RoomGame.tsx`内の「結果」ボタン周辺）を置き換える
 - **Task 33** Phase6 gate: `tests/e2e/story/full-ending.spec.ts` + `tests/workers/story-lifecycle.test.ts` + `docs/story-contract.md` — 人間投稿が主役・本文保存終了・生成call<=2/試合を検証
 
-その後 **W7（Task 34〜39）Discord+リリース**:
+## 次にやること — W7（Task 34〜39）Discord+リリース
 - 34 platform adapter（`packages/platform/src/` は adapter.ts/browser.ts のスタブのみ）
 - 35 Discord OAuth/メンバーシップ認可
 - 36 Workers Static Assets配信+proxy経路（`docs/discord-setup.md`）
