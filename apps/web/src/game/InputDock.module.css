@@ -1,0 +1,281 @@
+/* Bottom input tray: a wide chamfered bar bolted to the screen's bottom
+   edge — a game console tray, not a floating form. Only the top corners are
+   cut; the bottom edge sits flush. The uniform bodyDeep-teal outline is a
+   real plate (::before teal, ::after ivory inset 2px) so the rim reads
+   evenly on every edge. One small hard offset shadow lifts it off the
+   paper. Three zones: [acting seat + goal] [framed textarea + meta]
+   [send button]. */
+.dock {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  inline-size: min(960px, 100%);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 12px 18px 14px;
+  filter: drop-shadow(0 -3px 0 rgb(23 118 99 / 0.14));
+}
+
+.dock::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: #27a98b; /* CREATURE_COLORS.bodyDeep */
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%, 0 16px);
+}
+
+.dock::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  background: var(--paper-raised);
+  clip-path: polygon(13px 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 0 100%, 0 13px);
+}
+
+/* flushBottom: the paper reaches the screen's bottom edge — the teal rim
+   under the box is dropped so the room's own time bar can sit right below
+   without a stray border line between them. */
+.dockFlush::after {
+  inset: 3px 3px 0;
+}
+
+/* Left zone: who is acting + what they pull toward. The slot-colored spine
+   on the leading edge carries the acting player's color (same custom prop
+   as the send button), so the acting seat reads at a glance. */
+.whoBox {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  inline-size: 200px;
+  flex-shrink: 0;
+  min-inline-size: 0;
+  padding-inline-start: 12px;
+  border-inline-start: 5px solid var(--send-color, rgb(39 169 139 / 0.35));
+}
+
+.seat {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.goal {
+  color: var(--ink-muted);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hint {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+/* Center zone: just the framed input — centered so input, pass and send
+   share one vertical midline. Counter and error are frame overlays, never
+   flow children (a row under the input would push the field off-axis). */
+.field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-inline-size: 0;
+}
+
+/* The textarea keeps no border of its own — the frame carries the plate:
+   teal ::before + paper ::after inset 2px, SHARP corners (a chamfered
+   2px rim renders the diagonal hairline-thin — the flagged defect).
+   Focus turns the rim blue via :focus-within. */
+.inputFrame {
+  position: relative;
+  isolation: isolate;
+  padding: 8px 12px;
+}
+
+.inputFrame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: rgb(39 169 139 / 0.55);
+}
+
+.inputFrame::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  background: var(--paper);
+}
+
+.inputFrame:focus-within::before {
+  background: var(--focus);
+}
+
+.input {
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  inline-size: 100%;
+  min-block-size: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  resize: none;
+  box-sizing: border-box;
+  display: block;
+}
+
+.input::placeholder {
+  color: var(--ink-muted);
+}
+
+.input:disabled {
+  opacity: 0.55;
+}
+
+/* The count floats on the frame's lower-right corner — an overlay, so it
+   never participates in the field column's vertical rhythm. */
+.counter {
+  position: absolute;
+  inset-inline-end: 14px;
+  inset-block-end: 4px;
+  padding-inline: 4px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  background: var(--paper);
+  pointer-events: none;
+}
+
+.counter[data-warn="true"] {
+  color: #8a5a08; /* darkened amber for a 4.5:1 read (was #b0780f ~3.7:1) */
+  font-weight: bold;
+}
+
+.counter[data-over="true"] {
+  color: var(--danger);
+}
+
+/* The validation note floats on the frame's lower-left corner — same
+   overlay idiom as the counter, opposite side so they never collide. */
+.error {
+  position: absolute;
+  inset-inline-start: 12px;
+  inset-block-end: 4px;
+  max-inline-size: calc(100% - 88px);
+  padding-inline: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--danger);
+  font-size: 12px;
+  background: var(--paper);
+  pointer-events: none;
+}
+
+/* Flat slot-colored chamfered block — a game button, not a gradient pill.
+   Same two-layer plate trick: ::before is the dark ink ring, ::after the
+   slot-color fill inset 2px, so the button separates crisply from the bar.
+   Keyboard focus turns the ink ring focus-blue. */
+.send {
+  position: relative;
+  isolation: isolate;
+  flex-shrink: 0;
+  align-self: center;
+  min-block-size: 64px;
+  padding-inline: 30px;
+  border: 0;
+  border-radius: 0;
+  /* Ink on every slot color reads >=3.2:1 — at 19px bold that satisfies
+     large-text contrast (ivory text failed ~2:1 on light slots). */
+  color: var(--ink);
+  font-weight: bold;
+  font-size: 19px;
+  background: transparent;
+}
+
+.send::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: var(--ink);
+  clip-path: polygon(
+    10px 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0 calc(100% - 10px),
+    0 10px
+  );
+}
+
+.send::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  background: var(--send-color, var(--focus));
+  clip-path: polygon(
+    7px 0,
+    calc(100% - 7px) 0,
+    100% 7px,
+    100% calc(100% - 7px),
+    calc(100% - 7px) 100%,
+    7px 100%,
+    0 calc(100% - 7px),
+    0 7px
+  );
+}
+
+.send:focus-visible::before {
+  background: var(--focus);
+}
+
+.send:disabled {
+  opacity: 0.45;
+}
+
+/* Narrow trays (<=640px): wrap into two rows — the who strip takes the full
+   width (seat + goal inline), then the input field and send button share a
+   row. Without this the 200px who column + send button squeeze the textarea
+   to zero width at 375px. */
+@media (max-width: 640px) {
+  .dock {
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 10px 12px 12px;
+  }
+
+  .whoBox {
+    inline-size: 100%;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 10px;
+    border-inline-start-width: 4px;
+    padding-inline-start: 10px;
+  }
+
+  .goal {
+    flex: 1;
+  }
+
+  .send {
+    min-block-size: 54px;
+    padding-inline: 22px;
+  }
+}

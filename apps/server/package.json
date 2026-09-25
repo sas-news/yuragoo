@@ -1,0 +1,19 @@
+{
+  "name": "@yuragoo/server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --compatibility-date 2026-09-18 --var APP_ENV:local"
+  },
+  "dependencies": {
+    "@yuragoo/ai": "workspace:*",
+    "@yuragoo/game-core": "workspace:*",
+    "@yuragoo/platform": "workspace:*",
+    "@yuragoo/protocol": "workspace:*",
+    "hono": "4.13.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260911.1"
+  }
+}

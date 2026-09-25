@@ -1,0 +1,120 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Angular party bubble: the wrapper is positioned + animated only. The
+   chamfered silhouette — rect + tail-spike union — is drawn by an
+   absolutely-positioned SVG measured to the box (see bubblePath.ts), so
+   ONE stroked path gives a uniform bodyDeep-teal outline on every edge,
+   including the tail union. Overflow stays visible so the spike and the
+   hard offset shadow can poke past the box. */
+.bubble {
+  position: absolute;
+  inline-size: max-content;
+  min-inline-size: 96px;
+  max-inline-size: min(340px, 88%);
+  padding: 14px 20px;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  transform: translate(-50%, -50%);
+  animation: bubblePop 4820ms linear forwards;
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+}
+
+/* Hard offset shadow — flat, no blur — following the union silhouette. */
+.shadow {
+  fill: rgb(23 118 99 / 0.18);
+}
+
+/* Solid ivory plate. */
+.body {
+  fill: var(--paper-raised);
+}
+
+/* The tail spike: solid slot color under the shared outline. */
+.tailFill {
+  fill: var(--bubble-color, #715e6b);
+}
+
+/* Uniform outline: one stroke around the rect+spike union, constant width
+   even while the pop animation scales the wrapper. */
+.outline {
+  fill: none;
+  stroke: #27a98b; /* CREATURE_COLORS.bodyDeep */
+  stroke-width: 2.4px;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Readable size: 20px ink text wrapping to at most 3 lines. */
+.text {
+  position: relative;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* Pop in (~380ms, gentle overshoot), hold to ~4.5s, pop out (~320ms). */
+@keyframes bubblePop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.4);
+  }
+  5.8% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.4, 1);
+  }
+  7.9% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    animation-timing-function: linear;
+  }
+  93.4% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.7, 0.4);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+}
+
+/* Reduced motion: same anchor, opacity only — no pop, no travel. */
+@keyframes bubbleFadeHold {
+  0% {
+    opacity: 0;
+  }
+  2.1%,
+  96% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.bubble[data-motion="reduced"] {
+  animation-name: bubbleFadeHold;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble {
+    animation-name: bubbleFadeHold;
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "yuragoo-server",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-19",
+  "durable_objects": {
+    "bindings": [
+      { "name": "GAME_ROOM", "class_name": "GameRoom" },
+      // Task 22: one deployment-wide budget/registry DO ("control-v1").
+      { "name": "CONTROL_PLANE", "class_name": "ControlPlane" }
+    ]
+  },
+  // Task 25: Workers AI binding for the one-shot normal-LLM calls
+  // (@cf/qwen/qwen3-30b-a3b-fp8). It lives ONLY under env.production:
+  // a top-level `ai` binding makes `wrangler dev` and vitest-pool-workers
+  // open a paid remote-proxy session (Workers AI cannot run locally),
+  // which breaks offline dev/test. Production deploys use
+  // `wrangler deploy --env production` and receive env.AI; local/test
+  // resolve the mock provider or GENERATION_UPSTREAM_URL instead.
+  "env": {
+    "production": {
+      "name": "yuragoo-server",
+      "ai": { "binding": "AI" }
+    }
+  },
+  // SQLite-backed DOs (ctx.storage.sql) — must be new_sqlite_classes, not
+  // new_classes. v1 created GameRoom; v2 (Task 22) adds ControlPlane.
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["GameRoom"] },
+    { "tag": "v2", "new_sqlite_classes": ["ControlPlane"] }
+  ]
+}

@@ -1,0 +1,72 @@
+:root {
+  --paper: #fff7e8;
+  --paper-raised: #fffdf6;
+  --ink: #402f3b;
+  --ink-muted: #715e6b;
+  --body: #78dfc5;
+  --focus: #2458d3;
+  --danger: #b4233b;
+}
+
+html,
+body {
+  margin: 0;
+  min-block-size: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "M PLUS Rounded 1c", "BIZ UDPGothic", "Yu Gothic", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+#root {
+  min-block-size: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding: 8px 16px;
+  border: 2px solid var(--ink-muted);
+  border-radius: 0;
+  background: var(--paper-raised);
+  cursor: pointer;
+}
+
+button[aria-pressed="true"] {
+  border-color: var(--focus);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-block-size: 100dvh;
+}
+
+.status-strip {
+  padding: 8px 16px;
+  color: var(--ink-muted);
+}
+
+.status-strip h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.stage-area {
+  flex: 1;
+  padding: 16px;
+}

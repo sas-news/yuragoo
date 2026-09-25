@@ -1,0 +1,71 @@
+.stage {
+  position: relative;
+  inline-size: 100%;
+  block-size: clamp(280px, 62dvh, 720px);
+  min-block-size: 280px;
+  overflow: hidden;
+  border-radius: 0;
+  background: var(--paper-raised);
+}
+
+@media (max-height: 480px) {
+  .stage {
+    block-size: 220px;
+    min-block-size: 220px;
+  }
+}
+
+.stage canvas {
+  display: block;
+}
+
+.alert {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--ink);
+  background: var(--paper-raised);
+  text-align: center;
+}
+
+.errorBadge {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-start: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 2px solid var(--danger);
+  border-radius: 0;
+  color: var(--danger);
+  background: var(--paper-raised);
+}
+
+.status {
+  position: absolute;
+  inset-block-end: 8px;
+  inset-inline-start: 8px;
+  padding: 4px 10px;
+  border: 1px solid rgb(39 169 139 / 0.35);
+  color: var(--ink-muted);
+  background: var(--paper-raised);
+}
+
+/* The DOM state description that stands in for the canvas (Task 27):
+   subtle muted text bottom-end, matching the loading pill. role=status
+   announces each change to screen readers. */
+.creatureStatus {
+  position: absolute;
+  inset-block-end: 8px;
+  inset-inline-end: 8px;
+  max-inline-size: 60%;
+  padding: 4px 10px;
+  border: 1px solid rgb(39 169 139 / 0.35);
+  color: var(--ink-muted);
+  background: var(--paper-raised);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}

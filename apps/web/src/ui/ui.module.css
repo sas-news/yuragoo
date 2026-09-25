@@ -1,0 +1,213 @@
+/* Shared primitive styles (Task 27): the same flat chamfered idiom as the
+   lobby and /play — teal rim + ivory face plates, hard offset shadows,
+   ink text. Nothing here introduces a new visual language. */
+
+/* ---- Button variants ---- */
+
+/* Filled primary action: teal fill + ink ring, bold ink text. 19px bold
+   keeps ink-on-teal >= 3:1 (large-text contrast) on every slot color. */
+.primary {
+  background: var(--body);
+  border-color: var(--ink);
+  font-weight: 700;
+}
+
+.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Big centered action (はじめる / もう一回): ink ring + teal fill plate. */
+.big {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  margin: 16px auto 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 14px 46px;
+  color: var(--ink);
+  font-weight: bold;
+  font-size: 19px;
+}
+
+.big::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: var(--ink);
+  clip-path: polygon(
+    10px 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0 calc(100% - 10px),
+    0 10px
+  );
+}
+
+.big::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  background: #27a98b;
+  clip-path: polygon(
+    7px 0,
+    calc(100% - 7px) 0,
+    100% 7px,
+    100% calc(100% - 7px),
+    calc(100% - 7px) 100%,
+    7px 100%,
+    0 calc(100% - 7px),
+    0 7px
+  );
+}
+
+.big:focus-visible::before {
+  background: var(--focus);
+}
+
+/* ---- TextField ---- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-block-end: 12px;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+.input {
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink-muted);
+  border-radius: 0;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  inline-size: 100%;
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.fieldError {
+  margin: 0;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.fieldHint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* ---- Dialog ---- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.overlayDark {
+  background: rgb(64 47 59 / 0.5);
+}
+
+.overlayPaper {
+  background: rgb(255 247 232 / 0.82); /* flat paper veil — no blur */
+}
+
+/* Chamfered plate: teal rim ::before + inset ivory face ::after — the
+   same two-layer idiom as every plate, scaled to a dialog. */
+.panel {
+  position: relative;
+  inline-size: min(430px, 100%);
+  max-block-size: calc(100dvh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 24px 26px;
+  filter: drop-shadow(4px 4px 0 rgb(23 118 99 / 0.18));
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: #27a98b;
+  clip-path: polygon(
+    16px 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% calc(100% - 16px),
+    calc(100% - 16px) 100%,
+    16px 100%,
+    0 calc(100% - 16px),
+    0 16px
+  );
+}
+
+.panel::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  background: var(--paper-raised);
+  clip-path: polygon(
+    13px 0,
+    calc(100% - 13px) 0,
+    100% 13px,
+    100% calc(100% - 13px),
+    calc(100% - 13px) 100%,
+    13px 100%,
+    0 calc(100% - 13px),
+    0 13px
+  );
+}
+
+.panelTitle {
+  margin: 0 0 10px;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.panelBody {
+  overflow-wrap: anywhere;
+}
+
+.panelButtons {
+  display: flex;
+  gap: 10px;
+  margin-block-start: 18px;
+  flex-wrap: wrap;
+}
+
+/* Small corner chip that re-opens a dismissed result dialog. */
+.reopen {
+  position: absolute;
+  inset-block-end: 10px;
+  inset-inline-end: 10px;
+  z-index: 4;
+}

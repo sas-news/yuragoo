@@ -1,0 +1,54 @@
+/* Shared responsive + accessibility layer (Task 27). Global rules that
+   every page needs: the visually-hidden utility, the reduced-motion clamp
+   and small overflow guards. Visual design tokens stay in styles.css —
+   this file only carries behaviour, never a restyle. */
+/* biome-ignore-all lint/complexity/noImportantStyles: the reduced-motion
+   clamp below must beat component animations regardless of specificity —
+   !important is the point of that rule. */
+
+/* Screen-reader-only text: present in the accessibility tree, invisible on
+   screen. Used for state that is otherwise carried by color/icon alone
+   (connection dot, host mark, ready glyph). */
+.sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Media/iframes can never push a layout wider than its track. */
+img,
+canvas,
+svg,
+video {
+  max-inline-size: 100%;
+}
+
+/* Reduced motion (DESIGN.md §7): transitions collapse to <=100ms —
+   direction, face and state text are untouched. Only transitions are
+   clamped globally: animations are lifecycle-timed in this app (the
+   bubble unmounts on animationend), so each component owns its own
+   reduced-media animation rule instead. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 100ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Effective width <360px (200% zoom reaches this): the app shell keeps a
+   single column and nothing fixed-width may overflow. Long unbroken tokens
+   wrap instead of overflowing their plate. */
+@media (max-width: 360px) {
+  :root {
+    overflow-wrap: break-word;
+  }
+}

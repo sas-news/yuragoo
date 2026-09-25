@@ -1,0 +1,13 @@
+{
+  "name": "@yuragoo/creature",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@yuragoo/protocol": "workspace:*",
+    "pixi.js": "8.20.1"
+  }
+}

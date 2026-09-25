@@ -1,0 +1,50 @@
+/* Party stage on the flat paper world — the cream light the creature lives
+   in. No gradient, no dark re-theme, no color-scheme override: the shared
+   light tokens from styles.css carry straight through. The dock strip is
+   just the flat page itself — solid paper, no translucent glass — with the
+   chamfered input bar centered on it. */
+.page {
+  display: flex;
+  flex-direction: column;
+  block-size: 100dvh;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+/* The arena is everything above the dock: creature, seats, bubbles, HUD
+   strip and feed all overlay it. */
+.arena {
+  position: relative;
+  flex: 1;
+  min-block-size: 0;
+}
+
+.stageWrap {
+  position: absolute;
+  inset: 0;
+}
+
+/* CreatureStage fills the arena edge-to-edge: no card radius, no paper bg —
+   the Pixi canvas is mounted transparent (backgroundAlpha=0). */
+.stageWrap > section {
+  block-size: 100%;
+  min-block-size: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.hudWrap {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+}
+
+/* The feed is a quiet log tucked into the corner — flat angular chips, not
+   panels. */
+.feedWrap {
+  position: absolute;
+  inset-block-end: 10px;
+  inset-inline-start: 10px;
+  inline-size: min(340px, 46%);
+}

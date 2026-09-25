@@ -1,0 +1,185 @@
+/* Chips float over the arena; clicks pass through to the stage. */
+.seats {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+/* Seat: no plate — just the round icon planted on the attractor post and
+   the name floating under it in its own pill. The anchor is the AVATAR's
+   center (avatar 64/2 = -32px), so the icon lands exactly on the canvas
+   post while the name hangs below. */
+.seat {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-50%, -32px);
+}
+
+/* The acting seat's pointer wedge — the "your move" marker. Same teal as
+   the room's rim (bodyDeep), plain flat shape — no shadow, floating just
+   over the icon. */
+.turnMark {
+  position: absolute;
+  inset-block-start: -34px;
+  color: #27a98b; /* CREATURE_COLORS.bodyDeep */
+  font-size: 27px;
+  line-height: 1;
+  visibility: hidden;
+}
+
+.seat[data-current="true"] .turnMark {
+  visibility: visible;
+}
+
+/* Seat avatar: slot color ring + ivory disc + ink glyph — big enough to
+   read as the player's icon in a Discord-Activity-sized window. */
+.avatar {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  inline-size: 64px;
+  block-size: 64px;
+  border-radius: 50%;
+  color: var(--ink);
+  font-size: 25px;
+  font-weight: bold;
+  white-space: nowrap;
+  background: var(--slot-bg, var(--ink-muted));
+  filter: drop-shadow(2px 2px 0 rgb(23 118 99 / 0.14));
+}
+
+.avatar::after {
+  content: "";
+  position: absolute;
+  inset: 3.5px;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--paper-raised);
+}
+
+/* Name + goal stack: centered under the icon. Only the NAME gets the
+   floating pill — the goal stays quiet text beneath it. */
+.who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-inline-size: 0;
+  max-inline-size: 140px;
+  text-align: center;
+}
+
+.name {
+  padding: 2px 12px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-inline-size: 100%;
+  box-sizing: border-box;
+  background: var(--paper-raised);
+  border: 2px solid rgb(39 169 139 / 0.55);
+  border-radius: 999px;
+  filter: drop-shadow(2px 2px 0 rgb(23 118 99 / 0.12));
+}
+
+.goal {
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 var(--paper-raised);
+}
+
+/* The current player's icon also pulses a soft slot-colored glow — the
+   ▼ wedge stays the primary turn cue, this is the ambient one. */
+.seat[data-current="true"] .avatar {
+  animation: seatPulse 2.4s ease-in-out infinite;
+}
+
+/* Selectable seats (LIVE on /play): the chips live under a pointer-events:none
+   layer, so the seat opts back in and a transparent hit button covers the
+   chip — a real <button>, so keyboard + screen readers work for free. */
+.seat[data-selectable="true"] {
+  pointer-events: auto;
+}
+
+.seatHit {
+  position: absolute;
+  inset: 0;
+  min-block-size: 0;
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.seatHit:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@keyframes seatPulse {
+  0%,
+  100% {
+    filter: drop-shadow(2px 2px 0 rgb(23 118 99 / 0.14));
+  }
+  50% {
+    filter: drop-shadow(2px 2px 0 rgb(23 118 99 / 0.14))
+      drop-shadow(0 0 9px var(--seat-color, #f0a03c));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat[data-current="true"] .avatar {
+    animation: none;
+    filter: drop-shadow(2px 2px 0 rgb(23 118 99 / 0.14))
+      drop-shadow(0 0 6px color-mix(in srgb, var(--seat-color, #f0a03c) 65%, transparent));
+  }
+}
+
+/* Narrow arenas: shrink the icon so two side seats can both stay onscreen —
+   the clamp rect in seats.ts covers this smaller size too. */
+@media (max-width: 640px) {
+  .seat {
+    gap: 3px;
+    /* avatar 48/2 -> icon center 24px below the top edge */
+    transform: translate(-50%, -24px);
+  }
+
+  .turnMark {
+    inset-block-start: -27px;
+    font-size: 21px;
+  }
+
+  .avatar {
+    inline-size: 48px;
+    block-size: 48px;
+    font-size: 19px;
+  }
+
+  .who {
+    max-inline-size: 104px;
+  }
+
+  .name {
+    padding: 2px 10px;
+    font-size: 13.5px;
+  }
+
+  .goal {
+    font-size: 11.5px;
+  }
+}

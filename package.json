@@ -1,0 +1,32 @@
+{
+  "name": "yuragoo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "check": "biome check && bun run check:types && bun scripts/check-boundaries.ts",
+    "check:types": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p packages/protocol/tsconfig.json && tsc --noEmit -p packages/game-core/tsconfig.json && tsc --noEmit -p packages/creature/tsconfig.json && tsc --noEmit -p packages/ai/tsconfig.json && tsc --noEmit -p packages/platform/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json && tsc --noEmit -p apps/server/tsconfig.json",
+    "build": "bun run check:types && bun --cwd=apps/web run build",
+    "test:unit": "bun scripts/test-unit.ts",
+    "eval:jev": "bun scripts/eval-jev.ts",
+    "test:workers": "vitest run --config vitest.workers.config.ts",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@biomejs/biome": "2.5.13",
+    "@cloudflare/vitest-pool-workers": "0.22.0",
+    "@cloudflare/workers-types": "5.20260911.1",
+    "@playwright/test": "1.63.0",
+    "@types/node": "22.20.2",
+    "@vitest/runner": "4.1.11",
+    "@vitest/snapshot": "4.1.11",
+    "bun-types": "1.4.2",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11",
+    "wrangler": "4.131.1"
+  }
+}

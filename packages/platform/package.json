@@ -1,0 +1,12 @@
+{
+  "name": "@yuragoo/platform",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@yuragoo/protocol": "workspace:*"
+  }
+}

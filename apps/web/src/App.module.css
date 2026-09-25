@@ -1,0 +1,26 @@
+/* Home entry (Task 28): the creature stage keeps the flex area; the entry
+   cluster sits beneath it — a centered lead line, the chamfered big
+   button (Button variant="big" owns the teal plate) and the error line. */
+.entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 28px;
+  text-align: center;
+}
+
+.lead {
+  margin: 0;
+  max-inline-size: 30em;
+  color: var(--ink-muted);
+  font-size: 16px;
+}
+
+.error {
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--danger);
+  border: 2px solid var(--danger);
+  background: var(--paper-raised);
+}

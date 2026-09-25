@@ -1,0 +1,106 @@
+/* Shared arena layout for the in-game screens (/play local match and the
+   room's synchronized match): the arena is everything above the dock;
+   creature, seats, bubbles, HUD strip, scenario strip and feed all overlay
+   it. The dock itself is a separate bottom-attached tray (InputDock). */
+.page {
+  display: flex;
+  flex-direction: column;
+  block-size: 100dvh;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.arena {
+  position: relative;
+  flex: 1;
+  min-block-size: 0;
+}
+
+.stageWrap {
+  position: absolute;
+  inset: 0;
+}
+
+/* CreatureStage fills the arena edge-to-edge, canvas mounted transparent. */
+.stageWrap > section {
+  block-size: 100%;
+  min-block-size: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.hudWrap {
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline: 0;
+}
+
+/* Scenario strip: one muted line pinned under the HUD on the left — a
+   plain sharp-cornered plate (thin rims never get chamfers: the diagonal
+   would render hairline-thin). Ellipsis-truncated; when truncated the
+   strip renders as a button and pressing it unfolds the full text.
+   Lives below the HUD so it never fights the top seat chip. */
+.scenarioStrip {
+  position: absolute;
+  inset-block-start: 54px;
+  inset-inline-start: 14px;
+  z-index: 3;
+  box-sizing: border-box;
+  max-inline-size: min(460px, 32%); /* never reaches the top-center seat zone */
+  padding: 4px 18px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  background: var(--paper-raised);
+  border: 2px solid rgb(39 169 139 / 0.55); /* bodyDeep at half strength */
+  filter: drop-shadow(2px 2px 0 rgb(23 118 99 / 0.12));
+}
+
+/* The expandable variant (rendered as <button> only when truncated). */
+button.scenarioStrip {
+  font: inherit;
+  text-align: start;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+button.scenarioStrip:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.scenarioStrip[data-open="true"] {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  max-inline-size: min(560px, 72%);
+  max-block-size: 40%;
+  overflow-y: auto;
+}
+
+/* The unfold affordance: a little wedge riding the strip's right edge. */
+.scenarioMore {
+  margin-inline-start: 4px;
+  font-size: 11px;
+}
+
+/* On narrow arenas the strip can afford to be wider again — the top seat
+   is pushed below it by the clamp margin, so only the (hidden) roster row
+   was ever in its way. */
+@media (max-width: 640px) {
+  .scenarioStrip {
+    max-inline-size: 60%;
+  }
+}
+
+.feedWrap {
+  position: absolute;
+  inset-block-end: 10px;
+  inset-inline-start: 10px;
+  inline-size: min(340px, 46%);
+}

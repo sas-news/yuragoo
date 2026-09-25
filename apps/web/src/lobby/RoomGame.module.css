@@ -1,0 +1,80 @@
+/* Room in-game screen extras on top of the shared arena module: the dock
+   wrapper pins the input tray to the viewport bottom, the TURN pass button
+   is a compact secondary INSIDE the tray (never a separate element between
+   dock and screen edge), and the outcome dialog keeps the shared plate
+   idiom. Small boxes stay sharp-cornered — chamfers are for large plates. */
+
+.dockZone {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* The remaining-time bar: thin draining track at the screen's very bottom,
+   directly under the input tray (the HUD strip's bar lives here on the
+   room screen). Sharp corners — the fill itself is the shape, no rim. */
+.dockDeadline {
+  inline-size: min(960px, 100%);
+  margin: 0 auto;
+  block-size: 7px;
+  background: rgb(30 141 116 / 0.18);
+  overflow: hidden;
+}
+
+.dockDeadlineFill {
+  block-size: 100%;
+  background: var(--body);
+  transition: inline-size 200ms linear;
+}
+
+/* Secondary in-tray action: quiet, sharp, same height rhythm as send. */
+.passButton {
+  align-self: center;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 2px solid var(--ink-muted);
+  background: var(--paper);
+  color: var(--ink-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.passButton:hover:not(:disabled) {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.passButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Dock-level send error — pinned right above the tray so it never
+   detaches the tray from the bottom edge. */
+.errorNote {
+  margin: 0;
+  padding: 4px 12px;
+  color: var(--danger);
+  font-size: 13px;
+  border-inline-start: 3px solid var(--danger);
+}
+
+/* Outcome dialog content (the Dialog primitive owns overlay + plate). */
+.title {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.outcomeText {
+  font-size: 20px;
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.dialogButtons {
+  display: flex;
+  gap: 10px;
+  margin-block-start: 18px;
+  flex-wrap: wrap;
+}

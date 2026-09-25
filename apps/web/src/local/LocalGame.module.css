@@ -1,0 +1,238 @@
+/* /play on the flat paper world — the arena layout classes (page, arena,
+   stageWrap, hudWrap, scenarioStrip, feedWrap) live in game/arena.module.css,
+   shared with the room match screen. What remains here: setup + result
+   cards and local-only pieces — the same two-layer chamfered idiom (teal
+   plate ::before + inset ivory plate ::after + one hard offset shadow). */
+
+/* ---- setup + result: the same chamfered plate card ---- */
+
+.setupWrap {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(255 247 232 / 0.82); /* flat paper veil — no blur, no glass */
+}
+
+.card {
+  position: relative;
+  inline-size: min(520px, 92vw);
+  max-block-size: 90%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 22px 26px;
+  filter: drop-shadow(4px 4px 0 rgb(23 118 99 / 0.16));
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: #27a98b; /* CREATURE_COLORS.bodyDeep */
+  clip-path: polygon(
+    16px 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% calc(100% - 16px),
+    calc(100% - 16px) 100%,
+    16px 100%,
+    0 calc(100% - 16px),
+    0 16px
+  );
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  background: var(--paper-raised);
+  clip-path: polygon(
+    13px 0,
+    calc(100% - 13px) 0,
+    100% 13px,
+    100% calc(100% - 13px),
+    calc(100% - 13px) 100%,
+    13px 100%,
+    0 calc(100% - 13px),
+    0 13px
+  );
+}
+
+.title {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.scenario {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.persona {
+  margin: 0 0 12px;
+  color: var(--ink-muted);
+  font-size: 15px;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 10px;
+  padding: 0;
+  border: 0;
+}
+
+/* legend sits inline with the chips (the classic float trick — fieldset
+   content is a separate flow). */
+.label {
+  float: left;
+  color: var(--ink-muted);
+  font-size: 15px;
+  min-inline-size: 4.5em;
+  padding-block: 8px;
+}
+
+/* Flat chamfered chip button — the two-layer outline idiom, small. */
+.chipButton {
+  position: relative;
+  isolation: isolate;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 8px 18px;
+  min-block-size: 44px;
+  font-size: 15px;
+}
+
+.chipButton::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: var(--ink-muted);
+  clip-path: polygon(
+    8px 0,
+    calc(100% - 8px) 0,
+    100% 8px,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    8px 100%,
+    0 calc(100% - 8px),
+    0 8px
+  );
+}
+
+.chipButton::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  background: var(--paper-raised);
+  clip-path: polygon(
+    5px 0,
+    calc(100% - 5px) 0,
+    100% 5px,
+    100% calc(100% - 5px),
+    calc(100% - 5px) 100%,
+    5px 100%,
+    0 calc(100% - 5px),
+    0 5px
+  );
+}
+
+.chipButton[aria-pressed="true"]::before {
+  background: #27a98b;
+}
+
+.chipButton[aria-pressed="true"]::after {
+  background: #dff5ec;
+}
+
+/* ---- result card internals ---- */
+
+.choices {
+  margin: 8px 0 12px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+/* Slot disc: slot color as the ring, ivory face + ink symbol inside —
+   same two-layer read as the seat avatars (Task 27 contrast fix). */
+.choiceBadge {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  inline-size: 34px;
+  block-size: 34px;
+  border-radius: 50%;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: bold;
+  flex-shrink: 0;
+  background: var(--slot-bg, var(--ink-muted));
+}
+
+.choiceBadge::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--paper-raised);
+}
+
+.choiceLabel {
+  flex: 1;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.owner {
+  color: var(--ink-muted);
+  font-size: 14px;
+  white-space: nowrap;
+  max-inline-size: 10em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.outcome {
+  margin: 10px 0 4px;
+  font-size: 22px;
+  font-weight: bold;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.resultButtons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-block-start: 10px;
+}

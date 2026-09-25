@@ -1,0 +1,110 @@
+/* Public roster chips (Task 24): connection dot, name, host star, ready
+   mark and the 観戦待ち badge — one sharp-cornered chip per member (small
+   boxes stay pointed; chamfering eats the border). */
+.roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 44px;
+  /* min-width:0 lets the chip shrink past its nowrap name at extreme
+     zoom — the name ellipsizes instead of overflowing the viewport. */
+  min-inline-size: 0;
+  padding: 6px 12px;
+  background: var(--paper-raised);
+  border: 2px solid var(--ink-muted);
+}
+
+/* Long display names ellipsize inside the chip — the full name stays on
+   the element's title (and in the choice-row assignee / event feed). */
+.chipName {
+  font-size: 15px;
+  max-inline-size: 12em;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.selfMark {
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+/* Dark ochre — the accent keeps its warm read and still meets 4.5:1 on
+   the ivory chip (was #f0a03c, ~2:1). */
+.hostMark {
+  color: #8f5d0b;
+  font-size: 15px;
+}
+
+.dotOn,
+.dotOff {
+  inline-size: 10px;
+  block-size: 10px;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.dotOn {
+  background: #2fa98b;
+}
+
+.dotOff {
+  background: var(--ink-muted);
+  opacity: 0.45;
+}
+
+/* Darkened teal for a 4.5:1 read on paper-raised (was #2fa98b, ~2.9:1). */
+.readyOn {
+  color: #16705c;
+  font-weight: 700;
+}
+
+.readyOff {
+  color: var(--ink-muted);
+}
+
+.waitBadge {
+  font-size: 12px;
+  padding: 1px 6px;
+  background: var(--ink-muted);
+  color: var(--paper-raised);
+}
+
+/* Host hand-off affordance — a small sharp-cornered text button inside
+   the chip, visible only to the current host on connected members. */
+.hostGive {
+  font-size: 12px;
+  padding: 2px 8px;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 1.5px solid var(--ink-muted);
+  cursor: pointer;
+}
+
+.hostGive:hover,
+.hostGive:focus-visible {
+  color: var(--ink);
+  border-color: var(--ink);
+}

@@ -1,0 +1,306 @@
+/* /r/<roomId> lobby (Task 24). Same visual system as /play: flat cream
+   paper, two-layer chamfered plates (teal rim plate ::before + inset
+   ivory plate ::after + one hard offset shadow), no gradients, no rounded
+   web-cards. Mobile-first; readable >= 16px, targets >= 44px. */
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-block-size: 100dvh;
+  padding: 16px;
+  box-sizing: border-box;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.lobby {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  inline-size: 100%;
+  max-inline-size: 720px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.code {
+  font-size: 14px;
+  color: var(--ink-muted);
+  background: var(--paper-raised);
+  padding: 2px 8px;
+}
+
+.headerButtons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Two-layer chamfered plate: teal rim under an ivory face, hard shadow. */
+.plate {
+  position: relative;
+  padding: 18px 20px;
+  filter: drop-shadow(3px 3px 0 rgb(23 118 99 / 0.15));
+}
+
+/* The pre-join name panel shrink-wraps inside .page's center alignment —
+   pin its width so the field stays usable at every viewport. */
+.namePanel {
+  inline-size: min(560px, 100%);
+  box-sizing: border-box;
+}
+
+.plate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: rgb(39 169 139 / 0.65);
+  clip-path: polygon(
+    14px 0,
+    calc(100% - 14px) 0,
+    100% 14px,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 calc(100% - 14px),
+    0 14px
+  );
+}
+
+.plate::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  background: var(--paper-raised);
+  clip-path: polygon(
+    12px 0,
+    calc(100% - 12px) 0,
+    100% 12px,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    0 calc(100% - 12px),
+    0 12px
+  );
+}
+
+.plateHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.sectionTitle {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-block-end: 12px;
+  /* Settings pickers render as real <fieldset>s — strip the UA chrome. */
+  border: 0;
+  padding: 0;
+  margin-inline: 0;
+  min-inline-size: 0;
+}
+
+.field > legend.fieldLabel {
+  padding: 0;
+  margin-block-end: 6px;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+.input,
+.scenarioInput {
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink-muted);
+  border-radius: 0;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  inline-size: 100%;
+}
+
+.scenarioInput {
+  min-block-size: 96px;
+  resize: vertical;
+}
+
+.scenarioRead {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  min-block-size: 24px;
+}
+
+.badge {
+  font-size: 12px;
+  padding: 1px 6px;
+  background: var(--ink-muted);
+  color: var(--paper-raised);
+}
+
+.conflictBadge {
+  font-size: 12px;
+  padding: 1px 6px;
+  background: #f0a03c;
+  color: var(--ink); /* ink on amber ≈5.9:1 — was paper-raised ~2:1 */
+  white-space: nowrap;
+}
+
+/* Task 26 settings panel: segmented pickers for the contract menus +
+   toggle buttons for the optional switches. aria-pressed marks the
+   active option for both hosts and read-only members. */
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.segment,
+.toggle {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 12px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink-muted);
+  cursor: pointer;
+}
+
+.segment[aria-pressed="true"],
+.toggle[aria-pressed="true"] {
+  background: var(--body);
+  border-color: var(--ink);
+  font-weight: 700;
+}
+
+.segment:disabled,
+.toggle:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.toggle {
+  align-self: flex-start;
+  min-inline-size: 72px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.primary {
+  background: var(--body);
+  border-color: var(--ink);
+  font-weight: 700;
+}
+
+.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.startWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.gateReason {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* Leave-confirm dialog content (the Dialog primitive owns the plate). */
+.dialogTitle {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.dialogButtons {
+  display: flex;
+  gap: 10px;
+  margin-block-start: 18px;
+  flex-wrap: wrap;
+}
+
+.aiButton {
+  align-self: flex-start;
+}
+
+.aiButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.proposalList {
+  margin: 0 0 10px;
+  padding-inline-start: 20px;
+}
+
+.proposalList li {
+  margin-block-end: 4px;
+  overflow-wrap: anywhere;
+}
+
+.proposalButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.error {
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--danger);
+  border: 2px solid var(--danger);
+  background: var(--paper-raised);
+}
+
+.note {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+@media (min-width: 768px) {
+  .lobby {
+    max-inline-size: 760px;
+  }
+  .title {
+    font-size: 24px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .lobby {
+    max-inline-size: 860px;
+  }
+}

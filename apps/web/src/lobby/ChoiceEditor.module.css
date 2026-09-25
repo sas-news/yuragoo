@@ -1,0 +1,110 @@
+/* Per-seat choice rows (Task 24): slot symbol diamond + letter + assignee
+   + label field. Orphan rows (past the member count) dim to drafts. */
+.choiceList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choiceRow,
+.choiceRowOrphan {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 44px;
+}
+
+.choiceRowOrphan {
+  opacity: 0.45;
+}
+
+/* Slot diamond: the slot color stays as a solid rim (decorative accent);
+   the face is ivory with an ink glyph — readable at every size without
+   relying on color contrast against the accent (Task 27). */
+.slotBadge {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 30px;
+  block-size: 30px;
+  flex: none;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--slot-bg, var(--ink-muted));
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.slotBadge::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  background: var(--paper-raised);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.slotLetter {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  inline-size: 14px;
+  flex: none;
+}
+
+.assignee {
+  font-size: 14px;
+  color: var(--ink-muted);
+  /* Shrinkable rather than fixed — at extreme zoom the name ellipsizes
+     (the full name stays in the row's aria-label / chip title). */
+  flex: 0 1 96px;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.choiceInput {
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink-muted);
+  border-radius: 0;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  inline-size: 100%;
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.choiceRead {
+  font-size: 16px;
+  flex: 1;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) {
+  .assignee {
+    flex-basis: 140px;
+  }
+}
+
+/* Extreme-zoom band (≈200% at a 360px viewport): the assignee keeps its
+   first line while the field/label takes a full second line. */
+@media (max-width: 299px) {
+  .choiceRow,
+  .choiceRowOrphan {
+    flex-wrap: wrap;
+  }
+  .choiceInput,
+  .choiceRead {
+    flex: 1 1 100%;
+  }
+}

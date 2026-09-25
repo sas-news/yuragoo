@@ -1,0 +1,118 @@
+/* Slim top strip: turn word + round + roster chips, then a thin draining
+   bar (a screen may move the bar onto the input dock via hideDeadline).
+   Small elements keep SHARP corners — a thin border over a chamfered
+   corner renders the diagonal hairline-thin (design rule). */
+.hud {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 16px;
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.turnLine {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.round {
+  color: var(--ink-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.deadline {
+  inline-size: 220px;
+  max-inline-size: 100%;
+  block-size: 8px;
+  background: rgb(30 141 116 / 0.18);
+  overflow: hidden;
+  clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px);
+}
+
+.deadlineFill {
+  block-size: 100%;
+  background: var(--body);
+  transition: inline-size 200ms linear;
+}
+
+.roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  margin-inline-start: auto; /* the player list hugs the strip's right edge */
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 13px;
+  background: var(--paper-raised);
+  border: 2px solid rgb(39 169 139 / 0.65);
+}
+
+.chip[data-current="true"] {
+  font-weight: bold;
+  border-color: #27a98b;
+  filter: drop-shadow(0 0 4px rgb(39 169 139 / 0.4));
+}
+
+/* Slot badge: slot color rim + ivory face, sharp octagon-free corners —
+   the glyph alone carries the attractor echo. */
+.slotChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 2.4em;
+  padding: 0 6px;
+  color: var(--ink);
+  font-weight: bold;
+  background: var(--slot-bg, var(--ink-muted));
+  border: 2px solid var(--paper-raised);
+}
+
+.name {
+  white-space: nowrap;
+  max-inline-size: 12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Narrow arenas: the roster collapses to slot symbols only — names stay
+   visible on the seat chips themselves — so the strip never wraps onto the
+   top seat. */
+@media (max-width: 1040px) {
+  .chip {
+    padding: 3px 6px;
+  }
+
+  .chip .name {
+    display: none;
+  }
+}
+
+/* Very narrow: drop the roster outright — every seat chip already carries
+   the player's name, slot color and the current-turn pulse, so the strip
+   would only duplicate them. The turn line + countdown stay. */
+@media (max-width: 640px) {
+  .roster {
+    display: none;
+  }
+
+  .deadline {
+    inline-size: 140px;
+  }
+}

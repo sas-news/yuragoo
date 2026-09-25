@@ -1,0 +1,72 @@
+/* Corner log: small flat rows, newest at the bottom — plain rectangular
+   border + solid ivory face. Small elements stay sharp-cornered (no
+   chamfer, no radius): cutting corners at this size eats the border. */
+.feed {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-block-size: 170px;
+  overflow-y: auto;
+}
+
+.item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 10px;
+  color: var(--ink);
+  font-size: 14px;
+  border: 1.5px solid rgb(39 169 139 / 0.55);
+  background: var(--paper-raised);
+}
+
+/* Slot badge: slot-colored rim as a real border + ivory face + ink glyph
+   (Task 27) — readable without leaning on accent-color contrast. */
+.slotChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 2.4em;
+  padding: 0 6px;
+  color: var(--ink);
+  font-weight: bold;
+  flex-shrink: 0;
+  border: 1.5px solid var(--slot-bg, var(--ink-muted));
+  background: var(--paper-raised);
+}
+
+.name {
+  font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-inline-size: 8em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text {
+  overflow-wrap: anywhere;
+  min-inline-size: 0;
+}
+
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

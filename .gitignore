@@ -1,0 +1,17 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+.dev.vars
+.wrangler/
+test-results/
+playwright-report/
+blob-report/
+tmp/
+.codegraph/
+
+# .omo: keep docs/plans, drop heavy per-run evidence and session artifacts
+.omo/evidence/
+.omo/shots/
+.omo/run-continuation/
