@@ -32,7 +32,7 @@ export function Kamishibai({ story }: KamishibaiProps) {
         >
           まえ
         </Button>
-        <span className={styles.pageCount} aria-live="polite">
+        <span className={styles.pageCount} data-testid="page-count" aria-live="polite">
           {index + 1} / {story.panels.length}
         </span>
         <Button

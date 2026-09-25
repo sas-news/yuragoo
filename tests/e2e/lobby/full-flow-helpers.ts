@@ -93,7 +93,7 @@ export const turnMoved = (page: Page, prev: string | null): Promise<unknown> =>
     (p) => {
       const el = document.querySelector("[data-turn-player]");
       return el === null
-        ? document.querySelector("[data-testid='room-outcome']") !== null
+        ? document.querySelector("[data-testid='room-results']") !== null
         : el.getAttribute("data-turn-player") !== p;
     },
     prev,
@@ -127,16 +127,16 @@ export const playMatch = async (pages: readonly Page[]): Promise<string> => {
     await watcher.waitForFunction(
       () =>
         document.querySelector("[data-turn-player]") !== null ||
-        document.querySelector("[data-testid='room-outcome']") !== null,
+        document.querySelector("[data-testid='room-results']") !== null,
       { timeout: 45_000 },
     );
-    if ((await watcher.getByTestId("room-outcome").count()) > 0) break;
+    if ((await watcher.getByTestId("room-results").count()) > 0) break;
     await actTurn(pages, "post", `ターン投稿${step}`);
   }
   const texts: string[] = [];
   for (const p of pages) {
-    await p.getByTestId("room-outcome").waitFor({ timeout: 30_000 });
-    texts.push((await p.getByTestId("room-outcome").textContent()) ?? "");
+    await p.getByTestId("room-results").waitFor({ timeout: 30_000 });
+    texts.push((await p.getByTestId("results-outcome").textContent()) ?? "");
   }
   expect(new Set(texts).size).toBe(1);
   return texts[0] ?? "";

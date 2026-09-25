@@ -7,6 +7,10 @@
 //
 //   mode "ok"      -> {response: {choices: [生成フィクスチャ案N x count]}}
 //                     where count comes from the schema's maxItems
+//                     — or, when the request schema asks for story
+//                     panels ({eventId} enum), {response: {title,
+//                     panels: every enum id captioned}} so the post-
+//                     game ending call gets its all-or-nothing reply
 //   mode "garbage" -> {response: <non-JSON text>} — parse fails, the
 //                     attempt is still spent (send happened)
 // Every request line is logged for the failure evidence file.
@@ -30,11 +34,27 @@ export const startGenerationFixture = (port = 8792): Promise<GenerationFixture> 
       const body = Buffer.concat(chunks).toString("utf8");
       state.requests.push(`${new Date().toISOString()} ${req.method} ${req.url} ${body}`);
       let count = 4;
+      let panelIds: number[] | null = null;
       try {
         const parsed = JSON.parse(body) as {
-          response_format?: { json_schema?: { properties?: { choices?: { maxItems?: number } } } };
+          response_format?: {
+            json_schema?: {
+              properties?: {
+                choices?: { maxItems?: number };
+                panels?: { items?: { properties?: { eventId?: { enum?: unknown } } } };
+              };
+            };
+          };
         };
         count = parsed.response_format?.json_schema?.properties?.choices?.maxItems ?? 4;
+        const ids =
+          parsed.response_format?.json_schema?.properties?.panels?.items?.properties?.eventId?.enum;
+        // The ending schema carries the allowed eventIds as an integer
+        // enum — a number-array enum means this call is the post-game
+        // story generation, not the lobby choice generation.
+        if (Array.isArray(ids) && ids.every((id) => typeof id === "number")) {
+          panelIds = ids;
+        }
       } catch {
         // Fall through — a malformed request still gets a shaped answer.
       }
@@ -42,6 +62,20 @@ export const startGenerationFixture = (port = 8792): Promise<GenerationFixture> 
         res.setHeader("content-type", "application/json");
         if (state.mode === "garbage") {
           res.end(JSON.stringify({ response: "この返答はJSONの選択肢ではありません" }));
+          return;
+        }
+        if (panelIds !== null) {
+          res.end(
+            JSON.stringify({
+              response: {
+                title: "よるのおやつものがたり",
+                panels: panelIds.map((eventId) => ({
+                  eventId,
+                  caption: `ばめん${eventId}`,
+                })),
+              },
+            }),
+          );
           return;
         }
         res.end(
