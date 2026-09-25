@@ -21,6 +21,7 @@ import {
 import { landedDecisions } from "./ai-jobs";
 import type { RoomPlayer } from "./auth-storage";
 import type { Books } from "./due";
+import { readEnding } from "./ending";
 import { type ApplyResult, type EventRow, maxEventSeq } from "./storage";
 
 // Command rejections carry a stable machine-readable code for the error frame.
@@ -119,10 +120,8 @@ export const snapshotFrame = (
   lobby: LobbyState,
 ): ServerEnvelope => {
   const nowMs = Date.now();
-  // The shared ledger head doubles as the heal point: the client's sync
-  // machine heals lastSeq to stateRevision, and room events (presence,
-  // host, close) share the same seq space — a stale books.meta value
-  // would leave those frames buffered as a permanent gap.
+  // The shared ledger head doubles as the heal point — a stale
+  // books.meta value would leave room frames buffered as a permanent gap.
   const seq = maxEventSeq(host.sql);
   return frame(host, seq, seq, "snapshot", {
     state: books === null ? null : JSON.parse(JSON.stringify(books.state)),
@@ -138,6 +137,7 @@ export const snapshotFrame = (
       connected: p.leaseUntilMs !== null && p.leaseUntilMs > nowMs,
     })),
     lobby,
+    ending: books === null ? null : readEnding(host.sql), // panels ride the snapshot
   });
 };
 
@@ -173,8 +173,7 @@ const gameEventFrame = (
 };
 
 // events-table types whose payload is already a wire envelope payload
-// (room-lifetime frames persisted by presence.ts / the close plan, and the
-// Task-22 decisionUpdated rows written by the decision-job runner).
+// (room-lifetime frames, Task-22 decisionUpdated rows, Task-32 endings).
 const ROOM_FRAME_TYPES = new Set([
   "presenceChanged",
   "hostChanged",
@@ -191,6 +190,8 @@ const ROOM_FRAME_TYPES = new Set([
   // failure ride the same persisted stream as every other room event.
   "choicesGenerated",
   "generationFailed",
+  // Task 32: kamishibai panels — fired at finish, then once generated.
+  "endingReady",
 ]);
 
 // One persisted row -> one envelope. Game rows map through the event

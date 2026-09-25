@@ -34,6 +34,7 @@ const NON_META_TABLES = [
   "deadlines",
   "ai_jobs",
   "early_watch",
+  "ending",
   "outbox",
   "room_lifetime",
 ] as const;

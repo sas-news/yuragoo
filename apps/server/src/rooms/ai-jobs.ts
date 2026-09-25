@@ -144,4 +144,7 @@ export const clearGameArtifacts = (sql: SqlStorage): void => {
   sql.exec("DELETE FROM ai_results");
   sql.exec("DELETE FROM generation_slots");
   sql.exec("DELETE FROM early_watch");
+  // The kamishibai ending is per-game too — panels/quotes from the last
+  // match must never bleed into a rematch or a reopened lobby.
+  sql.exec("DELETE FROM ending");
 };

@@ -10,6 +10,7 @@ export * from "./ids";
 export * from "./errors";
 export * from "./decision";
 export * from "./lobby";
+export * from "./story";
 export * from "./text";
 export * from "./snapshot";
 export * from "./client-messages";

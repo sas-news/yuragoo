@@ -24,6 +24,9 @@ const ORDERED = new Set([
   // Task 25: the generation outcome rows share the same persisted stream.
   "choicesGenerated",
   "generationFailed",
+  // Task 32: the kamishibai panel set shares the persisted event stream —
+  // dropped frames here would leave the results screen stuck on "pending".
+  "endingReady",
 ]);
 
 export interface SyncMachine {

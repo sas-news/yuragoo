@@ -8,6 +8,7 @@ import { z } from "zod";
 import { choiceIdSchema } from "./ids";
 import { lobbyStateSchema } from "./lobby";
 import { gameOutcomeSchema, gameStateSchema, postedInputSchema } from "./snapshot";
+import { endingStorySchema } from "./story";
 
 const safeInt = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 
@@ -78,6 +79,10 @@ export const serverEnvelopeSchema = z.discriminatedUnion("type", [
           z.array(z.strictObject({ choiceId: choiceIdSchema, probability: z.number() })),
         )
         .optional(),
+      // Task 32: the persisted kamishibai ending — a reconnecting client
+      // must heal panels from the snapshot because ordered frames older
+      // than the healed revision are never replayed.
+      ending: endingStorySchema.nullable().optional(),
     }),
   ),
   // The sender's receipt for one accepted commandId (dedupe-replayed intact).
@@ -145,6 +150,10 @@ export const serverEnvelopeSchema = z.discriminatedUnion("type", [
       slotSpent: z.boolean(),
     }),
   ),
+  // Task 31/32: the game's kamishibai panel set. Fires once right after
+  // finish with template text, then again once the post-game generation
+  // call lands (or the row just stays at generated:false on failure).
+  envelope("endingReady", endingStorySchema),
   envelope("roomClosed", z.strictObject({ reason: z.string() })),
   // Rejections are frames, not closes (except oversized frames, which close
   // 1009 after this frame). commandId echoes the rejected command when known.

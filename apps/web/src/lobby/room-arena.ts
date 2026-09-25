@@ -177,6 +177,10 @@ export const roomEventLine = (env: ServerEnvelope, view: RoomView): string => {
       return "生きものがかたよりました";
     case "decisionFailed":
       return "生きもののこたえがもらえなかった…";
+    case "endingReady":
+      return env.payload.generated
+        ? "おわりの紙芝居ができました"
+        : "おわりの紙芝居を用意しています";
     case "roomClosed":
       return "へやが閉じられました";
     default:

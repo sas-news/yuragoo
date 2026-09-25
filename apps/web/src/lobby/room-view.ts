@@ -1,10 +1,8 @@
-// The room page's merged UI state (Task 24): the snapshot supplies the
-// whole picture, then every ordered event folds in on top. Kept in one
-// pure module so Lobby/RoomGame stay render-only and the merge rules are
-// testable without a DOM.
+// The room page's merged UI state: the snapshot heals, ordered events fold.
 import type { PostedInput } from "@yuragoo/game-core";
 import {
   type DecisionDistribution,
+  type EndingStory,
   LOBBY_SETTINGS_DEFAULT,
   type LobbyState,
   type RoomPlayerView,
@@ -41,6 +39,9 @@ export interface RoomView {
   // Last N ordered frames, newest last — the playing screen's event feed.
   readonly feed: readonly ServerEnvelope[];
   readonly outcome: RoomOutcome;
+  // Task 32: the kamishibai panel set — null until the room writes it; a
+  // template-only finish reports `generated:false` until generation lands.
+  readonly ending: EndingStory | null;
   readonly choiceProposal: ChoiceProposal | null;
   readonly generationError: GenerationError | null;
   // Task 28: the live turn pointer and the game roster, folded from the
@@ -81,6 +82,7 @@ export const initialView = (): RoomView => ({
   lobby: EMPTY_LOBBY,
   feed: [],
   outcome: null,
+  ending: null,
   choiceProposal: null,
   generationError: null,
   turn: null,
@@ -112,6 +114,9 @@ export const applySnapshot = (
     roster: s?.roster ?? [],
     posts: s?.posts ?? [],
     dists: new Map(Object.entries(p.decisions ?? {})),
+    // Ordered frames older than the healed revision never replay, so the
+    // snapshot is the only path a reconnecting client sees the panels.
+    ending: p.ending ?? null,
     deadlineAtMs: s?.deadlineAtMs ?? null,
     clockOffset: serverTimeMs === undefined ? view.clockOffset : serverTimeMs - Date.now(),
     epoch: gameEpoch ?? view.epoch,
@@ -124,6 +129,10 @@ export const applySnapshot = (
 
 const push = (view: RoomView, env: ServerEnvelope): readonly ServerEnvelope[] =>
   [...view.feed, env].slice(-60);
+
+// A landed decision (or terminal failure) flips the post out of pending.
+const markEvaluated = (posts: readonly PostedInput[], postId: string): readonly PostedInput[] =>
+  posts.map((p) => (p.postId === postId ? { ...p, status: "evaluated" as const } : p));
 
 export const applyEvent = (view: RoomView, env: ServerEnvelope): RoomView => {
   const feed = push(view, env);
@@ -146,6 +155,7 @@ export const applyEvent = (view: RoomView, env: ServerEnvelope): RoomView => {
         state: null,
         lobby: env.payload,
         outcome: null,
+        ending: null,
         turn: null,
         posts: [],
         dists: new Map(),
@@ -178,35 +188,26 @@ export const applyEvent = (view: RoomView, env: ServerEnvelope): RoomView => {
         choiceProposal: null,
         generationError: env.payload,
       };
+    case "endingReady":
+      // Fires twice per game (template, then generated) — last write wins.
+      return { ...view, feed, clockOffset, epoch, ending: env.payload };
     case "decisionUpdated": {
       const { postId, distribution } = env.payload;
       if (postId === undefined || distribution === undefined) {
         return { ...view, feed, clockOffset, epoch };
       }
       const dists = new Map(view.dists).set(postId, distribution);
-      return {
-        ...view,
-        feed,
-        clockOffset,
-        epoch,
-        dists,
-        posts: view.posts.map((p) =>
-          p.postId === postId ? { ...p, status: "evaluated" as const } : p,
-        ),
-      };
+      return { ...view, feed, clockOffset, epoch, dists, posts: markEvaluated(view.posts, postId) };
     }
     case "decisionFailed":
-      // The eval is never coming — flip the post out of "pending" so the
-      // post-reaction hold releases (no dist lands, so latestRoomDist
-      // still skips it; the bubble already shows the text).
+      // The eval is never coming; no dist lands, so latestRoomDist still
+      // skips it — the bubble already shows the text either way.
       return {
         ...view,
         feed,
         clockOffset,
         epoch,
-        posts: view.posts.map((p) =>
-          p.postId === env.payload.postId ? { ...p, status: "evaluated" as const } : p,
-        ),
+        posts: markEvaluated(view.posts, env.payload.postId),
       };
     case "phaseChanged":
     case "inputAccepted": {
@@ -226,6 +227,7 @@ export const applyEvent = (view: RoomView, env: ServerEnvelope): RoomView => {
         epoch,
         phase: env.payload.phase,
         outcome: e.type === "finished" ? e.outcome : e.type === "started" ? null : view.outcome,
+        ending: e.type === "started" ? null : view.ending,
         deadlineAtMs: deadlineFor(view, env),
         posts,
         dists: e.type === "started" ? new Map() : view.dists,

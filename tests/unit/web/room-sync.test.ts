@@ -81,6 +81,7 @@ describe("room event sync machine", () => {
       "choicesGenerated",
       "generationFailed",
       "decisionUpdated",
+      "endingReady",
       "roomClosed",
     ].entries()) {
       const r = feed(m, env(type as ServerEnvelope["type"], 2 + i));
