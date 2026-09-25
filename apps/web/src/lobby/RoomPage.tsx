@@ -201,6 +201,7 @@ export default function RoomPage() {
         submitText={(text: string) => connRef.current?.send("submitText", { text })}
         pass={() => connRef.current?.send("pass", {})}
         backToLobby={() => connRef.current?.send("backToLobby", {})}
+        closeRoom={() => connRef.current?.send("closeRoom", {})}
       />
     );
   }

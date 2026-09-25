@@ -3,7 +3,7 @@
 // the creature (committed choice i rides canonical slot i, same as /play),
 // and the flat HudSnapshot for the HUD strip. All data is server-folded in
 // room-view.ts; nothing here fabricates game authority.
-import { type AttractionSample, CANONICAL_SLOT_ANGLES } from "@yuragoo/creature";
+import { type AttractionSample, CANONICAL_SLOT_ANGLES, PULL_GAIN } from "@yuragoo/creature";
 import { orderForRound } from "@yuragoo/game-core";
 import type { DecisionDistribution, ServerEnvelope } from "@yuragoo/protocol";
 import type { HudSnapshot } from "../game/hud-types";
@@ -36,14 +36,10 @@ const committedCount = (view: RoomView): number =>
 const committedChoices = (view: RoomView): readonly { choiceId: string; label: string }[] =>
   view.lobby.choices.slice(0, committedCount(view));
 
-// Presentation gain: Jev's verdicts are gentle (0.45/0.30/0.25 is already a
-// firm answer), so the raw probabilities read as a barely-off-center drift.
-// Cubing sharpens the lean into a readable pull — the ranking is untouched
-// and a true tie stays exactly uniform (nothing is invented).
-const PULL_GAIN = 3;
-
 // Attraction samples for the creature: committed choice i sits on slot i's
 // canonical angle; a missing distribution reads as a uniform pull.
+// PULL_GAIN lives in @yuragoo/creature: story panels replay poses with the
+// same cubing, so live lean and captured silhouette always match.
 export const roomSamples = (
   distribution: readonly DecisionDistribution[] | null,
   view: RoomView,

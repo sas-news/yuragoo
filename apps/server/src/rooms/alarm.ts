@@ -133,6 +133,7 @@ export const handleAlarm = async (host: SocketHost): Promise<void> => {
   // due) — drive it off the alarm path.
   if (flushWanted || (booksUpdate ?? books)?.state.phase === "finished") {
     host.waitUntil(host.driveOutbox());
+    host.waitUntil(host.driveEnding());
   }
   // Deadline transitions can open the settle window (final evaluations)
   // or leave jobs stranded by an eviction — drive the runner without

@@ -26,6 +26,7 @@ export interface LedgerHost extends CloseHost {
   waitUntil(p: Promise<void>): void;
   roomLimits(): RoomLimits;
   driveOutbox(): Promise<void>;
+  driveEnding(): Promise<void>;
 }
 
 // The lazy half of lease enforcement (the alarm is the other): lapsed
@@ -83,7 +84,10 @@ export const applyToRoom = async (
   await host.rearm();
   // A finished game enqueued an aggregate outbox row — flush it without
   // blocking the ack (submission is server-only and best-effort).
-  if (committed.state.phase === "finished") host.waitUntil(host.driveOutbox());
+  if (committed.state.phase === "finished") {
+    host.waitUntil(host.driveOutbox());
+    host.waitUntil(host.driveEnding());
+  }
   // An accepted post wrote a pending evaluate job — drive it without
   // blocking the ack (the result arrives as a decisionUpdated event).
   host.waitUntil(drive());

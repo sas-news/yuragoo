@@ -1,12 +1,9 @@
 // DO-side WebSocket plumbing (Task 19) + presence delegation (Task 20):
 // hibernation handlers, frame guards, envelope parsing, delivery, broadcast.
 // Upgrade admission lives in ./admit; room effects go through commands.ts
-// and presence.ts — this module only moves bytes and enforces transport rules:
-//   frame > 16KiB        -> error frame, then close 1009
-//   binary / non-JSON / bad shape / wrong protocolVersion / wrong gameId
-//                        -> error frame, no state change
-//   stale epoch / >64 cmds per 10s -> error frame, bounded (per-socket window)
-// Every command entrypoint also runs the expired guard and a lazy lease sweep; close routes through presence.disconnect so a stale generation's close never clears newer presence.
+// and presence.ts — this module moves bytes and enforces transport rules
+// (oversized -> 1009; malformed/stale -> error frame; rate bounds), the
+// expired guard, and a lazy lease sweep on every entrypoint.
 import { GameRuleError } from "@yuragoo/game-core";
 import { clientEnvelopeSchema, type ClientEnvelope, protocolVersion } from "@yuragoo/protocol";
 import { RoomError } from "./api";
@@ -45,12 +42,12 @@ export interface SocketHost extends CommandHost {
   waitUntil(p: Promise<void>): void;
   leaseMs(): number;
   emptyGraceMs(): number;
-  // Task 21: expiry->purge hysteresis + the aggregate-outbox/wipe drives.
-  purgeDelayMs(): number;
+  purgeDelayMs(): number; // expiry->purge hysteresis (Task 21)
   driveOutbox(): Promise<void>;
   retryWipe(): Promise<void>;
-  // Task 22: kick the decision-job runner without blocking the handler.
+  // Task 22/32 drives — never block the handler on them.
   driveDecisionJobs(): Promise<void>;
+  driveEnding(): Promise<void>;
 }
 
 const sendError = (
@@ -216,7 +213,10 @@ export const handleMessage = async (
       await host.rearm();
       // A commit that landed "finished" enqueued the aggregate outbox —
       // flush it off the ack path.
-      if (host.booksView()?.state.phase === "finished") host.waitUntil(host.driveOutbox());
+      if (host.booksView()?.state.phase === "finished") {
+        host.waitUntil(host.driveOutbox());
+        host.waitUntil(host.driveEnding());
+      }
       // The commit may have written pending evaluate jobs (accepted post)
       // or opened the settle window (final evaluations) — drive them.
       host.waitUntil(host.driveDecisionJobs());

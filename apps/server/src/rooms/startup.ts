@@ -20,6 +20,7 @@ export interface StartupHost extends DecisionJobHost {
   retryWipe(): Promise<void>;
   driveOutbox(): Promise<void>;
   driveDecisionJobs(): Promise<void>;
+  driveEnding(): Promise<void>;
 }
 
 export const runStartup = (
@@ -61,5 +62,11 @@ export const runStartup = (
     // Task 22 recovery: suppress orphaned jobs (never resend) + re-drive
     // survivors — inside waitUntil, never blocking on ControlPlane.
     scheduleJobRecovery(ctx, host, env, books.meta.gameEpoch);
+    // Task 32: a DO evicted between finish and the ending write (or the
+    // post-game generation send boundary) resumes here — kickEnding is
+    // idempotent on the ending row and the "post" slot.
+    if (books.state.phase === "finished") {
+      ctx.waitUntil(host.driveEnding().catch(() => {}));
+    }
   }
 };

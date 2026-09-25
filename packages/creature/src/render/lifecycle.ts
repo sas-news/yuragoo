@@ -1,5 +1,6 @@
 import { Application, type Ticker } from "pixi.js";
 import type { AttractionSample, Vec2 } from "../attraction";
+import { extractFrameBlob } from "../extract";
 import { FIXED_STEP_SECONDS, MAX_SUBSTEPS } from "../spring";
 import { CREATURE_COLORS } from "./materials";
 import { createCreatureScene } from "./scene";
@@ -7,15 +8,14 @@ import { createCreatureScene } from "./scene";
 // Expression states carry no stage chrome except "hesitating": pending ring flash.
 export type StageExpression = "hesitating" | "engaged" | "bored";
 export type StageVisualState = "normal" | "focus" | "loading" | "error" | StageExpression;
-
 export type CreatureExpression = "rest" | "hesitating" | "engaged" | "bored" | "adhering";
-
 export interface CreaturePresentation {
   readonly samples: readonly AttractionSample[];
   readonly expression: CreatureExpression;
   readonly reducedMotion: boolean;
 }
 
+// Summary payloads for diagnostics and harnesses — plain JSON-able data.
 export interface FaceSummary {
   readonly x: number;
   readonly y: number;
@@ -41,7 +41,6 @@ export interface PoseRenderSummary {
   readonly activeParticles: number;
   readonly reducedMotion: boolean;
 }
-
 export interface RendererDiagnostics {
   readonly createdApplications: number;
   readonly destroyedApplications: number;
@@ -57,21 +56,18 @@ export interface MountCreatureOptions {
   readonly forceUnsupported?: boolean;
   readonly backgroundAlpha?: number; // 0 = transparent canvas (default 1)
 }
-
 export interface BodySummary {
   readonly width: number;
   readonly height: number;
   readonly nonTransparentPixels: number;
   readonly alphaLevels: number;
 }
-
 export interface RectSummary {
   readonly x: number;
   readonly y: number;
   readonly width: number;
   readonly height: number;
 }
-
 export interface SceneLayoutSummary {
   readonly stageWidth: number;
   readonly stageHeight: number;
@@ -86,9 +82,16 @@ export interface CreatureRuntime {
   extractBodySummary(): BodySummary;
   readLayoutSummary(): SceneLayoutSummary;
   readPoseSummary(): PoseRenderSummary;
+  // One rendered frame as a PNG Blob for story panels; null when destroyed/unencodable.
+  extractImage(): Promise<Blob | null>;
   destroy(): void;
 }
 
+// Runtime reachability for page-level harnesses (the e2e creature lab): the
+// runtime rides on its canvas element — element-scoped, GC'd with it.
+export interface CreatureCanvasHandle extends HTMLCanvasElement {
+  __yuragooCreatureRuntime?: CreatureRuntime;
+}
 export class RendererUnsupportedError extends Error {
   constructor(cause?: unknown) {
     super("WebGL renderer is not supported", { cause });
@@ -115,15 +118,9 @@ export function resetRendererDiagnostics(): void {
 
 const wait = (ms: number, signal: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
-    const onAbort = (): void => {
-      clearTimeout(timer);
-      reject(new Error("mount aborted"));
-    };
-    const timer = setTimeout(() => {
-      signal.removeEventListener("abort", onAbort);
-      resolve();
-    }, ms);
-    signal.addEventListener("abort", onAbort, { once: true });
+    // Once + settle-once semantics keep this leak-free without cleanup.
+    signal.addEventListener("abort", () => reject(new Error("mount aborted")), { once: true });
+    setTimeout(resolve, ms);
   });
 
 export async function mountCreatureScene(
@@ -169,7 +166,7 @@ export async function mountCreatureScene(
     app.stage.addChild(scene.root);
     scene.layout(app.screen.width, app.screen.height);
     scene.setVisualState(options.visualState);
-    const canvas = app.canvas as HTMLCanvasElement;
+    const canvas = app.canvas as CreatureCanvasHandle;
     canvas.setAttribute("aria-hidden", "true");
     host.appendChild(canvas);
     let lastWidth = app.screen.width,
@@ -191,10 +188,11 @@ export async function mountCreatureScene(
     counters.tickers += 1;
 
     let runtimeDestroyed = false;
-    return {
+    const runtime: CreatureRuntime = {
       setVisualState: (state: StageVisualState) => scene.setVisualState(state),
       setPresentation: (presentation: CreaturePresentation) => scene.setPresentation(presentation),
       readPoseSummary: () => scene.readPoseSummary(),
+      extractImage: () => (runtimeDestroyed ? Promise.resolve(null) : extractFrameBlob(app)),
       extractBodySummary: () => {
         app.render();
         const bodyMesh = scene.body.view;
@@ -242,6 +240,8 @@ export async function mountCreatureScene(
         destroyApp();
       },
     };
+    canvas.__yuragooCreatureRuntime = runtime;
+    return runtime;
   } catch (error) {
     destroyApp();
     throw error;

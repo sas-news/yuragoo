@@ -1,6 +1,4 @@
-// The GameRoom Durable Object — the authoritative room host: recovered
-// GameState, atomic commits, room-auth + presence ledgers. Startup lives in
-// ./startup, ledger RPC in ./room-ledger — this file stays a thin shell.
+// The GameRoom Durable Object — authoritative room host, a thin shell.
 import { DurableObject } from "cloudflare:workers";
 import { upgradeFetch } from "./admit";
 import { commitInitRoom } from "../auth/sessions";
@@ -14,6 +12,7 @@ import { retryWipeIfPending } from "./close";
 import { listDeadlines, minDeadlineRunAt } from "./deadlines";
 import { drainDecisionJobs, resolveJobDeps } from "./decision-jobs";
 import type { Books } from "./due";
+import { kickEnding } from "./ending";
 import { type ChoiceGenRequest, runChoiceGeneration } from "./generate-choices";
 import { resolveGenerationDeps } from "./generation-deps";
 import { spendGenerationSlot } from "./generation-slots";
@@ -156,7 +155,6 @@ export class GameRoom extends DurableObject<ServerBindings> implements transport
   async apply(input: api.ApplyInput): Promise<ApplyResult> {
     return applyToRoom(this, input, () => this.driveDecisionJobs());
   }
-
   private drive(lane: string, start: () => Promise<void>): Promise<void> {
     const current = this.driving.get(lane);
     if (current !== undefined) return current;
@@ -174,6 +172,7 @@ export class GameRoom extends DurableObject<ServerBindings> implements transport
       drainDecisionJobs(this, resolveJobDeps(this.env)).finally(async () => {
         if (!this.closed && this.books?.state.phase === "finished") {
           this.ctx.waitUntil(this.driveOutbox().catch(() => {}));
+          this.ctx.waitUntil(this.driveEnding().catch(() => {}));
         }
         if (!this.closed) await this.rearm().catch(() => {});
       }),
@@ -182,7 +181,9 @@ export class GameRoom extends DurableObject<ServerBindings> implements transport
   driveOutbox(): Promise<void> {
     return this.drive("outbox", () => flushOutbox(this, resolveOutboxDeps(this.env)));
   }
-
+  driveEnding(): Promise<void> {
+    return this.drive("ending", () => kickEnding(this, resolveGenerationDeps(this.env)));
+  }
   retryWipe(): Promise<void> {
     return retryWipeIfPending(this);
   }
@@ -192,9 +193,8 @@ export class GameRoom extends DurableObject<ServerBindings> implements transport
     return Promise.resolve(spendGenerationSlot(this, slot));
   }
 
-  // Task 25: the generateChoices command commits only an ack; the real
-  // attempt (reserve -> slot spend -> provider -> outcome event) runs
-  // here under waitUntil so the command path never blocks on the LLM.
+  // Task 25: generateChoices commits only an ack — the attempt itself runs
+  // under waitUntil so the command path never blocks on the LLM.
   startChoiceGeneration(request: ChoiceGenRequest): void {
     const run = this.closed
       ? Promise.resolve()

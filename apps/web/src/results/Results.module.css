@@ -1,0 +1,143 @@
+/* Results dialog + kamishibai (Task 32): warm paper plates, sharp corners
+   on small elements, chamfer only on the big dialog plate (DESIGN.md §2).
+   The page-size art is a still of the SAME creature — aqua blob, ink
+   face, attractor ticks as plain dots (no numerals, ever). */
+
+.resultsPanel {
+  inline-size: min(560px, 92vw);
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.outcomeLine {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.pending {
+  margin: 24px 0;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 15px;
+}
+
+.kamishibai {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.storyTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.panel {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.art {
+  inline-size: min(240px, 60vw);
+  block-size: auto;
+  aspect-ratio: 1;
+  background: var(--paper);
+  border: 2px solid var(--ink-muted);
+}
+
+.tick {
+  fill: #27a98b;
+  opacity: 0.55;
+}
+
+.blob {
+  fill: rgb(120 223 197 / 0.55);
+  stroke: #27a98b;
+  stroke-width: 2;
+}
+
+.eye {
+  fill: var(--ink);
+}
+
+.mouth {
+  fill: var(--ink);
+  opacity: 0.8;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 16px;
+  text-align: center;
+}
+
+.panelCaption {
+  margin: 4px 0 0;
+  font-size: 14px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.quotes {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quote {
+  font-size: 13px;
+  color: var(--ink-muted);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.pageCount {
+  font-size: 13px;
+  color: var(--ink-muted);
+  min-inline-size: 3.5em;
+  text-align: center;
+}
+
+.dialogButtons {
+  display: flex;
+  gap: 10px;
+  margin-block-start: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.confirmText {
+  inline-size: 100%;
+  margin: 0 0 4px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.errorNote {
+  margin: 8px 0 0;
+  padding: 4px 12px;
+  color: var(--danger);
+  font-size: 13px;
+  border-inline-start: 3px solid var(--danger);
+}

@@ -14,17 +14,13 @@ import feedStyles from "../game/MessageFeed.module.css";
 import { PlayerSeats } from "../game/PlayerSeats";
 import { ScenarioStrip } from "../game/ScenarioStrip";
 import { useSeatAnchors } from "../game/seats";
-import { SLOT_SYMBOLS } from "../game/slots";
 import { usePostReaction } from "../game/usePostReaction";
-import { Button } from "../ui/Button";
-import { Dialog } from "../ui/Dialog";
-import uiStyles from "../ui/ui.module.css";
 import { useVisualViewportHeight } from "../ui/useVisualViewport";
+import { Results } from "../results/Results";
 import { latestRoomDist, roomEventLine, roomGoals, roomHud, roomSamples } from "./room-arena";
 import { RoomDock } from "./RoomDock";
 import type { RoomView } from "./room-view";
 import { memberName } from "./view-members";
-import styles from "./RoomGame.module.css";
 
 interface RoomGameProps {
   readonly view: RoomView;
@@ -34,9 +30,18 @@ interface RoomGameProps {
   // Any member may send everyone back to the lobby — the server only
   // requires a finished game. One player's click never restarts a match.
   readonly backToLobby: () => Promise<unknown> | undefined;
+  // Host-only room close — the results dialog confirms before sending.
+  readonly closeRoom: () => Promise<unknown> | undefined;
 }
 
-export function RoomGame({ view, selfId, submitText, pass, backToLobby }: RoomGameProps) {
+export function RoomGame({
+  view,
+  selfId,
+  submitText,
+  pass,
+  backToLobby,
+  closeRoom,
+}: RoomGameProps) {
   // IME fallback (Task 27): shrink to the visual viewport so the dock
   // stays under the software keyboard.
   const vvHeight = useVisualViewportHeight();
@@ -44,18 +49,9 @@ export function RoomGame({ view, selfId, submitText, pass, backToLobby }: RoomGa
   const arenaRef = useRef<HTMLDivElement | null>(null);
   const [runtime, setRuntime] = useState<CreatureRuntime | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [dismissed, setDismissed] = useState(false);
-  const [lobbyBusy, setLobbyBusy] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
-  const seenOutcomeRef = useRef<RoomView["outcome"]>(null);
-  const reopenRef = useRef<HTMLButtonElement | null>(null);
   const feedRef = useRef<HTMLUListElement | null>(null);
 
   const outcome = view.outcome;
-  if (seenOutcomeRef.current !== outcome) {
-    seenOutcomeRef.current = outcome;
-    if (outcome !== null && dismissed) setDismissed(false);
-  }
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 250);
@@ -87,7 +83,6 @@ export function RoomGame({ view, selfId, submitText, pass, backToLobby }: RoomGa
   // TURN pulses the acting seat; LIVE has no order, so your own seat is
   // the highlighted one (the identity cue, not a turn claim).
   const currentId = hud.mode === "turn" ? view.turn?.playerId : selfId;
-  const winner = outcome?.kind === "winner" ? memberName(view.players, outcome.playerId) : null;
 
   return (
     <main className={arena.page} style={pageStyle} data-testid="room-game">
@@ -138,57 +133,14 @@ export function RoomGame({ view, selfId, submitText, pass, backToLobby }: RoomGa
             ))}
           </ul>
         </div>
-        {outcome !== null &&
-          (dismissed ? (
-            <Button
-              className={uiStyles.reopen}
-              ref={reopenRef}
-              data-testid="outcome-reopen"
-              onClick={() => setDismissed(false)}
-            >
-              けっかをみる
-            </Button>
-          ) : (
-            <Dialog
-              label="結果"
-              veil="dark"
-              testId="room-outcome"
-              onClose={() => setDismissed(true)}
-              returnFocus={() => reopenRef.current}
-            >
-              <h2 className={styles.title} data-autofocus tabIndex={-1}>
-                結果
-              </h2>
-              {outcome.kind === "winner" && (
-                <p className={styles.outcomeText}>
-                  {SLOT_SYMBOLS[outcome.slot] ?? "?"} {winner ?? "？"} の勝ち！
-                </p>
-              )}
-              {outcome.kind === "draw" && <p className={styles.outcomeText}>引き分け</p>}
-              {outcome.kind === "noContest" && (
-                <p className={styles.outcomeText}>無効試合（{outcome.reason}）</p>
-              )}
-              <div className={styles.dialogButtons}>
-                <Button
-                  variant="primary"
-                  data-testid="back-to-lobby"
-                  disabled={lobbyBusy}
-                  onClick={() => {
-                    setLobbyBusy(true);
-                    void backToLobby()
-                      ?.then(() => setLobbyBusy(false))
-                      .catch((e: Error) => {
-                        setLobbyBusy(false);
-                        setSendError(e.message);
-                      });
-                  }}
-                >
-                  ロビーにもどる
-                </Button>
-                <Button onClick={() => setDismissed(true)}>とじる</Button>
-              </div>
-            </Dialog>
-          ))}
+        {outcome !== null && (
+          <Results
+            view={view}
+            isHost={view.hostPlayerId === selfId}
+            backToLobby={backToLobby}
+            closeRoom={closeRoom}
+          />
+        )}
       </div>
       {view.phase === "playing" && (
         <RoomDock
@@ -198,11 +150,6 @@ export function RoomGame({ view, selfId, submitText, pass, backToLobby }: RoomGa
           submitText={submitText}
           pass={pass}
         />
-      )}
-      {sendError !== null && (
-        <p className={styles.errorNote} role="alert">
-          {sendError}
-        </p>
       )}
     </main>
   );

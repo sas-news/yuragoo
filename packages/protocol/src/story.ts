@@ -65,6 +65,7 @@ export const endingStorySchema = z.strictObject({
   gameEpoch: safeInt,
   outcome: gameOutcomeSchema,
   generated: z.boolean(),
+  title: graphemeCap(STORY_TITLE_MAX_GRAPHEMES),
   panels: z.array(storyPanelSchema).min(STORY_PANEL_MIN).max(STORY_PANEL_MAX),
 });
 export type EndingStory = z.infer<typeof endingStorySchema>;
