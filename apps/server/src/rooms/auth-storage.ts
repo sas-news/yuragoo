@@ -51,6 +51,7 @@ type RoomPlayerSqlRow = {
   join_order: number;
   display_name: string | null;
   platform: string;
+  discord_user_id: string | null;
   session_hash: string;
   reconnect_hash: string;
   lobby_waiting: number;
@@ -64,6 +65,9 @@ export interface RoomPlayer {
   readonly joinOrder: number;
   readonly displayName: string | null;
   readonly platform: string;
+  // Task 35: the verified Discord user id owning this seat (NULL for
+  // browser joins). Seat dedupe + the unique index key on room_players.
+  readonly discordUserId: string | null;
   readonly sessionHash: string;
   readonly reconnectHash: string;
   readonly lobbyWaiting: boolean;
@@ -74,13 +78,14 @@ export interface RoomPlayer {
 
 const ROOM_PLAYER_COLUMNS =
   "player_id, join_order, display_name, platform, session_hash, reconnect_hash, " +
-  "lobby_waiting, socket_generation, lease_until_ms, joined_at_ms";
+  "lobby_waiting, socket_generation, lease_until_ms, joined_at_ms, discord_user_id";
 
 const toRoomPlayer = (r: RoomPlayerSqlRow): RoomPlayer => ({
   playerId: r.player_id,
   joinOrder: r.join_order,
   displayName: r.display_name,
   platform: r.platform,
+  discordUserId: r.discord_user_id,
   sessionHash: r.session_hash,
   reconnectHash: r.reconnect_hash,
   lobbyWaiting: r.lobby_waiting !== 0,
@@ -102,7 +107,7 @@ export const deleteRoomPlayer = (sql: SqlStorage, playerId: string): void => {
 
 export const insertRoomPlayer = (sql: SqlStorage, p: RoomPlayer): void => {
   sql.exec(
-    `INSERT INTO room_players (${ROOM_PLAYER_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO room_players (${ROOM_PLAYER_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     p.playerId,
     p.joinOrder,
     p.displayName,
@@ -113,6 +118,7 @@ export const insertRoomPlayer = (sql: SqlStorage, p: RoomPlayer): void => {
     p.socketGeneration,
     p.leaseUntilMs,
     p.joinedAtMs,
+    p.discordUserId,
   );
 };
 
@@ -131,6 +137,39 @@ export const findPlayerBySessionHash = (sql: SqlStorage, hash: string): RoomPlay
 
 export const findPlayerByReconnectHash = (sql: SqlStorage, hash: string): RoomPlayer | null =>
   findPlayerBy(sql, "reconnect_hash", hash);
+
+// Task 35 seat dedupe: the verified Discord user id — never a
+// client-declared value — resolves the seat a rejoin reclaims.
+export const findPlayerByDiscordId = (
+  sql: SqlStorage,
+  discordUserId: string,
+): RoomPlayer | null => {
+  const row = sql
+    .exec<RoomPlayerSqlRow>(
+      `SELECT ${ROOM_PLAYER_COLUMNS} FROM room_players WHERE discord_user_id = ?`,
+      discordUserId,
+    )
+    .toArray()[0];
+  return row === undefined ? null : toRoomPlayer(row);
+};
+
+// Rejoin on an existing seat: rotate both token hashes and refresh the
+// stored name when the verified profile renamed it.
+export const updateDiscordSeat = (
+  sql: SqlStorage,
+  playerId: string,
+  sessionHash: string,
+  reconnectHash: string,
+  displayName: string | null,
+): void => {
+  sql.exec(
+    "UPDATE room_players SET session_hash = ?, reconnect_hash = ?, display_name = ? WHERE player_id = ?",
+    sessionHash,
+    reconnectHash,
+    displayName,
+    playerId,
+  );
+};
 
 export const updateSessionHashes = (
   sql: SqlStorage,

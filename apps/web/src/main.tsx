@@ -65,8 +65,7 @@ const Page =
 // the Activity URL anyway). e2e bundles get a deterministic dummy so the
 // adapter spec can drive the full gate without a real app id.
 const ClientId =
-  import.meta.env.VITE_DISCORD_CLIENT_ID ??
-  (import.meta.env.MODE === "e2e" ? "e2e-client" : "");
+  import.meta.env.VITE_DISCORD_CLIENT_ID ?? (import.meta.env.MODE === "e2e" ? "e2e-client" : "");
 createRoot(el).render(
   <StrictMode>
     {Page ? (

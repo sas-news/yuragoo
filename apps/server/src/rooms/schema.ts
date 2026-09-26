@@ -85,11 +85,15 @@ const STATEMENTS: readonly string[] = [
   // Room membership ledger — hash-only credentials, socket generation and
   // the lobby-waiting flag for mid-game joins. Not the game roster: the
   // `players` table holds the per-game roster snapshot instead.
+  // discord_user_id (Task 35): the verified Discord user id behind the
+  // seat, or NULL for browser seats — it is what makes a Discord rejoin
+  // land back on the same player row.
   `CREATE TABLE IF NOT EXISTS room_players (
     player_id TEXT PRIMARY KEY,
     join_order INTEGER NOT NULL,
     display_name TEXT,
     platform TEXT NOT NULL,
+    discord_user_id TEXT,
     session_hash TEXT NOT NULL,
     reconnect_hash TEXT NOT NULL,
     lobby_waiting INTEGER NOT NULL DEFAULT 0,
@@ -197,4 +201,19 @@ export const ensureSchema = (sql: SqlStorage): void => {
   if (!jobColumns.includes("tries")) {
     sql.exec("ALTER TABLE ai_jobs ADD COLUMN tries INTEGER NOT NULL DEFAULT 0");
   }
+  // Additive column migration (Task 35): discord_user_id seats a verified
+  // Discord user. The partial unique index enforces seat dedupe — at most
+  // one room seat per Discord account — without colliding on the NULLs
+  // every browser row carries.
+  const playerColumns = sql
+    .exec<{ name: string }>("PRAGMA table_info(room_players)")
+    .toArray()
+    .map((c) => c.name);
+  if (!playerColumns.includes("discord_user_id")) {
+    sql.exec("ALTER TABLE room_players ADD COLUMN discord_user_id TEXT");
+  }
+  sql.exec(
+    "CREATE UNIQUE INDEX IF NOT EXISTS room_players_discord " +
+      "ON room_players (discord_user_id) WHERE discord_user_id IS NOT NULL",
+  );
 };

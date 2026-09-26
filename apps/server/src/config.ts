@@ -23,6 +23,19 @@ export interface ServerBindings {
   // Comma-separated Origin allowlist for the room-auth API. In local mode
   // every loopback origin (any port) is allowed on top of this list.
   ALLOWED_ORIGINS?: string;
+  // Task 35 Discord auth: OAuth app credentials for the /api/discord/token
+  // code exchange — secrets never appear in logs or error bodies.
+  DISCORD_CLIENT_ID?: string;
+  DISCORD_CLIENT_SECRET?: string;
+  // Dev/test seam: retargets the Discord API base URL at a local fixture,
+  // like JEV_UPSTREAM_URL for the decision runner. Production never sets
+  // this (the real https://discord.com/api/v10 is the default); tests also
+  // inject the fetch itself via injectDiscordApiDeps.
+  DISCORD_UPSTREAM_URL?: string;
+  // Origin allowlist for Activity traffic (requests arrive through the
+  // *.discordsays.com proxy). Entries are exact origins or ".suffix"
+  // patterns matching any https subdomain, e.g. ".discordsays.com".
+  DISCORD_ORIGINS?: string;
   // Presence timing knobs (milliseconds, decimal strings). Production
   // defaults implement the contract — heartbeat 15s, lease 45s, empty-room
   // rejoin grace 60s. Tests and the wrangler e2e override them with

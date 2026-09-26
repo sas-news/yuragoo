@@ -80,7 +80,11 @@ export interface InitRoomInput {
 }
 
 export interface JoinRoomInput {
-  readonly inviteSecretHash: string;
+  // Browser joins prove membership with the invite secret hash; Discord
+  // joins (Task 35) arrive pre-verified and carry the OAuth-verified user
+  // id instead — one or the other is required, enforced inside commitJoin.
+  readonly inviteSecretHash?: string;
+  readonly discordUserId?: string;
   readonly displayName: string | null;
   readonly platform: string;
   readonly nowMs: number;
@@ -92,6 +96,7 @@ export interface JoinRoomResult {
   readonly reconnectToken: string;
   readonly joinOrder: number;
   readonly lobbyWaiting: boolean;
+  readonly displayName: string | null;
 }
 
 export interface ReconnectInput {

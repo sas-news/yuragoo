@@ -31,18 +31,21 @@ export const join = async (room: CommandHost, input: JoinRoomInput): Promise<Joi
   const lobbyWaiting = books !== null && books.state.phase !== "lobby";
   return room.txn(() => {
     const joined = commitJoin(room.sql, { ...input, lobbyWaiting }, creds);
-    // Task 24: the memberJoined ledger row + lobby choice growth commit
-    // inside the same transaction; joinRoomAt broadcasts them after.
-    onMemberJoined(
-      room.sql,
-      {
-        playerId: joined.playerId,
-        joinOrder: joined.joinOrder,
-        displayName: input.displayName,
-        lobbyWaiting,
-      },
-      books !== null,
-    );
+    // Task 24/35: the memberJoined ledger row + lobby choice growth commit
+    // inside the same transaction — a Discord rejoin reclaims its seat, so
+    // only a genuinely new member writes the row. joinRoomAt broadcasts.
+    if (joined.isNew) {
+      onMemberJoined(
+        room.sql,
+        {
+          playerId: joined.playerId,
+          joinOrder: joined.joinOrder,
+          displayName: joined.displayName,
+          lobbyWaiting,
+        },
+        books !== null,
+      );
+    }
     return joined;
   });
 };

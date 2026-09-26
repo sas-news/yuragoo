@@ -4,10 +4,12 @@
 // the commit* functions are synchronous SQLite steps the DO runs inside
 // ctx.storage.transactionSync so verify+write commit or roll back as one.
 import {
+  findPlayerByDiscordId,
   findPlayerByReconnectHash,
   insertRoomPlayer,
   readRoomAuth,
   roomPlayerCount,
+  updateDiscordSeat,
   updateSessionHashes,
   writeRoomAuth,
 } from "../rooms/auth-storage";
@@ -69,7 +71,10 @@ export const commitInitRoom = (
 };
 
 export interface JoinCommit {
-  readonly inviteSecretHash: string;
+  readonly inviteSecretHash?: string;
+  // Task 35: the Discord seat key — the OAuth-verified user id, set only
+  // by the platform:"discord" route after /users/@me succeeds.
+  readonly discordUserId?: string;
   readonly displayName: string | null;
   readonly platform: string;
   readonly lobbyWaiting: boolean;
@@ -82,6 +87,10 @@ export interface Joined {
   readonly reconnectToken: string;
   readonly joinOrder: number;
   readonly lobbyWaiting: boolean;
+  readonly displayName: string | null;
+  // False when a Discord rejoin reclaimed an existing seat — the caller
+  // must not emit another memberJoined ledger row for it.
+  readonly isNew: boolean;
 }
 
 export const commitJoin = (
@@ -89,13 +98,56 @@ export const commitJoin = (
   input: JoinCommit,
   creds: IssuedCredentials,
 ): Joined => {
-  const auth = readRoomAuth(sql);
-  if (auth === null) throw new RoomError("unknown-room", "room does not exist");
-  if (auth.inviteHash !== input.inviteSecretHash) {
-    throw new RoomError("bad-invite", "invite secret does not match");
+  let auth = readRoomAuth(sql);
+  if (auth === null) {
+    // Task 35: a Discord join creates its instance-bound room lazily —
+    // the stored invite hash is a random value nobody ever receives, so
+    // the browser invite path can never mint a seat inside it. Browser
+    // joins keep requiring a room that initRoom already initialized.
+    if (input.platform !== "discord" || input.inviteSecretHash === undefined) {
+      throw new RoomError("unknown-room", "room does not exist");
+    }
+    writeRoomAuth(sql, input.inviteSecretHash, input.platform, input.nowMs);
+    auth = {
+      inviteHash: input.inviteSecretHash,
+      platform: input.platform,
+      createdAtMs: input.nowMs,
+    };
   }
+  // The platform gate precedes the credential check so a browser join
+  // aimed at a discord room is refused as platform-mismatch even without
+  // a valid secret (discord rooms carry a random, never-shared hash).
   if (auth.platform !== input.platform) {
     throw new RoomError("platform-mismatch", "room belongs to a different platform");
+  }
+  if (input.platform === "discord") {
+    // The verified user id IS the credential — a rejoin rotates the seat's
+    // token hashes in place (the old session dies, a second socket replaces
+    // the first) and refreshes the stored name; membership is untouched.
+    if (input.discordUserId === undefined) {
+      throw new RoomError("bad-invite", "discord joins require a verified user id");
+    }
+    const seat = findPlayerByDiscordId(sql, input.discordUserId);
+    if (seat !== null) {
+      updateDiscordSeat(
+        sql,
+        seat.playerId,
+        creds.sessionHash,
+        creds.reconnectHash,
+        input.displayName,
+      );
+      return {
+        playerId: seat.playerId,
+        sessionToken: creds.sessionToken,
+        reconnectToken: creds.reconnectToken,
+        joinOrder: seat.joinOrder,
+        lobbyWaiting: seat.lobbyWaiting,
+        displayName: input.displayName,
+        isNew: false,
+      };
+    }
+  } else if (auth.inviteHash !== input.inviteSecretHash) {
+    throw new RoomError("bad-invite", "invite secret does not match");
   }
   const count = roomPlayerCount(sql);
   if (count >= MAX_ROOM_PLAYERS) {
@@ -111,6 +163,7 @@ export const commitJoin = (
     joinOrder,
     displayName: input.displayName,
     platform: input.platform,
+    discordUserId: input.discordUserId ?? null,
     sessionHash: creds.sessionHash,
     reconnectHash: creds.reconnectHash,
     lobbyWaiting: input.lobbyWaiting,
@@ -124,6 +177,8 @@ export const commitJoin = (
     reconnectToken: creds.reconnectToken,
     joinOrder,
     lobbyWaiting: input.lobbyWaiting,
+    displayName: input.displayName,
+    isNew: true,
   };
 };
 
