@@ -10,6 +10,7 @@
     "preview:e2e": "vite preview --host 127.0.0.1 --port 4173 --strictPort"
   },
   "dependencies": {
+    "@discord/embedded-app-sdk": "2.5.0",
     "@yuragoo/ai": "workspace:*",
     "@yuragoo/creature": "workspace:*",
     "@yuragoo/game-core": "workspace:*",
