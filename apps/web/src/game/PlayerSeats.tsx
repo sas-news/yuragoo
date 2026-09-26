@@ -50,6 +50,8 @@ export function PlayerSeats(props: PlayerSeatsProps) {
             style={style}
             data-testid={`seat-${player.id}`}
             data-slot={player.slot}
+            data-anchor-x={pos.x}
+            data-anchor-y={pos.y}
             data-current={isCurrent || undefined}
             data-selectable={onSelect !== undefined || undefined}
             aria-label={`${nameOf(player.id)} の席`}

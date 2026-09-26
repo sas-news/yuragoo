@@ -56,13 +56,20 @@ test("happy: seats sit on their attractor posts, clear of dock and each other", 
     expect(box).not.toBeNull();
     if (attractor === undefined || box === null) continue;
     boxes.push(box);
-    const seatC = center(box);
     const post = { x: stageBox.x + attractor.x, y: stageBox.y + attractor.y };
-    // The chip is anchored at its post: ~48px outward, clamped at the edges.
-    expect(Math.hypot(seatC.x - post.x, seatC.y - post.y)).toBeLessThan(120);
-    // …and the offset points radially OUTWARD from the creature, not inward.
-    const dot = (seatC.x - post.x) * (post.x - stageC.x) + (seatC.y - post.y) * (post.y - stageC.y);
-    expect(dot).toBeGreaterThan(0);
+    // The chip's anchor point — the avatar icon's center — IS the
+    // attractor post (clamped at the edges). The chip box extends inward
+    // from it, so box geometry is not the seat position.
+    const seat = page.getByTestId(`seat-${player.id}`);
+    const anchorX = Number(await seat.getAttribute("data-anchor-x"));
+    const anchorY = Number(await seat.getAttribute("data-anchor-y"));
+    expect(Math.hypot(anchorX - attractor.x, anchorY - attractor.y)).toBeLessThan(120);
+    const anchor = { x: stageBox.x + anchorX, y: stageBox.y + anchorY };
+    // OUTWARD_PX is 0 and edge clamps only pull the chip INWARD — the
+    // anchor may sit on the post or inside it, never outward past it.
+    const dot =
+      (anchor.x - post.x) * (post.x - stageC.x) + (anchor.y - post.y) * (post.y - stageC.y);
+    expect(dot).toBeLessThanOrEqual(1);
     // No seat ever slides under the dock's send button.
     expect(overlaps(box, sendBox)).toBe(false);
   }
