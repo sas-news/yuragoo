@@ -1,0 +1,40 @@
+# Live-credential gates (Task 38): workflow_dispatch ONLY — never on the
+# default CI path. Jev eval needs JEV_API_KEY as a repo secret; without
+# it the eval step is skipped (exit code 2 "blocked" is not a pass).
+# results/jev-eval.json uploads as an artifact either way.
+name: live-gates
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  jev-eval:
+    runs-on: ubuntu-latest
+    env:
+      JEV_API_KEY: ${{ secrets.JEV_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
+      - run: bun install --frozen-lockfile
+      - name: Jev behavior eval (ja-v1)
+        if: env.JEV_API_KEY != ''
+        run: bun run eval:jev -- --suite ja-v1 --max-attempts 60 --out results/jev-eval.json
+      - name: Jev eval skipped (no JEV_API_KEY secret)
+        if: env.JEV_API_KEY == ''
+        run: echo "JEV_API_KEY secret not set — live eval skipped"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jev-eval-manifest
+          path: results/jev-eval.json
+          if-no-files-found: ignore
+      # Release gate, documented not wired: the Discord live Activity
+      # smoke needs a Discord app + credentials that do not exist yet,
+      # so the command is intentionally not run here.
+      - name: Discord live smoke (not wired yet)
+        run: echo "bun run test:discord:live — requires Discord live credentials; add a script + secrets before enabling"

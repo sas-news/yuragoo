@@ -1,0 +1,29 @@
+# Default CI (Task 38): the whole offline gate — lint/types/boundary
+# checks, unit tests, the workerd suite, the web build and the Playwright
+# e2e (which spins up wrangler dev + vite preview with stub upstreams).
+# Anything needing live credentials is NOT here — see live-gates.yml.
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bun run test:unit
+      - run: bun run test:workers
+      - run: bun run build
+      - run: npx playwright install --with-deps chromium
+      - run: bun run test:e2e

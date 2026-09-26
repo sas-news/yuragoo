@@ -1,0 +1,53 @@
+/* 「とうけい」 public-stats link + dialog content (Task 38): a bare text
+   link in footers — quiet ink, no plate, since it opens a dialog rather
+   than navigating. The dialog itself is the shared chamfered panel. */
+.link {
+  min-block-size: 0;
+  min-inline-size: 44px;
+  padding: 2px 4px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.title {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.row dt {
+  color: var(--ink-muted);
+}
+
+.row dd {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.hint {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.note {
+  margin: 0;
+  color: var(--ink-muted);
+}

@@ -4,7 +4,9 @@
 // The page owns the RoomView reducer; Lobby and RoomGame are render-only.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SnapshotPayload } from "@yuragoo/protocol";
+import { StatsLink } from "../info/Stats";
 import { RoomConnection } from "../net/reconnect";
+import { inviteUrl as buildInviteUrl } from "../net/urls";
 import { useVisualViewportHeight } from "../ui/useVisualViewport";
 import { Lobby } from "./Lobby";
 import { NamePanel } from "./NamePanel";
@@ -33,15 +35,6 @@ type Stage =
   | { readonly kind: "error"; readonly message: string };
 
 const roomIdOf = (): string => window.location.pathname.split("/")[2] ?? "";
-
-// location.search minus the per-user ?name= param — the environment
-// overrides (api/hb) ride the invite link, user data never does.
-const inviteQuery = (): string => {
-  const params = new URLSearchParams(window.location.search);
-  params.delete("name");
-  const qs = params.toString();
-  return qs === "" ? "" : `?${qs}`;
-};
 
 export default function RoomPage() {
   const roomId = roomIdOf();
@@ -178,10 +171,7 @@ export default function RoomPage() {
   // The shared invite carries the environment params (api/hb) but never
   // per-user data: a host who joined through ?name= must not hand out a
   // link that auto-names every invitee.
-  const inviteUrl =
-    inviteSecret === null
-      ? null
-      : `${window.location.origin}/r/${roomId}${inviteQuery()}#${inviteSecret}`;
+  const inviteUrl = inviteSecret === null ? null : buildInviteUrl(roomId, inviteSecret);
 
   // IME fallback (Task 27): where 100dvh does not track the software
   // keyboard, the page shrinks to the visual viewport so inputs and the
@@ -235,6 +225,9 @@ export default function RoomPage() {
           onLeave={onLeave}
         />
       )}
+      <p className={styles.note}>
+        <StatsLink />
+      </p>
     </main>
   );
 }

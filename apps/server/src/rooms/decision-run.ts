@@ -15,6 +15,7 @@ import {
   type DecisionResult,
   parseJevDecisionResponse,
 } from "@yuragoo/protocol";
+import { latencyBucket, logEvent } from "../observability";
 import {
   type AiJobRow,
   attemptToken,
@@ -81,6 +82,7 @@ const callUpstream = async (
   sendDeadline: number,
 ): Promise<{ result: DecisionResult | null; retriable: boolean; delayMs: number }> => {
   const controller = new AbortController();
+  const sentAt = deps.nowMs();
   const timer = setTimeout(
     () => controller.abort(new DOMException("deadline", "TimeoutError")),
     Math.max(1, sendDeadline - deps.nowMs()),
@@ -97,21 +99,40 @@ const callUpstream = async (
     });
     if (response.status >= 200 && response.status < 300) {
       try {
-        return {
-          result: parseJevDecisionResponse(await response.json(), envelope),
-          retriable: false,
-          delayMs: 0,
-        };
+        const result = parseJevDecisionResponse(await response.json(), envelope);
+        logEvent({
+          eventCode: "jev-decision",
+          modelVersion: result.model,
+          latencyBucket: latencyBucket(deps.nowMs() - sentAt),
+          usage: result.usage,
+        });
+        return { result, retriable: false, delayMs: 0 };
       } catch {
+        logEvent({
+          eventCode: "jev-decision",
+          errorKind: "invalid-response",
+          latencyBucket: latencyBucket(deps.nowMs() - sentAt),
+        });
         return { result: null, retriable: false, delayMs: 0 }; // contract violation never retries
       }
     }
+    logEvent({
+      eventCode: "jev-decision",
+      errorKind: `http-${response.status}`,
+      latencyBucket: latencyBucket(deps.nowMs() - sentAt),
+    });
     return {
       result: null,
       retriable: isRetriableStatus(response.status),
       delayMs: retryAfterMs(response.headers.get("retry-after"), deps.nowMs()),
     };
   } catch {
+    const ek = controller.signal.aborted ? "timeout" : "transport";
+    logEvent({
+      eventCode: "jev-decision",
+      errorKind: ek,
+      latencyBucket: latencyBucket(deps.nowMs() - sentAt),
+    });
     return { result: null, retriable: true, delayMs: 0 }; // transport failure / deadline abort
   } finally {
     clearTimeout(timer);

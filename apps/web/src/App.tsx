@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { gameRulesVersion } from "@yuragoo/game-core";
 import { CreatureStage } from "./game/CreatureStage";
+import { StatsLink } from "./info/Stats";
 import { apiOrigin, createRoom } from "./lobby/room-session";
 import { Button } from "./ui/Button";
 import styles from "./App.module.css";
@@ -52,6 +53,9 @@ export function App() {
           </p>
         )}
       </section>
+      <footer className={styles.statsFoot}>
+        <StatsLink />
+      </footer>
     </main>
   );
 }

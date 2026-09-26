@@ -66,3 +66,16 @@ ControlPlane へ server-only 送信される。receiptId は room/player/game
 公開は前の UTC 日までの日次バケットに限り、完了 20 試合未満は
 `pending` を返す。noContest 試合と開発/評価ルームは公開集計に含めない。
 表示名・ID・本文・自由選択肢名・個別勝者・ルーム別統計は公開しない。
+アプリ内では「とうけい」リンクの小さなダイアログが同じ値を読むだけ。
+
+## ops ログ（構造化・数値のみ）
+
+サーバーの ops ログは `apps/server/src/observability.ts` の `logEvent`
+が出す JSON 1行に限定される。出せるフィールドは `eventCode` /
+`modelVersion` / `latencyBucket` / `errorKind` / `usage`（トークン数）
+だけで、latency は `<1s`/`1-3s`/`3-10s`/`>10s` のバケットのみ。
+
+リクエスト body、roomId、playerId、表示名、URL query、secret、
+エラーの自由文はこの経路ではログに出さない。呼び出し側が渡すのは
+固定コード（`timeout`・`http-503` など）だけなので、投稿本文や
+個人が引っ付く経路は存在しない。

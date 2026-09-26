@@ -24,3 +24,10 @@
   border: 2px solid var(--danger);
   background: var(--paper-raised);
 }
+
+/* Home footer (Task 38): the とうけい link sits quiet under the entry. */
+.statsFoot {
+  display: flex;
+  justify-content: center;
+  padding: 0 16px 16px;
+}

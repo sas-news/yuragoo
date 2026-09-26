@@ -22,6 +22,7 @@ import {
   parseChoiceLabels,
 } from "@yuragoo/ai";
 import { countGraphemes } from "@yuragoo/protocol";
+import { latencyBucket, logEvent } from "../observability";
 import { utcDay } from "../control/budgets";
 import type { RoomPlayer } from "./auth-storage";
 import type { Books } from "./due";
@@ -107,7 +108,14 @@ const emitOutcome = (
   }
 };
 
-const fail = (host: ChoiceGenHost, code: string, slotSpent: boolean): void => {
+const fail = (host: ChoiceGenHost, code: string, slotSpent: boolean, elapsedMs?: number): void => {
+  // Structured ops log alongside the room event — codes only, never the
+  // scenario text or room/player ids.
+  logEvent({
+    eventCode: "choice-gen",
+    errorKind: code,
+    latencyBucket: elapsedMs === undefined ? undefined : latencyBucket(elapsedMs),
+  });
   emitOutcome(host, "generationFailed", {
     code,
     message: "選択肢の生成に失敗しました — 手入力で続けられます",
@@ -191,6 +199,7 @@ export const runChoiceGeneration = async (
   }
   let labels: string[] | null = null;
   let code = "generation-upstream";
+  const sentAt = deps.nowMs();
   try {
     const raw = await callProvider(provider, deps, req);
     try {
@@ -207,12 +216,13 @@ export const runChoiceGeneration = async (
   // The attempt was sent — consume the grant whatever landed back.
   await control.consume({ token: req.token }).catch(() => {});
   if (labels !== null) {
+    logEvent({ eventCode: "choice-gen", latencyBucket: latencyBucket(deps.nowMs() - sentAt) });
     emitOutcome(host, "choicesGenerated", {
       lobbyRevision: req.lobbyRevision,
       memberCount: req.memberCount,
       labels,
     });
   } else {
-    fail(host, code, true);
+    fail(host, code, true, deps.nowMs() - sentAt);
   }
 };

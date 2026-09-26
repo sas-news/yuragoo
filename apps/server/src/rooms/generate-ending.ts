@@ -24,6 +24,7 @@ import {
   parseEndingCaptions,
 } from "@yuragoo/ai";
 import type { EndingStory } from "@yuragoo/protocol";
+import { latencyBucket, type LatencyBucket, logEvent } from "../observability";
 import { utcDay } from "../control/budgets";
 import type { Books } from "./due";
 import { readEnding, writeEnding } from "./ending";
@@ -46,10 +47,10 @@ export interface EndingGenHost extends BroadcastHost {
   isClosed(): boolean;
 }
 
-// No stream event for rejections — the template captions stand silently.
-const fail = (code: string): void => {
-  console.log(`[ending-gen] ${code}`);
-};
+// No stream event for rejections — the template captions stand silently;
+// ops sees only the structured event (never prompt/room/player data).
+const fail = (code: string, latency?: LatencyBucket): void =>
+  logEvent({ eventCode: "ending-gen", errorKind: code, latencyBucket: latency });
 
 // The gates run identically at the send boundary and again inside the
 // apply txn: only the SAME finished game (same epoch) that still owns a
@@ -185,16 +186,16 @@ export const runEndingGeneration = async (
     fail(`generation-${prepared}`);
     return;
   }
-  const input = prepared;
   let title: string | null = null;
   let captions: ReadonlyMap<number, string> | null = null;
   let code = "generation-upstream";
+  const sentAt = deps.nowMs();
   try {
-    const raw = await callProvider(provider, deps, input);
+    const raw = await callProvider(provider, deps, prepared);
     try {
       const parsed = parseEndingCaptions(
         raw,
-        input.panels.map((p) => p.eventId),
+        prepared.panels.map((p) => p.eventId),
       );
       title = parsed.title;
       captions = parsed.captions;
@@ -210,10 +211,9 @@ export const runEndingGeneration = async (
   // The attempt reached the wire — consume the grant whatever landed.
   await control.consume({ token }).catch(() => {});
   if (title === null || captions === null) {
-    fail(code); // the template story stands — the once-only fallback
+    fail(code, latencyBucket(deps.nowMs() - sentAt)); // the template story stands
     return;
   }
-  // const copies carry the narrowed type into the txn closure.
   const storyTitle = title;
   const storyCaptions = captions;
   const since = maxEventSeq(host.sql);
