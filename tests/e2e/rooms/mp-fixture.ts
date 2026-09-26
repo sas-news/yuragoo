@@ -117,6 +117,10 @@ export const startWorker = async (opts: {
   port: number;
   dir: string;
   upstreamUrl: string;
+  // Task 36: a named wrangler env (e.g. "e2e") selects the assets-
+  // enabled config block in wrangler.jsonc; unset keeps the plain dev
+  // topology every existing caller relies on.
+  env?: string;
 }): Promise<WorkerHandle> => {
   const bin = join(
     process.cwd(),
@@ -151,6 +155,7 @@ export const startWorker = async (opts: {
       "2026-08-22",
       "--persist-to",
       join(opts.dir, "persist"),
+      ...(opts.env === undefined ? [] : ["--env", opts.env]),
     ],
     { stdio: ["ignore", "ignore", "pipe"], windowsHide: true },
   );

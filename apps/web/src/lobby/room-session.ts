@@ -6,6 +6,11 @@
 import { eraseInviteSecret, readInviteSecret } from "@yuragoo/platform";
 import type { RoomCredentials } from "../net/reconnect";
 import { rotateCredentials } from "../net/reconnect";
+import { apiOrigin } from "../net/urls";
+
+// Re-exported so existing callers keep one import — the single source of
+// truth for the API origin moved to net/urls.ts (Task 36).
+export { apiOrigin };
 
 export interface JoinedSession extends RoomCredentials {
   readonly displayName: string | null;
@@ -72,10 +77,6 @@ export const clearSession = (roomId: string): void => {
     // Nothing to clear.
   }
 };
-
-// `?api=<origin>` overrides the worker origin for e2e/dev; production is
-// same-origin. Mirrors the RoomConnection workerOrigin option.
-export const apiOrigin = (): string => new URLSearchParams(window.location.search).get("api") ?? "";
 
 // Reads the invite secret out of `#fragment`, then removes the fragment
 // from the address bar AND the history entry — the secret is one-shot

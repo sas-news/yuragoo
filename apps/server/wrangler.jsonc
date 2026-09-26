@@ -17,9 +17,75 @@
   // `wrangler deploy --env production` and receive env.AI; local/test
   // resolve the mock provider or GENERATION_UPSTREAM_URL instead.
   "env": {
+    // Task 36: env-scoped assets — top-level config serves the API only
+    // (wrangler dev / vitest-pool-workers stay asset-free). Production
+    // and staging serve the SPA from Workers Static Assets on the same
+    // worker: /api/* runs the worker first (Hono API + DO WS upgrade),
+    // every other path falls to assets, and misses fall back to
+    // index.html so client routes (/r/<id>) resolve in the browser.
+    // Discord maps "/" and "/api" to this one origin, matching this.
     "production": {
       "name": "yuragoo-server",
-      "ai": { "binding": "AI" }
+      "ai": { "binding": "AI" },
+      // env blocks never inherit durable_objects/migrations from the top
+      // level — each deployable env restates both bindings and its tags.
+      "durable_objects": {
+        "bindings": [
+          { "name": "GAME_ROOM", "class_name": "GameRoom" },
+          { "name": "CONTROL_PLANE", "class_name": "ControlPlane" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["GameRoom"] },
+        { "tag": "v2", "new_sqlite_classes": ["ControlPlane"] }
+      ],
+      "assets": {
+        "directory": "../web/dist",
+        "binding": "ASSETS",
+        "not_found_handling": "single-page-application",
+        "run_worker_first": ["/api/*"]
+      }
+    },
+    "staging": {
+      "name": "yuragoo-staging",
+      "ai": { "binding": "AI" },
+      "durable_objects": {
+        "bindings": [
+          { "name": "GAME_ROOM", "class_name": "GameRoom" },
+          { "name": "CONTROL_PLANE", "class_name": "ControlPlane" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["GameRoom"] },
+        { "tag": "v2", "new_sqlite_classes": ["ControlPlane"] }
+      ],
+      "assets": {
+        "directory": "../web/dist",
+        "binding": "ASSETS",
+        "not_found_handling": "single-page-application",
+        "run_worker_first": ["/api/*"]
+      }
+    },
+    // e2e-local: lets proxy.spec boot an assets-enabled worker without
+    // touching the API-only dev config. Requires apps/web/dist to exist.
+    "e2e": {
+      "name": "yuragoo-e2e",
+      "durable_objects": {
+        "bindings": [
+          { "name": "GAME_ROOM", "class_name": "GameRoom" },
+          { "name": "CONTROL_PLANE", "class_name": "ControlPlane" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["GameRoom"] },
+        { "tag": "v2", "new_sqlite_classes": ["ControlPlane"] }
+      ],
+      "assets": {
+        "directory": "../web/dist",
+        "binding": "ASSETS",
+        "not_found_handling": "single-page-application",
+        "run_worker_first": ["/api/*"]
+      }
     }
   },
   // SQLite-backed DOs (ctx.storage.sql) — must be new_sqlite_classes, not

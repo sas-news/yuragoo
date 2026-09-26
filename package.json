@@ -13,7 +13,9 @@
     "test:unit": "bun scripts/test-unit.ts",
     "eval:jev": "bun scripts/eval-jev.ts",
     "test:workers": "vitest run --config vitest.workers.config.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "deploy:staging": "bun run build && wrangler deploy --config apps/server/wrangler.jsonc --env staging",
+    "deploy:production": "bun run build && wrangler deploy --config apps/server/wrangler.jsonc --env production"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

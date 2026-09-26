@@ -13,6 +13,7 @@ import {
   type SnapshotPayload,
 } from "@yuragoo/protocol";
 import { ingest, initSync, type SyncMachine } from "./sync";
+import { wsUrl } from "./urls";
 
 export interface RoomClientOptions {
   readonly roomId: string;
@@ -43,8 +44,7 @@ const ACK_TIMEOUT_MS = 10_000;
 const HEARTBEAT_MS = 15_000;
 
 const wsUrlFor = (roomId: string, ticket: string): string => {
-  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${proto}//${window.location.host}/api/rooms/${roomId}/ws?ticket=${encodeURIComponent(ticket)}`;
+  return wsUrl(`/api/rooms/${roomId}/ws?ticket=${encodeURIComponent(ticket)}`);
 };
 
 export class RoomClient {
