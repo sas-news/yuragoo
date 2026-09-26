@@ -98,7 +98,10 @@ test("happy: discord boot runs the ordered auth chain and yields a session", asy
   // Zero the gate's run and count only this boot()'s chain.
   expect(
     await page.evaluate(async () => {
-      const w = window as never as { __fakeLog: string[]; __yuragooPlatform: { bootPlatform: (id: string) => Promise<unknown> } };
+      const w = window as never as {
+        __fakeLog: string[];
+        __yuragooPlatform: { bootPlatform: (id: string) => Promise<unknown> };
+      };
       w.__fakeLog = [];
       await w.__yuragooPlatform.bootPlatform("client-1");
       return w.__fakeLog;
