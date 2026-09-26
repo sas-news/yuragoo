@@ -76,8 +76,18 @@ test("happy: discord boot runs the ordered auth chain and yields a session", asy
   await page.route("**/api/discord/token", (route) =>
     route.fulfill({ json: { access_token: "at-1" } }),
   );
+  // The mounted DiscordGate boots the chain too — pin its outcome (a
+  // failed join keeps it on the gate page) so its SDK log cannot leak
+  // into the assertion below, and wait for it before measuring ours.
+  await page.route("**/api/rooms/discord/join", (route) =>
+    route.fulfill({ status: 403, json: { error: "discord-auth" } }),
+  );
   await page.goto("/?platform=discord&x=1");
   await waitPlatform(page);
+  await page.waitForFunction(
+    () => (window as never as { __fakeLog: string[] }).__fakeLog.length >= 3,
+    { timeout: 20_000 },
+  );
   const result = (await boot(page)) as {
     boot: { kind: string; session: { instanceId: string } | null };
     error: unknown;
@@ -85,9 +95,15 @@ test("happy: discord boot runs the ordered auth chain and yields a session", asy
   expect(result.error).toBeNull();
   expect(result.boot.kind).toBe("discord");
   expect(result.boot.session?.instanceId).toBe("inst-1");
-  expect(await page.evaluate(() => (window as never as { __fakeLog: string[] }).__fakeLog)).toEqual(
-    ["ready", "authorize", "authenticate"],
-  );
+  // Zero the gate's run and count only this boot()'s chain.
+  expect(
+    await page.evaluate(async () => {
+      const w = window as never as { __fakeLog: string[]; __yuragooPlatform: { bootPlatform: (id: string) => Promise<unknown> } };
+      w.__fakeLog = [];
+      await w.__yuragooPlatform.bootPlatform("client-1");
+      return w.__fakeLog;
+    }),
+  ).toEqual(["ready", "authorize", "authenticate"]);
 });
 
 test("happy: browser mode never touches the SDK", async ({ page }) => {
