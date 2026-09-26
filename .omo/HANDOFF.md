@@ -5,7 +5,7 @@
 
 ## 現在地
 
-**W1〜W6（Task 1〜33）完了。W7は Task 34・35・36・38 が完了**、残りは Task 37（実Discord QA・資格情報でBLOCKED）、Task 39（release gate）、F1〜F4最終検証。
+**W1〜W6（Task 1〜33）完了。W7は Task 34・35・36・38 が完了**、残りは Task 37（実Discord QA・資格情報でBLOCKED）、live Jev eval receipt（JEV_API_KEY）、F1〜F4最終検証。Task 39のゲート一式は実装済み（tests/workers/release-chaos.test.ts 4件・tests/e2e/release/ 2件・manifest .omo/evidence/task-39-release-manifest.json）。
 
 ### 紙芝居エンディング（Task 29〜33）の実装メモ
 
