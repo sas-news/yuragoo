@@ -1,11 +1,11 @@
-# ゆらぐー！ 引継ぎ（2026-09-25）
+# ゆらぐー！ 引継ぎ（2026-09-26）
 
 このファイルはセッション間の引継ぎ。最新の状態をここに集約する。
 計画書: `.omo/plans/yuragoo-development.md`（todosは実ファイル・テスト存在と照合すること — checkboxは未更新のまま）
 
 ## 現在地
 
-**W1〜W6（Task 1〜33）完了。** W6＝紙芝居エンディングは本セッションで実装・検証まで完了。
+**W1〜W6（Task 1〜33）完了。W7は Task 34・35・36・38 が完了**、残りは Task 37（実Discord QA・資格情報でBLOCKED）、Task 39（release gate）、F1〜F4最終検証。
 
 ### 紙芝居エンディング（Task 29〜33）の実装メモ
 
@@ -50,6 +50,17 @@
 - **Task 32** `apps/web/src/results/{Results,Kamishibai,Panel}.tsx` + `apps/server/src/rooms/ending.ts`: 全員同一panel集合、各自ページ送り、rematch準備、closeRoom確認。download/share機能は作らない。現在の簡易結果ダイアログ（`RoomGame.tsx`内の「結果」ボタン周辺）を置き換える
 - **Task 33** Phase6 gate: `tests/e2e/story/full-ending.spec.ts` + `tests/workers/story-lifecycle.test.ts` + `docs/story-contract.md` — 人間投稿が主役・本文保存終了・生成call<=2/試合を検証
 
+### W7完了分のメモ（Task 34/35/36/38）
+
+- 34: packages/platform/src/{discord,discord-errors,discord-layout}.ts SDK注入IF + apps/web/src/platform/{bootstrap,DiscordGate}.tsx。platform=discord/frame_idでgate分岐、browser経路はSDKをlazy-loadしない
+- 35: POST /api/discord/token（code交換）+ POST /api/rooms/discord/join（instanceId+accessToken→verified seat）。room_players.discord_user_id partial unique indexでseat dedupe、再joinはhash回転。instance→roomは idFromName(discord:+instanceId)、room_authはcommitJoin内でlazy作成。DISCORD_ORIGINSは .discordsays.com 形式のsuffix許可
+- 36: wrangler env.production/staging/e2eにassets(../web/dist)+run_worker_first:[/api/*]+SPA fallback。apps/web/src/net/urls.tsにapiOrigin/apiUrl/wsUrl/inviteUrl/roomPath集約。deploy:staging/deploy:production scripts
+- 38: とうけいリンク→/api/statsダイアログ（20件未満pending）、observability.ts（codes/bucket/usageのみ、本文・ID・query一切なし）、.github/workflows/{ci,live-gates}.yml、docs/{operations,release-checklist}.md、README、privacy.md追記
+
+### W7の罠
+
+- wranglerのenvブロックは durable_objects/migrations を継承しない — envだけ足すとDO bindingが消え /api/rooms がconfig 503。全envに明示（e05764c）
+- adapter.specのhappyはマウント済みDiscordGateの自動bootと混線する — join成功でnavigateすると__fakeLogが2周する。joinを失敗stub＋gate boot完了待ち＋計測直前リセットで分離（a48f546）
 ## 次にやること — W7（Task 34〜39）Discord+リリース
 - 34 platform adapter（`packages/platform/src/` は adapter.ts/browser.ts のスタブのみ）
 - 35 Discord OAuth/メンバーシップ認可
