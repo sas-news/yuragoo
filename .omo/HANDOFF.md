@@ -1,6 +1,9 @@
 # ゆらぐー！ 引継ぎ（2026-09-26）
 
 このファイルはセッション間の引継ぎ。最新の状態をここに集約する。
+
+## 最新（2026-09-27）
+- **staging を workers.dev にデプロイ済み → 固定URL https://yuragoo-staging.sasshinbun0655.workers.dev**。wrangler login済み（sasshinbun0655@gmail.com）。env.staging vars: APP_ENV=production / ALLOWED_ORIGINS=自身URL / DISCORD_CLIENT_ID / DISCORD_ORIGINS=.discordsays.com / JEV_DAILY_ATTEMPT_CAP=120。secrets: DISCORD_CLIENT_SECRET / JEV_API_KEY（.dev.varsからwrangler secret put）。検証済み: /→SPA, /api/health→200, discordsays origin POST /api/rooms→200。Discord URL Mappings の「/」ターゲットは yuragoo-staging.sasshinbun0655.workers.dev（スキームなし）。コード更新は bun run deploy:staging。quick tunnelよりこちらを使う。
 計画書: `.omo/plans/yuragoo-development.md`（todosは実ファイル・テスト存在と照合すること — checkboxは未更新のまま）
 
 ## 現在地

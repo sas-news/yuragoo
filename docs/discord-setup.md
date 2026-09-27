@@ -2,6 +2,8 @@
 
 ゆらぐー！は Discord アクティビティとしても動く。Web本体は同一 Worker が配信し、Discord は `/` と `/api` をこの Worker にマップする。
 
+> 2026-09-27 時点: staging は **https://yuragoo-staging.sasshinbun0655.workers.dev** にデプロイ済み（secrets/vars 設定・AI binding 済み）。実機テストは URL Mappings の / を yuragoo-staging.sasshinbun0655.workers.dev に向けるだけでよい — quick tunnel は不要になった。コード更新は bun run deploy:staging。
+
 ## 前提
 
 - Discord Developer Portal でアプリケーションを作成し、**Activities を有効化**（Embedded App SDK v2 以降を利用）。
