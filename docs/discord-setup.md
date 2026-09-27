@@ -15,7 +15,11 @@
 | `/api` | Worker のオリジン（例 `yuragoo-server.<sub>.workers.dev`） |
 | `/` | 同上（longest-match で `/api` が先に効く） |
 
-WS は同一 origin の `/api/rooms/:id/ws` に乗る — プロキシ側で `/api` を剥がさない（パスごと転送）。patchUrlMappings は不要。
+**宛先はスキームを書かない** — Discord の URL マッピングは `https://` を付けず
+`host` だけ入れるフォーマット（公式 local-development.mdx）。プロトコルは
+マッピング側が選ぶので wss もここで拾える。
+
+WS は同一 origin の `/api/rooms/:id/ws` に乗る — プロキシ側で `/api` を剥がさない（パスごと転送）。patchUrlMappings は不要。Discord proxy は WebSocket を通す（WebTransport は未対応）。
 
 ## 認証フロー（アクティビティ内）
 
@@ -53,11 +57,21 @@ wrangler dev を公開する（公式チュートリアルと同じ構成）。
    （`/api` へのAPI要求は `/` の longest-match が拾うので別マッピングは不要。
    WS は `/api/rooms/:id/ws` に乗り、trycloudflare→wrangler→Discord proxy の
    二重プロキシで成立する）
-5. OAuth2 → Redirects に `https://<app-id>.discordsays.com/` を登録
-   （`commands.authorize` は redirect_uri を送らないが、URL 未登録で
-   invalid 系エラーになる事例があるため保険として設定）
-6. Discord クライアント: ユーザー設定 → 詳細設定 → 開発者モード ON →
-   VC参加 → ロケットアイコン → 「開発中のアクティビティ」から起動
+5. OAuth2 → Redirects に `https://127.0.0.1` を登録（公式チュートリアルの
+   プレースホルダ。SDK が redirect を内部で処理するので実値は何でもよいが
+   1件以上ないと authorize が弾かれる）
+6. インストール: Installation → Installation Contexts で **User Install / Guild
+   Install 両方をON**（非配布アプリでもVC内の App Launcher に出るために必要）
+7. Discord クライアント: ユーザー設定 → 詳細設定 → 開発者モード ON →
+   VC参加 → ロケットアイコン or App Launcher でアプリ名を検索
+
+### シェルフに出ないときの条件（local-development.mdx より）
+
+- **Enable Activities がON**（Activities → Settings の一番上のチェック）
+- **Supported Platforms に今使ってるプラットフォームをチェック**
+  （Activities → Settings。web/desktop で見るならそれを入れないと出ない）
+- Developer Mode ON のアカウントで、そのアプリを所有 or チーム所属
+- VCに参加していること（参加前はシェルフに出ない）
 
 トンネル URL は起動ごとに変わる。固定 URL が欲しくなったら quick tunnel ではなく
 staging deploy（`bun run deploy:staging`）を使う — URL マッピングを安定させられる。
