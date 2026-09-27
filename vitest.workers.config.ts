@@ -14,6 +14,9 @@ export default defineConfig({
         // production reads ALLOWED_ORIGINS from real deployment vars.
         bindings: {
           ALLOWED_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173",
+          // .dev.vars may carry APP_ENV=local for wrangler dev; tests pin
+          // production so the dev gateway and origin rules stay honest.
+          APP_ENV: "production",
           // Task 20 presence timings compressed for tests (contract:
           // 15s heartbeat / 45s lease / 60s empty grace). Tests that need
           // determinism also backdate lease_until_ms directly via SQL.
