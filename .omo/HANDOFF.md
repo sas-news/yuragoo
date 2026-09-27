@@ -149,3 +149,5 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - Task41: Discordアバター配線+ready解除はmode変更時のみ+紙芝居eventId昇順+figcaption固定高+締切自動送信+招待custom_id/フォールバック+Discordタグ削除+表情を分布導出(room-expression)+お題プリセット。.dev.varsにAPP_ENV=local必須。staging再デプロイ済(67110e4時点, workers 126/126 green, APP_ENVピンはテストbinding側で対処)。
 
 - Task41b: eval:jev live 実行(ja-v1) — baseline 10/12 pass。poison-label(毒札きのこ>我慢)を修正するため INSTRUCTIONS に『行動しない選択肢も有効/安全なら高評価/近い魅力には近い確率』を追加し 11/12 に改善。close-call(close margin 0.3)はモデルの決断癖で残留、instructions では解決不可と判断。artifacts/ は gitignore+biome ignore 済。manifest は artifacts/eval-ja-v1-iter4.json。staging再デプロイ済。
+
+- Task42: (a)ABCDずれ修正 — reducer.createGame の seededShuffle を廃止し slot=joinOrder(ChoiceEditor行i=members[i]と一致)。seedはsettings互換で残存。tests: rules.test.ts を join-order assertion に、コメント類追従。(b)招待ボタン修正 — 根本原因は bootPlatform が ready()済みSDKを持つのに InviteButton が getDiscordSdk で別インスタンスを未readyで作成していた点。getDiscordSdk を唯一のシングルトンに統一。加えて shareLink の success:false は『閉じた』ので失敗扱いしない tri-state(shared/cancelled/failed)化、openInviteDialog フォールバックは guildId null(DM)/CREATE_INSTANT_INVITE 権限でゲート。tests/unit/platform/share-invite.test.ts 追加。stagingデプロイ済(26e6282)。
