@@ -279,3 +279,47 @@
     padding-inline: 22px;
   }
 }
+
+/* PIP tier (Discord pop-out): the tray collapses to a single compact row —
+   the who column shrinks to one seat line, the textarea to a single row,
+   and meta overlays tuck into the frame so the tray stays under ~90px. */
+@media (max-width: 460px), (max-height: 480px) {
+  .dock {
+    gap: 6px 8px;
+    padding: 7px 8px 8px;
+  }
+
+  .whoBox {
+    inline-size: 96px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    padding-inline-start: 8px;
+  }
+
+  .seat {
+    font-size: 12.5px;
+  }
+
+  .goal {
+    font-size: 11px;
+  }
+
+  .input {
+    min-block-size: 30px;
+    block-size: 30px;
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+
+  .counter {
+    font-size: 10px;
+  }
+
+  .send {
+    min-block-size: 40px;
+    padding-inline: 14px;
+    font-size: 13px;
+  }
+}

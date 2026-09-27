@@ -118,3 +118,14 @@
     animation-name: bubbleFadeHold;
   }
 }
+
+/* PIP tier (Discord pop-out): bubbles shrink with the seats — a 20px
+   bubble line on a 300px window would cover the whole creature. */
+@media (max-width: 460px), (max-height: 480px) {
+  .bubble {
+    padding: 6px 10px;
+    font-size: 13px;
+    min-inline-size: 60px;
+    max-inline-size: 72%;
+  }
+}

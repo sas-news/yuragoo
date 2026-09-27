@@ -116,3 +116,25 @@
     inline-size: 140px;
   }
 }
+
+/* PIP tier (Discord pop-out): the strip compresses — no roster at all,
+   a shorter turn line and a narrower countdown bar. */
+@media (max-width: 460px), (max-height: 480px) {
+  .hud {
+    gap: 3px;
+    padding: 3px 10px;
+  }
+
+  .turnLine {
+    font-size: 13px;
+  }
+
+  .round {
+    font-size: 11px;
+  }
+
+  .deadline {
+    inline-size: 100px;
+    block-size: 6px;
+  }
+}
