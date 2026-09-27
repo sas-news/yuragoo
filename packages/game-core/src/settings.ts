@@ -8,7 +8,7 @@ export type GameMode = "turn" | "live";
 
 export interface GameSettings {
   readonly mode: GameMode;
-  readonly seed: number; // safe int, drives the initial roster shuffle
+  readonly seed: number; // safe int, reserved randomness (roster is join-order now)
   readonly rosterSize: number; // set by the host from joined players
   readonly devMode?: boolean; // sandbox: rosterSize 1 + free-range timing knobs
   readonly turnSeconds?: number; // TURN slot length: 10|20|30|45|60, default 20
@@ -90,8 +90,9 @@ const discrete = (
 };
 
 // hostId needs the joined ids: it must name a roster member and defaults to
-// playerIds[0] — the room creator, pre-shuffle. Callers without a roster
-// context (none today) resolve it to "" so request-end can never pass.
+// playerIds[0] — the room creator and, post-shuffle-removal, slot 0 too.
+// Callers without a roster context (none today) resolve it to "" so
+// request-end can never pass.
 const resolveHostId = (
   hostId: string | undefined,
   playerIds: readonly string[] | undefined,

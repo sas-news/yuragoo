@@ -17,8 +17,8 @@
 | `maxPendingPerPlayer` | 1 | 1..4 | LIVE の未評価投稿数上限/人 |
 | `adhesionSeconds` | 3 | 1..60 | dwell 早期終了に必要な吸着保持秒数 |
 | `settleSeconds` | 8 | 1..30 | settle 猶予の上限（timeout backstop） |
-| `hostId` | `playerIds[0]` | roster内 | request-end の権限者（シャッフル前の作成者） |
-| `seed` | — | safe int | 初期 roster shuffle 用 |
+| `hostId` | `playerIds[0]` | roster内 | request-end の権限者（room 作成者） |
+| `seed` | — | safe int | 予約済み乱数枠（roster は joinOrder 固定） |
 
 （devMode = ローカル /play の sandbox だけが自由値。本番ルームは上の
 離散メニューのみ受理 — lobbySettingsSchema と GameSettings.tsx が一致）

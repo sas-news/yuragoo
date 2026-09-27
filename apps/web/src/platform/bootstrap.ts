@@ -58,8 +58,10 @@ export const discordClientId = (): string =>
   import.meta.env.VITE_DISCORD_CLIENT_ID ?? (import.meta.env.MODE === "e2e" ? "e2e-client" : "");
 
 // The gate navigates with location.assign — a fresh page means a fresh
-// SDK bridge, so the lobby's share button lazily constructs its own
-// instance. Module-level memo keeps a second click cheap.
+// SDK bridge. ONE module-level memo is shared by bootPlatform AND the
+// lobby's share button: a second DiscordSDK instance would post commands
+// on a bridge that never ran ready()/authenticate(), which is exactly why
+// the invite modal used to error every time.
 let sdkPromise: Promise<DiscordSdkLike> | null = null;
 export const getDiscordSdk = (clientId: string): Promise<DiscordSdkLike> => {
   sdkPromise ??= (window.__yuragooSdkFactory ?? realSdkFactory)(clientId);
@@ -100,10 +102,10 @@ const exchangeToken =
 // Boot the platform once per page load. On discord the full auth chain
 // runs here so every later screen can assume a verified session — a
 // failure surfaces as a classified error the caller can render + retry.
-export const bootPlatform = async (
-  clientId: string,
-  factory: SdkFactory = window.__yuragooSdkFactory ?? realSdkFactory,
-): Promise<BootResult> => {
+// The SDK comes from getDiscordSdk, not a fresh factory call: a second
+// DiscordSDK instance would post commands on a bridge that never ran
+// ready()/authenticate() (the share button's every-click failure).
+export const bootPlatform = async (clientId: string): Promise<BootResult> => {
   const kind = platformKind();
   const adapter = platformAdapter();
   if (kind === "browser") {
@@ -117,7 +119,7 @@ export const bootPlatform = async (
     };
   }
   try {
-    const sdk = await factory(clientId);
+    const sdk = await getDiscordSdk(clientId);
     const session = await establishDiscordSession({
       sdk,
       clientId,

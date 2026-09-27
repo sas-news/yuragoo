@@ -8,7 +8,7 @@ import type { GameState } from "@yuragoo/game-core";
 import { created, ids, pass, started } from "./rules-helpers";
 
 test("happy: the host takes the first turn, then the order sweeps the roster", () => {
-  const s = created(4, { hostId: ids(4)[2] ?? "" }); // host = mugi pre-shuffle
+  const s = created(4, { hostId: ids(4)[2] ?? "" }); // host = mugi (slot 2)
   expect(s.turnOrder[0]).toBe("mugi");
   const idx = s.roster.findIndex((p) => p.id === "mugi");
   const expected = s.roster.map((_, i) => s.roster[(idx + i) % s.roster.length]?.id ?? "");

@@ -24,8 +24,10 @@ export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) 
           void getDiscordSdk(discordClientId())
             .then((sdk) =>
               shareInvite(sdk, "ゆらぐー！ このボイスチャンネルであそぼう", sdk.instanceId).then(
-                (ok) => {
-                  if (!ok) onError("招待できませんでした");
+                (result) => {
+                  // "cancelled" = the user closed the share modal — silent,
+                  // never an error toast.
+                  if (result === "failed") onError("招待できませんでした");
                 },
               ),
             )

@@ -34,7 +34,8 @@ export const LOCAL_CHOICES: readonly LocalChoice[] = CHOICE_IDS.map((id, i) => (
   label: CHOICE_LABELS[i] ?? "?",
 }));
 
-// Fixed six-seat roster (pre-shuffle ids; seed decides who sits where).
+// Fixed six-seat roster — slot i is LOCAL_PLAYER_IDS[i] since the create
+// shuffle was removed (slot order now matches the lobby's choice rows).
 export const LOCAL_PLAYER_IDS = ["aiko", "ren", "yuu", "riku", "sora", "nagi"] as const;
 export const LOCAL_NAMES: Readonly<Record<string, string>> = {
   aiko: "あいこ",

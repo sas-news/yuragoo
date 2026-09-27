@@ -24,34 +24,6 @@ const checkNowMs = (nowMs: number): void => {
   }
 };
 
-// mulberry32: tiny seeded PRNG so roster order is reproducible from seed.
-const mulberry32 = (seed: number): (() => number) => {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(a ^ (a >>> 15), a | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-
-// Fisher-Yates over index space driven by the seeded PRNG.
-const seededShuffle = (seed: number, length: number): number[] => {
-  const rng = mulberry32(seed);
-  const order = Array.from({ length }, (_, i) => i);
-  for (let i = order.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(rng() * (i + 1));
-    const a = order[i];
-    const b = order[j];
-    if (a === undefined || b === undefined) {
-      throw new GameRuleError("bad-state", "shuffle index out of range");
-    }
-    order[i] = b;
-    order[j] = a;
-  }
-  return order;
-};
-
 const requireState = (state: GameState | null): GameState => {
   if (state === null) {
     throw new GameRuleError("bad-state", "action requires an existing game");
@@ -62,9 +34,11 @@ const requireState = (state: GameState | null): GameState => {
 type CreateAction = Extract<GameAction, { type: "create" }>;
 type PostAction = Extract<GameAction, { type: "post" }>;
 
-// create: validate settings + roster, shuffle player ids into slots. The
-// game is born in the lobby phase and emits nothing — `started` belongs to
-// the start action.
+// create: validate settings + roster, seat ids in JOIN order. The lobby's
+// choice rows already show row i = member i, so the in-game slot must be
+// the same index — a seeded shuffle here silently re-assigned every
+// player's choice (ロビー表示と ABCD がずれる bug). The game is born in the
+// lobby phase and emits nothing — `started` belongs to the start action.
 const createGame = (state: GameState | null, action: CreateAction): GameTransition => {
   if (state !== null) {
     throw new GameRuleError("bad-state", "game already exists");
@@ -85,13 +59,7 @@ const createGame = (state: GameState | null, action: CreateAction): GameTransiti
     }
     seen.add(id);
   }
-  const roster: Player[] = seededShuffle(settings.seed, ids.length).map((index, slot) => {
-    const id = ids[index];
-    if (id === undefined) {
-      throw new GameRuleError("bad-state", "shuffle index out of range");
-    }
-    return { id, slot };
-  });
+  const roster: Player[] = ids.map((id, slot) => ({ id, slot }));
   const game: GameState = {
     settings,
     phase: "lobby",

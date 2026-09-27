@@ -24,6 +24,9 @@ export interface DiscordSubscription {
 export interface DiscordSdkLike {
   readonly instanceId: string;
   readonly channelId?: string | null;
+  // null inside (G)DM contexts — openInviteDialog throws INVALID_CHANNEL
+  // there, so the fallback path checks it before calling.
+  readonly guildId?: string | null;
   ready(): Promise<void>;
   commands: {
     authorize(input: {
@@ -39,6 +42,10 @@ export interface DiscordSdkLike {
       custom_id?: string | undefined;
     }): Promise<{ success?: boolean } | null>;
     openInviteDialog(): Promise<unknown>;
+    // CREATE_INSTANT_INVITE check before openInviteDialog; absent on older
+    // clients so the property stays optional and a missing call skips the
+    // permission gate rather than breaking the fallback.
+    getChannelPermissions?(): Promise<{ permissions: string | bigint }>;
   };
   subscribe(event: string, listener: (data: unknown) => unknown): Promise<unknown> | unknown;
   unsubscribe(event: string, listener: (data: unknown) => unknown): Promise<unknown> | unknown;
@@ -83,26 +90,49 @@ export const establishDiscordSession = async (
 
 // shareLink is the sanctioned invite inside an Activity: it posts into
 // the channel with the custom_id so Discord routes joiners at the same
-// instance. Falls back to the native invite dialog when shareLink throws,
-// reports failure, or is unavailable (older client) — the dialog is the
-// last resort before surfacing an error. Both live behind the adapter —
-// the game UI never touches SDK commands directly.
+// instance. IMPORTANT: success:false means the user DISMISSED the share
+// modal — it is a cancel, not an error, so it never falls back or raises
+// a toast. A thrown shareLink (older client / unsupported) falls back to
+// the native invite dialog, which itself needs a guild channel and
+// CREATE_INSTANT_INVITE; both are gated before the call so a DM context
+// or permission-less member skips straight to "failed". Both live behind
+// the adapter — the game UI never touches SDK commands directly.
+export type ShareInviteResult = "shared" | "cancelled" | "failed";
+
+// CREATE_INSTANT_INVITE bit (0x1) in the channel permissions bitfield.
+const CREATE_INSTANT_INVITE = 0x1n;
+
+const canOpenInviteDialog = async (sdk: DiscordSdkLike): Promise<boolean> => {
+  if (sdk.guildId === null) return false;
+  try {
+    const res = await sdk.commands.getChannelPermissions?.();
+    if (res === undefined) return true; // older client: try the dialog anyway
+    return (BigInt(res.permissions) & CREATE_INSTANT_INVITE) !== 0n;
+  } catch {
+    return true; // a permission probe failure shouldn't block the dialog
+  }
+};
+
 export const shareInvite = async (
   sdk: DiscordSdkLike,
   message: string,
   customId?: string,
-): Promise<boolean> => {
+): Promise<ShareInviteResult> => {
   try {
     const res = await sdk.commands.shareLink({ message, custom_id: customId });
-    if (res !== null && res !== undefined && res.success !== false) return true;
+    if (res !== null && res !== undefined) {
+      // success:false = the modal was dismissed; do not double-prompt.
+      return res.success === false ? "cancelled" : "shared";
+    }
   } catch {
     // fall through to the invite dialog
   }
+  if (!(await canOpenInviteDialog(sdk))) return "failed";
   try {
     await sdk.commands.openInviteDialog();
-    return true;
+    return "shared";
   } catch {
-    return false;
+    return "failed";
   }
 };
 

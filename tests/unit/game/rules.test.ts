@@ -1,6 +1,5 @@
-// Task 12: pure TURN/LIVE game rules — seeded roster fairness, the fixed
-// per-round turn cycle, deadlines, pending-slot caps, abort and rejection
-// immutability.
+// Task 12: pure TURN/LIVE game rules — join-order roster, the fixed
+// per-round turn cycle, deadlines, pending-slot caps, abort, rejections.
 import { expect, test } from "bun:test";
 import { type GameSettings, type GameState, reduce } from "@yuragoo/game-core";
 import {
@@ -15,13 +14,14 @@ import {
   started,
 } from "./rules-helpers";
 
-test("happy: seeded shuffle is deterministic and varies by seed", () => {
-  // Given two creates with the same seed, Then identical order and slots
+test("happy: roster is join order — slot i is playerIds[i] whatever the seed", () => {
+  // The lobby's choice rows assign row i to member i, so the in-game slot
+  // MUST equal the join index (a seeded shuffle re-assigned the choice).
   const a = created(6, { seed: 42 });
   const b = created(6, { seed: 42 });
+  expect(a.roster.map((p) => p.id)).toEqual(ids(6));
   expect(a.roster.map((p) => p.id)).toEqual(b.roster.map((p) => p.id));
   expect(a.roster.map((p) => p.slot)).toEqual([0, 1, 2, 3, 4, 5]);
-  // And across seeds 1..20 the order differs somewhere
   const orders = new Set(
     Array.from({ length: 20 }, (_, i) =>
       created(6, { seed: i + 1 })
@@ -29,7 +29,7 @@ test("happy: seeded shuffle is deterministic and varies by seed", () => {
         .join(","),
     ),
   );
-  expect(orders.size).toBeGreaterThan(1);
+  expect(orders.size).toBe(1);
 });
 
 test("happy: 2/4/6 players x 3 rounds give every player equal slots", () => {

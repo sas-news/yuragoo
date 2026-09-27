@@ -21,7 +21,7 @@ declare global {
   }
 }
 
-// The host is always the pre-shuffle first roster id (LOCAL_PLAYER_IDS[0]).
+// The host is always the first roster id (LOCAL_PLAYER_IDS[0]).
 const HOST_ID = "aiko";
 
 const gotoPlay = async (page: Page, query: string): Promise<void> => {

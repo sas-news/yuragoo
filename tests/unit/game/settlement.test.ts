@@ -238,7 +238,7 @@ test("failure: adhesion/settle seconds and hostId validate at create", () => {
   rejected(null, mk({ adhesionSeconds: 61 }), "bad-state");
   rejected(null, mk({ settleSeconds: 0 }), "bad-state");
   rejected(null, mk({ settleSeconds: 31 }), "bad-state");
-  // hostId must name a joined player; the default is playerIds[0] pre-shuffle
+  // hostId must name a joined player; the default is playerIds[0]
   rejected(null, mk({ hostId: "ghost" }), "bad-state");
   expect(created(4).settings.hostId).toBe("aiko");
   // A custom hostId is honoured — authority follows the id, not the slot

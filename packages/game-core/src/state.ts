@@ -71,7 +71,7 @@ export interface Adhesion {
 export interface GameState {
   readonly settings: ResolvedGameSettings; // frozen at create
   readonly phase: GamePhase;
-  readonly roster: readonly Player[]; // seeded shuffle order, fixed
+  readonly roster: readonly Player[]; // join order (slot = index), fixed
   readonly turnOrder: readonly PlayerId[]; // current round order (rotates per round)
   readonly round: number; // 0-based, TURN only
   readonly turnIndex: number; // index into turnOrder, TURN only
