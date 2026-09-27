@@ -89,6 +89,8 @@ export function RoomDock({ view, selfId, now, submitText, pass }: RoomDockProps)
         flushBottom
         canPost={canPost}
         status={status}
+        deadlineAtMs={canPost ? hud.deadlineAtMs : undefined}
+        nowMs={canPost ? now : undefined}
         disabledReason={disabledReason}
         seatLabel={actingId === undefined ? undefined : `いまの席：${nameOf(view, actingId)}`}
         goalLabel={goal === undefined || goal === "" ? undefined : goal}

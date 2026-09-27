@@ -30,10 +30,15 @@ export interface GenerationError {
   readonly slotSpent: boolean;
 }
 
+// The wire RoomPlayerView plus the member profile fields the folded view
+// keeps for presentation — avatarUrl mirrors the (optional) protocol
+// field, so a snapshot/event carrying it lands here untouched.
+export type RoomPlayer = RoomPlayerView & { readonly avatarUrl?: string | undefined };
+
 export interface RoomView {
   readonly phase: RoomPhase;
   readonly state: SnapshotPayload["state"];
-  readonly players: readonly RoomPlayerView[];
+  readonly players: readonly RoomPlayer[];
   readonly hostPlayerId: string | null;
   readonly lobby: LobbyState;
   // Last N ordered frames, newest last — the playing screen's event feed.

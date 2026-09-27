@@ -23,6 +23,16 @@
   border: 2px solid var(--ink-muted);
 }
 
+/* Discord member photo (wire avatarUrl, optional) — a small round thumb
+   before the name; browser players simply show no image. */
+.avatar {
+  inline-size: 24px;
+  block-size: 24px;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 /* Long display names ellipsize inside the chip — the full name stays on
    the element's title (and in the choice-row assignee / event feed). */
 .chipName {
@@ -90,16 +100,6 @@
   padding: 1px 6px;
   background: var(--ink-muted);
   color: var(--paper-raised);
-}
-
-/* Discord-joined members carry a small platform tag — join provenance is
-   informational only, the game treats every seat the same. */
-.platformTag {
-  font-size: 10.5px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: #5865f2;
-  color: #fff;
 }
 
 /* Host hand-off affordance — a small sharp-cornered text button inside

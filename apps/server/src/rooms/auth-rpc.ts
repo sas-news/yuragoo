@@ -43,6 +43,7 @@ export const join = async (room: CommandHost, input: JoinRoomInput): Promise<Joi
           displayName: joined.displayName,
           lobbyWaiting,
           platform: input.platform,
+          avatarUrl: input.avatarUrl ?? undefined,
         },
         books !== null,
       );

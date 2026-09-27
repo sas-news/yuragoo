@@ -3,12 +3,14 @@
 // answers /oauth2/token and /users/@me).
 import { env, runInDurableObject, SELF } from "cloudflare:test";
 import { afterEach, expect, test } from "vitest";
+import type { ServerEnvelope } from "@yuragoo/protocol";
 import { createAuthApp } from "../../apps/server/src/auth/browser";
 import {
   type DiscordFetch,
   injectDiscordApiDeps,
 } from "../../apps/server/src/auth/discord-membership";
 import { discordRoomName } from "../../apps/server/src/auth/discord-session";
+import { Sock } from "./ws-helpers";
 
 const BASE = "https://auth.test";
 const ORIGIN = "http://localhost:5173"; // allowed by the test binding
@@ -17,6 +19,7 @@ interface FxUser {
   id: string;
   username: string;
   global_name: string | null;
+  avatar: string | null;
 }
 
 // Stubbed API: codes mint tokens once (spent codes die — OAuth replay
@@ -91,8 +94,10 @@ const playerRows = (roomId: string) =>
 
 afterEach(() => injectDiscordApiDeps(null));
 
-const ALICE: FxUser = { id: "111", username: "alice_u", global_name: "Alice A" };
-const BOB: FxUser = { id: "222", username: "bob_u", global_name: null };
+// Alice's "a_" hash is an animated avatar — the URL must be .gif, not .png.
+const ALICE: FxUser = { id: "111", username: "alice_u", global_name: "Alice A", avatar: "a_ani" };
+const BOB: FxUser = { id: "222", username: "bob_u", global_name: null, avatar: null };
+const ALICE_AVATAR_URL = "https://cdn.discordapp.com/avatars/111/a_ani.gif?size=64";
 
 test("happy: code exchange returns { access_token } and mints once", async () => {
   const fx = fixture();
@@ -115,6 +120,13 @@ test("happy: verified join maps instanceId to a deterministic room", async () =>
   expect(rows).toHaveLength(1);
   expect(rows[0]?.platform).toBe("discord");
   expect(rows[0]?.discord_user_id).toBe("111");
+  expect(rows[0]?.avatar_url).toBe(ALICE_AVATAR_URL);
+  // The snapshot's players list carries the same avatarUrl key.
+  const sock = await Sock.connect(j.roomId, j.sessionToken);
+  const snap = sock.log.find((e: ServerEnvelope) => e.type === "snapshot");
+  if (snap === undefined || snap.type !== "snapshot") throw new Error("no snapshot");
+  expect(snap.payload.players[0]?.avatarUrl).toBe(ALICE_AVATAR_URL);
+  sock.close();
 });
 
 test("happy: same instance shares a room, a different instance a different room", async () => {
@@ -134,12 +146,14 @@ test("happy: rejoining reclaims the same seat and rotates tokens", async () => {
   const fx = fixture();
   injectDiscordApiDeps({ fetch: fx.api });
   const first = await join("inst-4", fx.issue(ALICE));
-  // A fresh OAuth token for the SAME Discord user still claims seat one.
-  const again = await join("inst-4", fx.issue(ALICE));
+  // A fresh OAuth token for the SAME Discord user still claims seat one —
+  // the rejoin also refreshes the stored avatar (here to a static hash).
+  const again = await join("inst-4", fx.issue({ ...ALICE, avatar: "static1" }));
   expect(again.playerId).toBe(first.playerId);
   expect(again.sessionToken).not.toBe(first.sessionToken);
   const rows = await playerRows(first.roomId);
   expect(rows).toHaveLength(1);
+  expect(rows[0]?.avatar_url).toBe("https://cdn.discordapp.com/avatars/111/static1.png?size=64");
   // The rotated-out session token is dead immediately.
   const stale = await post(`/api/rooms/${first.roomId}/ticket`, {
     sessionToken: first.sessionToken,

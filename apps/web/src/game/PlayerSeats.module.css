@@ -64,6 +64,18 @@
   background: var(--paper-raised);
 }
 
+/* A Discord profile photo instead of the drawn face: the slot ring and
+   ivory disc stay, the image just covers the disc. overflow:hidden on
+   .avatar can't clip ::after, so the img rounds itself. */
+.avatarImg {
+  position: relative;
+  z-index: 1;
+  inline-size: 57px;
+  block-size: 57px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 /* Name + goal stack: centered under the icon. Only the NAME gets the
    floating pill — the goal stays quiet text beneath it. */
 .who {

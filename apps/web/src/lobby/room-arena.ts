@@ -30,7 +30,7 @@ export const latestRoomDist = (view: RoomView): readonly DecisionDistribution[] 
 // stays 0 through live play because no lobbyChanged row rides the start
 // commit. An empty choice prefix would make every dist lookup miss —
 // uniform pull, creature glued to the center.
-const committedCount = (view: RoomView): number =>
+export const committedCount = (view: RoomView): number =>
   view.roster.length > 0 ? view.roster.length : view.lobby.committedCount;
 
 const committedChoices = (view: RoomView): readonly { choiceId: string; label: string }[] =>

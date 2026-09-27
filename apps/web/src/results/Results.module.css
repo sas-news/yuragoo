@@ -105,6 +105,17 @@
   overflow-wrap: anywhere;
 }
 
+/* Uniform page height: the start page carries no quotes, so without a
+   floor the text block shrank and the card jumped between pages. The
+   caption area centers inside a fixed-height block instead. */
+.captionBlock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-block-size: 132px;
+  text-align: center;
+}
+
 .quotes {
   margin: 8px 0 0;
   padding: 0;

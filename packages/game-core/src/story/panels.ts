@@ -95,5 +95,10 @@ export const buildStory = (source: StorySource): readonly StoryPanel[] => {
     seen.add(d.seq);
     panels.push(buildPanel(d, source, landed));
   }
-  return panels;
+  // Story order is not chronological order — a later event can win the
+  // reversal slot while the impact pick sits on an earlier seq. Panels
+  // sort ascending by eventId so the strip replays the match in ledger
+  // order; dedupe ran first, so ids are unique and the stable sort never
+  // sees a tie.
+  return panels.sort((a, b) => a.eventId - b.eventId);
 };

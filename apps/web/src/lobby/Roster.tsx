@@ -33,6 +33,9 @@ export function Roster({ view, selfId, onTransferHost }: RosterProps) {
             aria-hidden="true"
           />
           <span className={styles.srOnly}>{p.connected ? "接続中" : "切断"}</span>
+          {p.avatarUrl !== undefined && p.avatarUrl !== "" && (
+            <img src={p.avatarUrl} className={styles.avatar} alt="" />
+          )}
           <span className={styles.chipName} title={memberName(view.players, p.playerId)}>
             {memberName(view.players, p.playerId)}
             {p.playerId === selfId && <span className={styles.selfMark}>（あなた）</span>}
@@ -71,7 +74,6 @@ export function Roster({ view, selfId, onTransferHost }: RosterProps) {
               <span className={styles.srOnly}>{ready.has(p.playerId) ? "準備OK" : "未準備"}</span>
             </>
           )}
-          {p.platform === "discord" && <span className={styles.platformTag}>Discord</span>}
         </li>
       ))}
     </ul>

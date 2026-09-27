@@ -22,7 +22,13 @@ export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) 
         data-testid="discord-share"
         onClick={() => {
           void getDiscordSdk(discordClientId())
-            .then((sdk) => shareInvite(sdk, "ゆらぐー！ このボイスチャンネルであそぼう"))
+            .then((sdk) =>
+              shareInvite(sdk, "ゆらぐー！ このボイスチャンネルであそぼう", sdk.instanceId).then(
+                (ok) => {
+                  if (!ok) onError("招待できませんでした");
+                },
+              ),
+            )
             .catch(() => onError("招待できませんでした"));
         }}
       >

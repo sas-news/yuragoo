@@ -75,6 +75,8 @@ export interface JoinCommit {
   // Task 35: the Discord seat key — the OAuth-verified user id, set only
   // by the platform:"discord" route after /users/@me succeeds.
   readonly discordUserId?: string;
+  // Discord CDN avatar URL from the verified profile (browser joins: null).
+  readonly avatarUrl?: string | null;
   readonly displayName: string | null;
   readonly platform: string;
   readonly lobbyWaiting: boolean;
@@ -135,6 +137,7 @@ export const commitJoin = (
         creds.sessionHash,
         creds.reconnectHash,
         input.displayName,
+        input.avatarUrl ?? null,
       );
       return {
         playerId: seat.playerId,
@@ -164,6 +167,7 @@ export const commitJoin = (
     displayName: input.displayName,
     platform: input.platform,
     discordUserId: input.discordUserId ?? null,
+    avatarUrl: input.avatarUrl ?? null,
     sessionHash: creds.sessionHash,
     reconnectHash: creds.reconnectHash,
     lobbyWaiting: input.lobbyWaiting,

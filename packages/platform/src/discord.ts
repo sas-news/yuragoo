@@ -36,7 +36,7 @@ export interface DiscordSdkLike {
     authenticate(input: { access_token: string }): Promise<unknown>;
     shareLink(input: {
       message: string;
-      custom_id?: string;
+      custom_id?: string | undefined;
     }): Promise<{ success?: boolean } | null>;
     openInviteDialog(): Promise<unknown>;
   };
@@ -83,17 +83,24 @@ export const establishDiscordSession = async (
 
 // shareLink is the sanctioned invite inside an Activity: it posts into
 // the channel with the custom_id so Discord routes joiners at the same
-// instance. Falls back to the native invite dialog when shareLink is
-// unavailable (older client). Both live behind the adapter — the game UI
-// never touches SDK commands directly.
-export const shareInvite = async (sdk: DiscordSdkLike, message: string): Promise<boolean> => {
+// instance. Falls back to the native invite dialog when shareLink throws,
+// reports failure, or is unavailable (older client) — the dialog is the
+// last resort before surfacing an error. Both live behind the adapter —
+// the game UI never touches SDK commands directly.
+export const shareInvite = async (
+  sdk: DiscordSdkLike,
+  message: string,
+  customId?: string,
+): Promise<boolean> => {
   try {
-    const res = await sdk.commands.shareLink({ message });
-    if (res === null || res === undefined) {
-      await sdk.commands.openInviteDialog();
-      return true;
-    }
-    return res.success !== false;
+    const res = await sdk.commands.shareLink({ message, custom_id: customId });
+    if (res !== null && res !== undefined && res.success !== false) return true;
+  } catch {
+    // fall through to the invite dialog
+  }
+  try {
+    await sdk.commands.openInviteDialog();
+    return true;
   } catch {
     return false;
   }

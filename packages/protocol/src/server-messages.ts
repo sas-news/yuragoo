@@ -37,6 +37,9 @@ export const roomPlayerViewSchema = z.strictObject({
   // The join's platform ("browser" | "discord") — presentation-only: the
   // lobby may tag Discord members, and the game never branches on it.
   platform: z.string().max(24).optional(),
+  // Discord CDN avatar for platform:"discord" seats; omitted when the
+  // account has no avatar set so the frame stays small.
+  avatarUrl: z.string().max(2048).optional(),
 });
 export type RoomPlayerView = z.infer<typeof roomPlayerViewSchema>;
 

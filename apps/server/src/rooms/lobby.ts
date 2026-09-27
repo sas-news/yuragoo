@@ -118,6 +118,9 @@ export const onMemberJoined = (
     readonly displayName: string | null;
     readonly lobbyWaiting: boolean;
     readonly platform: string;
+    // Matches roomPlayerViewSchema's optional field — undefined drops the
+    // key out of the memberJoined payload.
+    readonly avatarUrl?: string | undefined;
   },
   gameExists: boolean,
 ): void => {

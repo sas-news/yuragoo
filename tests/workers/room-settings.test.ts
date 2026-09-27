@@ -66,18 +66,15 @@ test("lobby settings: shared view, host-only patch, ready reset, start lock", as
   }
   await host.next((e) => e.type === "lobbyChanged" && e.payload.ready.length === 2);
   host.sendCmd(room.roomId, "set-2", "updateLobby", { hostDecision: true });
-  const cleared = await host.next(
+  const kept = await host.next(
     (e) => e.type === "lobbyChanged" && e.payload.settings.hostDecision === true,
   );
-  if (cleared.type !== "lobbyChanged") throw new Error("not a lobbyChanged");
-  expect(cleared.payload.ready).toEqual([]); // every ready flag died together
+  if (kept.type !== "lobbyChanged") throw new Error("not a lobbyChanged");
+  expect(kept.payload.ready).toHaveLength(2); // a non-mode tweak keeps the ready list
 
   // A no-op patch is ack-only — the revision and ready flags never move.
-  for (const [i, s] of socks.entries()) {
-    s.sendCmd(room.roomId, `rr-${i}`, "setReady", { ready: true });
-    await s.next(ackFor(`rr-${i}`));
-  }
-  await host.next((e) => e.type === "lobbyChanged" && e.payload.ready.length === 2);
+  // Everyone is still readied from before, so a redundant setReady here
+  // would itself be a no-op; there is nothing to wait on but the ack.
   const frames = host.log.length;
   host.sendCmd(room.roomId, "noop", "updateLobby", { hostDecision: true });
   await host.next(ackFor("noop"));
@@ -85,7 +82,15 @@ test("lobby settings: shared view, host-only patch, ready reset, start lock", as
   expect(host.log.slice(frames).some(isType("lobbyChanged"))).toBe(false);
   expect(latestLobby(host)?.ready).toHaveLength(2);
 
-  host.sendCmd(room.roomId, "s-bad", "startGame", { mode: "turn" });
+  // A mode switch is the one change that still clears every ready flag.
+  host.sendCmd(room.roomId, "set-3", "updateLobby", { mode: "turn" });
+  const cleared = await host.next(
+    (e) => e.type === "lobbyChanged" && e.payload.settings.mode === "turn",
+  );
+  if (cleared.type !== "lobbyChanged") throw new Error("not a lobbyChanged");
+  expect(cleared.payload.ready).toEqual([]); // the mode move wiped them
+
+  host.sendCmd(room.roomId, "s-bad", "startGame", { mode: "live" });
   expect((await host.next(isError("settings-mismatch"))).type).toBe("error");
   await armLobby(room, socks); // content + ready at the current revision
   host.sendCmd(room.roomId, "go", "startGame", {});
@@ -93,12 +98,12 @@ test("lobby settings: shared view, host-only patch, ready reset, start lock", as
   const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromString(room.roomId));
   const view = await stub.snapshot();
   expect(view.state.settings).toMatchObject({
-    mode: "live",
+    mode: "turn",
     liveSeconds: 60,
     earlyDecision: true,
     hostDecision: true,
   });
-  host.sendCmd(room.roomId, "late", "updateLobby", { mode: "turn" });
+  host.sendCmd(room.roomId, "late", "updateLobby", { mode: "live" });
   expect((await host.next(isError("bad-state"))).type).toBe("error");
   for (const s of socks) s.close();
 });

@@ -85,6 +85,9 @@ export interface JoinRoomInput {
   // id instead — one or the other is required, enforced inside commitJoin.
   readonly inviteSecretHash?: string;
   readonly discordUserId?: string;
+  // The Discord CDN avatar resolved by the join route (undefined/null for
+  // browser joins and avatar-less accounts).
+  readonly avatarUrl?: string | null;
   readonly displayName: string | null;
   readonly platform: string;
   readonly nowMs: number;

@@ -18,7 +18,15 @@ import { useSeatAnchors } from "../game/seats";
 import { usePostReaction } from "../game/usePostReaction";
 import { useVisualViewportHeight } from "../ui/useVisualViewport";
 import { Results } from "../results/Results";
-import { latestRoomDist, roomEventLine, roomGoals, roomHud, roomSamples } from "./room-arena";
+import {
+  committedCount,
+  latestRoomDist,
+  roomEventLine,
+  roomGoals,
+  roomHud,
+  roomSamples,
+} from "./room-arena";
+import { expressionFor } from "./room-expression";
 import { RoomDock } from "./RoomDock";
 import type { RoomView } from "./room-view";
 import { useOutcomeReveal } from "./useOutcomeReveal";
@@ -72,14 +80,18 @@ export function RoomGame({
 
   const nameOf = (id: string): string => memberName(view.players, id);
   const seats = useSeatAnchors(view.roster, runtime, arenaRef);
-  const presentation = useMemo(
-    () => ({
-      samples: roomSamples(latestRoomDist(view), view),
-      expression: "rest" as const,
+  const presentation = useMemo(() => {
+    const dist = latestRoomDist(view);
+    const newest = view.posts[view.posts.length - 1];
+    // postedAtMs is server-clock; the tick clock is local — shift by the offset.
+    const idleMs =
+      newest === undefined ? 0 : Math.max(0, now + view.clockOffset - newest.postedAtMs);
+    return {
+      samples: roomSamples(dist, view),
+      expression: expressionFor(dist, committedCount(view), idleMs, view.turn?.round ?? 0),
       reducedMotion: false,
-    }),
-    [view],
-  );
+    };
+  }, [view, now]);
   const { stageState, presentation: reacted } = usePostReaction(
     view.posts,
     view.roster,
@@ -120,6 +132,7 @@ export function RoomGame({
           nameOf={nameOf}
           goals={roomGoals(view)}
           pulledId={pulledId}
+          avatarOf={(id) => view.players.find((p) => p.playerId === id)?.avatarUrl ?? undefined}
         />
         <PullCue view={view} seats={seats} onPulled={setPulledId} />
         <BubbleLayer posts={view.posts} roster={view.roster} seats={seats} />

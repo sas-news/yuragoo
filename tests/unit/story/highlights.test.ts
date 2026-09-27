@@ -78,10 +78,12 @@ test("happy: two reversals and grouped coverage pick the max swing", () => {
       ],
     }),
   );
-  expect(panels.map((p) => p.kind)).toEqual(["start", "reversal", "impact", "result"]);
-  expect(panels.map((p) => p.eventId)).toEqual([10, 40, 30, 60]);
-  const reversal = panels[1];
-  const impact = panels[2];
+  // Panels sort by eventId, so the impact pick (seq 30) lands before the
+  // reversal (seq 40) even though pickDrafts drafts reversal first.
+  expect(panels.map((p) => p.kind)).toEqual(["start", "impact", "reversal", "result"]);
+  expect(panels.map((p) => p.eventId)).toEqual([10, 30, 40, 60]);
+  const impact = panels[1];
+  const reversal = panels[2];
   // reversal: the 40-seq event flipped the leader from slot0 to slot1 —
   // its covered posts are seq 3 and 4 (prev landed revision was 2).
   expect(reversal?.postIds).toEqual(["p3", "p4"]);
@@ -98,6 +100,33 @@ test("happy: two reversals and grouped coverage pick the max swing", () => {
   expect(panels[3]?.pull).toEqual([0.2, 0.8]);
   expect(panels[3]?.caption).toContain("みずの おもい");
   expect(panels[3]?.caption).toContain("れん");
+});
+
+test("happy: panels emit in ascending eventId when a later event is drafted earlier", () => {
+  // The reversal sits on seq 70 while the impact pick sits on seq 40 —
+  // pickDrafts returns reversal before impact, but the wire order must
+  // stay chronological.
+  const events: StoryEventRow[] = [
+    { seq: 10, type: "started", payload: { roster: ROSTER } },
+    decision(40, 1, [
+      ["c1", 0.8],
+      ["c2", 0.2],
+    ]),
+    decision(70, 2, [
+      ["c1", 0.2],
+      ["c2", 0.8],
+    ]),
+    { seq: 90, type: "complete", payload: { cutoffSeq: 2, cause: "rounds" } },
+    { seq: 95, type: "finished", payload: { outcome: { kind: "winner" } } },
+  ];
+  const panels = buildStory(
+    source(events, { posts: [post(1, "aiko", "はじめ"), post(2, "ren", "つぎ")] }),
+  );
+  const ids = panels.map((p) => p.eventId);
+  expect([...ids].sort((a, b) => a - b)).toEqual(ids);
+  // The reversal (seq 70) sorts between the earlier impact (seq 40) and
+  // the result — the endgame draft deduped into that same seq-70 row.
+  expect(panels.map((p) => p.kind)).toEqual(["start", "impact", "reversal", "result"]);
 });
 
 test("happy: zero posts still yields the 3-panel floor", () => {

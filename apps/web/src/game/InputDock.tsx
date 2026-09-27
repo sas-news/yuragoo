@@ -37,6 +37,12 @@ export interface InputDockProps {
   // its own draining bar right under the box, so a second border would
   // read as a stray line.
   readonly flushBottom?: boolean | undefined;
+  // Server-clock deadline + ticking clock (both undefined while posting is
+  // impossible). When now reaches the deadline the CURRENT draft ships
+  // as-is — whatever is in the box counts as the answer, grapheme-clamped
+  // to the wire cap. Once per deadline value; empty drafts stay silent.
+  readonly deadlineAtMs?: number | undefined;
+  readonly nowMs?: number | undefined;
   readonly onSubmit: (text: string) => void;
 }
 
@@ -53,6 +59,8 @@ export function InputDock(props: InputDockProps) {
     sendColor,
     trailing,
     flushBottom,
+    deadlineAtMs,
+    nowMs,
     onSubmit,
   } = props;
   const [text, setText] = useState("");
@@ -60,6 +68,9 @@ export function InputDock(props: InputDockProps) {
   const composingRef = useRef(false);
   const inFlightRef = useRef(false);
   const prevStatusRef = useRef(status);
+  // The deadline the auto-send already consumed; a new deadline (turn
+  // rotation / next match) re-arms it because the value itself changes.
+  const firedDeadlineRef = useRef<number | null>(null);
   const counterId = useId();
   const errorId = useId();
 
@@ -95,6 +106,40 @@ export function InputDock(props: InputDockProps) {
     setSubmitError(null);
     onSubmit(result.text);
   }, [canPost, status, text, onSubmit]);
+
+  // Deadline auto-send: the parent only hands us a deadline while posting
+  // is possible, so reaching it means "whatever is in the box ships".
+  // Length never blocks the send — the draft is grapheme-clamped to the
+  // wire cap — but an empty box still stays silent.
+  useEffect(() => {
+    if (firedDeadlineRef.current !== null && firedDeadlineRef.current !== deadlineAtMs) {
+      firedDeadlineRef.current = null; // new deadline re-arms
+    }
+    if (
+      !canPost ||
+      status === "pending" ||
+      deadlineAtMs === undefined ||
+      nowMs === undefined ||
+      deadlineAtMs <= 0 ||
+      nowMs < deadlineAtMs ||
+      firedDeadlineRef.current === deadlineAtMs
+    ) {
+      return;
+    }
+    const draft = text.trim();
+    if (draft === "") return;
+    firedDeadlineRef.current = deadlineAtMs;
+    const parts =
+      typeof Intl.Segmenter === "function"
+        ? Array.from(
+            new Intl.Segmenter("ja", { granularity: "grapheme" }).segment(draft),
+            (s) => s.segment,
+          )
+        : Array.from(draft);
+    inFlightRef.current = true;
+    setSubmitError(null);
+    onSubmit(parts.slice(0, POST_TEXT_MAX_GRAPHEMES).join(""));
+  }, [canPost, status, deadlineAtMs, nowMs, text, onSubmit]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (event.key !== "Enter" || event.shiftKey) return;

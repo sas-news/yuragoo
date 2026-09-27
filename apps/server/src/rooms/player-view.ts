@@ -10,4 +10,7 @@ export const roomPlayerView = (p: RoomPlayer, nowMs: number) => ({
   lobbyWaiting: p.lobbyWaiting,
   connected: p.leaseUntilMs !== null && p.leaseUntilMs > nowMs,
   platform: p.platform,
+  // Optional on the wire — a NULL row emits no key instead of null so
+  // browser/avatar-less players keep the frame small.
+  avatarUrl: p.avatarUrl ?? undefined,
 });

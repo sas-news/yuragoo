@@ -75,6 +75,8 @@ export interface DiscordUser {
   readonly id: string;
   readonly username: string;
   readonly globalName: string | null;
+  // Profile avatar hash (e.g. "a_…" for animated) — never a URL itself.
+  readonly avatar: string | null;
 }
 
 // GET /users/@me is reachable with the identify scope alone, which is the
@@ -91,17 +93,24 @@ export const fetchDiscordUser = async (
   const id = body.id;
   const username = body.username;
   const globalName = body.global_name;
+  const avatar = body.avatar;
   if (
     typeof id !== "string" ||
     id === "" ||
     id.length > DISCORD_ID_MAX ||
     typeof username !== "string" ||
     username === "" ||
-    (globalName !== null && globalName !== undefined && typeof globalName !== "string")
+    (globalName !== null && globalName !== undefined && typeof globalName !== "string") ||
+    (avatar !== null && avatar !== undefined && typeof avatar !== "string")
   ) {
     throw new RoomError("discord-upstream", "discord user payload is incomplete");
   }
-  return { id, username, globalName: typeof globalName === "string" ? globalName : null };
+  return {
+    id,
+    username,
+    globalName: typeof globalName === "string" ? globalName : null,
+    avatar: typeof avatar === "string" ? avatar : null,
+  };
 };
 
 // global_name is the display name; username is the fallback. The value is
@@ -115,4 +124,13 @@ export const discordDisplayName = (user: DiscordUser): string => {
     name = trimmed.slice(0, trimmed.length - 1);
   }
   return playerNameSchema.parse(name);
+};
+
+// CDN avatar URL for a verified user: the hash is the row the API
+// returned, never client input, so interpolating it cannot leak anywhere.
+// "a_" hashes mark animated avatars — they only serve as .gif.
+export const discordAvatarUrl = (user: DiscordUser): string | null => {
+  if (user.avatar === null) return null;
+  const ext = user.avatar.startsWith("a_") ? "gif" : "png";
+  return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${ext}?size=64`;
 };

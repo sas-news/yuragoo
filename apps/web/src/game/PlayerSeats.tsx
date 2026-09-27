@@ -29,10 +29,22 @@ export interface PlayerSeatsProps {
   // The seat the last verdict pulled toward — a brief outward pulse so
   // "which way did it go" reads on the seat itself, not only in the feed.
   readonly pulledId?: PlayerId | undefined;
+  // Optional avatar lookup (room members carry their platform avatar —
+  // Discord CDN URL — on the wire view). Falls back to the IconFace.
+  readonly avatarOf?: ((id: PlayerId) => string | undefined) | undefined;
 }
 
 export function PlayerSeats(props: PlayerSeatsProps) {
-  const { roster, positions, currentId, nameOf = (id) => id, goals, onSelect, pulledId } = props;
+  const {
+    roster,
+    positions,
+    currentId,
+    nameOf = (id) => id,
+    goals,
+    onSelect,
+    pulledId,
+    avatarOf,
+  } = props;
 
   return (
     <ul className={styles.seats} aria-label="プレイヤーの席">
@@ -72,7 +84,17 @@ export function PlayerSeats(props: PlayerSeatsProps) {
               style={{ "--slot-bg": slotColor(player.slot) } as CSSProperties}
               aria-hidden="true"
             >
-              <IconFace />
+              {avatarOf?.(player.id) === undefined ? (
+                <IconFace />
+              ) : (
+                <img
+                  className={styles.avatarImg}
+                  src={avatarOf?.(player.id)}
+                  alt=""
+                  width={64}
+                  height={64}
+                />
+              )}
             </span>
             <span className={styles.who}>
               <span className={styles.name}>

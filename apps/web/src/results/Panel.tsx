@@ -115,7 +115,7 @@ export function Panel({ panel }: PanelProps) {
           <path className={styles.mouth} d={mouthPath} />
         </g>
       </svg>
-      <figcaption>
+      <figcaption className={styles.captionBlock}>
         <h3 className={styles.panelTitle} data-testid="panel-title">
           {panel.title}
         </h3>

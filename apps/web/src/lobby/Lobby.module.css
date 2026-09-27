@@ -155,6 +155,13 @@
   min-block-size: 24px;
 }
 
+/* お題プリセット: a small secondary button under the textarea — it fills
+   the field through the same onEdit path (debounced save + revision). */
+.presetButton {
+  margin-block-start: 6px;
+  font-size: 13px;
+}
+
 .badge {
   font-size: 12px;
   padding: 1px 6px;

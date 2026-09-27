@@ -94,6 +94,7 @@ const STATEMENTS: readonly string[] = [
     display_name TEXT,
     platform TEXT NOT NULL,
     discord_user_id TEXT,
+    avatar_url TEXT,
     session_hash TEXT NOT NULL,
     reconnect_hash TEXT NOT NULL,
     lobby_waiting INTEGER NOT NULL DEFAULT 0,
@@ -211,6 +212,12 @@ export const ensureSchema = (sql: SqlStorage): void => {
     .map((c) => c.name);
   if (!playerColumns.includes("discord_user_id")) {
     sql.exec("ALTER TABLE room_players ADD COLUMN discord_user_id TEXT");
+  }
+  // avatar_url (Task 35 follow-up): the join-time Discord CDN avatar. The
+  // guarded ALTER upgrades room DOs created before the column existed —
+  // CREATE TABLE IF NOT EXISTS alone can't touch them.
+  if (!playerColumns.includes("avatar_url")) {
+    sql.exec("ALTER TABLE room_players ADD COLUMN avatar_url TEXT");
   }
   sql.exec(
     "CREATE UNIQUE INDEX IF NOT EXISTS room_players_discord " +

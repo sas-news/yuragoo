@@ -6,7 +6,12 @@
 // first. The seat commit itself lives in ./sessions next to browser joins.
 import { type Context, Hono } from "hono";
 import type { ServerBindings } from "../config";
-import { discordDisplayName, fetchDiscordUser, resolveDiscordDeps } from "./discord-membership";
+import {
+  discordAvatarUrl,
+  discordDisplayName,
+  fetchDiscordUser,
+  resolveDiscordDeps,
+} from "./discord-membership";
 import { discordTokenRoute } from "./discord-oauth";
 import { newInviteSecret, sha256B64 } from "./invites";
 import { codeOf, fail, failOn, guardOrigin, readBody, stringField } from "./registry";
@@ -48,6 +53,7 @@ const discordJoinRoute = (bindings: ServerBindings) => async (c: Context) => {
     const joined = await stub.joinRoom({
       inviteSecretHash: await sha256B64(newInviteSecret()),
       discordUserId: user.id,
+      avatarUrl: discordAvatarUrl(user),
       displayName,
       platform: DISCORD_PLATFORM,
       nowMs,
