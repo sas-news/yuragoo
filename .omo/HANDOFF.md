@@ -141,3 +141,4 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - 「いきなりDiscord multiplayerを作らない」「テストしたほうがいい領域まで来たら止めて」— 生命体の手触り優先、手動確認が必要な見た目/感触はユーザーに確認を仰ぐ
 - 「どんどん進んじゃって」— 実装スピード重視だが検証は省略しない
 - 設計の言い訳コメントはしっかり書く文化（なぜその値か・何を防ぐか）
+ Portal 側の正確な要件を local-development.mdx + building-an-activity.mdx で確認済み（シェルフに出る条件）: (a) Activities→Settings の Enable Activities ON、(b) Supported Platforms に現プラットフォームのチェック、(c) Installation→User/Guild Install 両方ON、(d) Developer Mode ONでVC参加中のアカウントがアプリ所有/チーム所属、+アプリ名で検索可。URLマッピングのTARGETは https:// を付けない（hostのみ）。OAuth2 Redirectsはプレースホルダ https://127.0.0.1 でよい（SDKが内部処理）。Application URL Override（アプリID+ローカルURL直指定）は存在するが desktop/web はHTTPS必須で http localhost 不可 — tunnel が正攻法。Discord proxyはWebSocketを通す（networking.mdx 明記）。
