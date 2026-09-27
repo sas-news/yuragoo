@@ -7,6 +7,10 @@
 
 **W1〜W6（Task 1〜33）完了。W7は Task 34・35・36・38 が完了**、残りは Task 37（実Discord QA・資格情報でBLOCKED）、live Jev eval receipt（JEV_API_KEY）、F1〜F4最終検証。Task 39のゲート一式は実装済み（tests/workers/release-chaos.test.ts 4件・tests/e2e/release/ 2件・manifest .omo/evidence/task-39-release-manifest.json）。
 
+### Task 37 進行中（2026-09-27）
+
+Discord 資格情報は apps/server/.dev.vars に配置済み（DISCORD_CLIENT_ID=1553394215029968926 / SECRET / ORIGINS=https://1553394215029968926.discordsays.com）。実機ローカル検証ルート確立: **localhost は URL マッピングの宛先にできない**（iframe は <app-id>.discordsays.com 経由でしかロードされず、Discord は公開 HTTPS のオリジンしか辿れない）。cloudflared quick tunnel で wrangler dev(--env e2e, assets付き) を公開し、Portal の URL Mappings 「/」 をトンネル URL に向ける。検証済み: トンネル経由で / → SPA HTML・/api/health → JSON・/api/discord/token → discordsays origin 許可 / evil origin 403 / bogus code で discord-auth 403（実Discord APIまで往復）。詳細手順は docs/discord-setup.md「ローカルでの実機検証」。残るは Portal 設定（Activities有効化 / URL Mappings / OAuth2 redirect https://<app-id>.discordsays.com/）と Discord クライアントでの起動。
+
 ### 紙芝居エンディング（Task 29〜33）の実装メモ
 
 - 契約: packages/protocol/src/story.ts — panel={kind,eventId=events.seq,postIds,quotes,pull,title,caption}、generatedフラグ。endingReady は wire.ts ROOM_FRAME_TYPES + sync.ts ORDERED + room-sync.test.ts の3箇所登録済み。snapshot.ending でresync heal
