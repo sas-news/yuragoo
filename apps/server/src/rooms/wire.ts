@@ -22,6 +22,7 @@ import { landedDecisions } from "./ai-jobs";
 import type { RoomPlayer } from "./auth-storage";
 import type { Books } from "./due";
 import { readEnding } from "./ending";
+import { roomPlayerView } from "./player-view";
 import { type ApplyResult, type EventRow, maxEventSeq } from "./storage";
 
 // Command rejections carry a stable machine-readable code for the error frame.
@@ -129,13 +130,7 @@ export const snapshotFrame = (
     phase: books?.state.phase ?? "lobby",
     inputSeq: books?.meta.inputSeq ?? 0,
     hostPlayerId,
-    players: players.map((p) => ({
-      playerId: p.playerId,
-      joinOrder: p.joinOrder,
-      displayName: p.displayName,
-      lobbyWaiting: p.lobbyWaiting,
-      connected: p.leaseUntilMs !== null && p.leaseUntilMs > nowMs,
-    })),
+    players: players.map((p) => roomPlayerView(p, nowMs)),
     lobby,
     ending: books === null ? null : readEnding(host.sql), // panels ride the snapshot
   });

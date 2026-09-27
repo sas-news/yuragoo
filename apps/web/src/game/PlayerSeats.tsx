@@ -5,6 +5,7 @@
 // ring — the glow IS the turn indicator (the HUD turn line stays for a11y).
 import type { CSSProperties } from "react";
 import type { Player, PlayerId } from "@yuragoo/game-core";
+import { IconFace } from "./IconFace";
 import styles from "./PlayerSeats.module.css";
 import type { SeatMap } from "./seats";
 import { slotBadge, slotColor } from "./slots";
@@ -25,10 +26,13 @@ export interface PlayerSeatsProps {
   // When provided (LIVE mode on /play), each chip gains a transparent hit
   // button so a tap picks the acting seat; omitted = purely decorative.
   readonly onSelect?: ((id: PlayerId) => void) | undefined;
+  // The seat the last verdict pulled toward — a brief outward pulse so
+  // "which way did it go" reads on the seat itself, not only in the feed.
+  readonly pulledId?: PlayerId | undefined;
 }
 
 export function PlayerSeats(props: PlayerSeatsProps) {
-  const { roster, positions, currentId, nameOf = (id) => id, goals, onSelect } = props;
+  const { roster, positions, currentId, nameOf = (id) => id, goals, onSelect, pulledId } = props;
 
   return (
     <ul className={styles.seats} aria-label="プレイヤーの席">
@@ -53,6 +57,7 @@ export function PlayerSeats(props: PlayerSeatsProps) {
             data-anchor-x={pos.x}
             data-anchor-y={pos.y}
             data-current={isCurrent || undefined}
+            data-pulled={player.id === pulledId || undefined}
             data-selectable={onSelect !== undefined || undefined}
             aria-label={`${nameOf(player.id)} の席`}
             aria-current={isCurrent || undefined}
@@ -67,10 +72,15 @@ export function PlayerSeats(props: PlayerSeatsProps) {
               style={{ "--slot-bg": slotColor(player.slot) } as CSSProperties}
               aria-hidden="true"
             >
-              {slotBadge(player.slot)}
+              <IconFace />
             </span>
             <span className={styles.who}>
-              <span className={styles.name}>{nameOf(player.id)}</span>
+              <span className={styles.name}>
+                <span className={styles.tag} aria-hidden="true">
+                  {slotBadge(player.slot)}
+                </span>
+                {nameOf(player.id)}
+              </span>
               {goal === undefined ? null : (
                 <span
                   className={styles.goal}

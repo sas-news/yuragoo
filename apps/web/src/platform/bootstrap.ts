@@ -52,6 +52,20 @@ const realSdkFactory: SdkFactory = async (clientId) => {
   return new m.DiscordSDK(clientId) as unknown as DiscordSdkLike;
 };
 
+// The application id is build config (it ships in the Activity URL), and
+// the e2e bundle's deterministic dummy lets adapter specs run the gate.
+export const discordClientId = (): string =>
+  import.meta.env.VITE_DISCORD_CLIENT_ID ?? (import.meta.env.MODE === "e2e" ? "e2e-client" : "");
+
+// The gate navigates with location.assign — a fresh page means a fresh
+// SDK bridge, so the lobby's share button lazily constructs its own
+// instance. Module-level memo keeps a second click cheap.
+let sdkPromise: Promise<DiscordSdkLike> | null = null;
+export const getDiscordSdk = (clientId: string): Promise<DiscordSdkLike> => {
+  sdkPromise ??= (window.__yuragooSdkFactory ?? realSdkFactory)(clientId);
+  return sdkPromise;
+};
+
 export interface PlatformBoot {
   readonly kind: PlatformKind;
   readonly adapter: PlatformAdapter;

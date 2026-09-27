@@ -104,6 +104,15 @@ test("happy: shared view, host-only edits, ready reset and the start lock", asyn
   await expect(mp.getByText("試合の時間", { exact: true })).toBeVisible();
   await segment(hp, "180秒").click();
   await expect(pressed(mp, "180秒")).toBeVisible();
+  // Task 40: the long-session menus are on the shared view too — 5分 on
+  // live, 45秒/60秒 on turn, rounds up to 8.
+  await segment(hp, "5分").click();
+  await expect(pressed(mp, "5分")).toBeVisible();
+  await segment(hp, "じゅんばん").click();
+  await segment(hp, "45秒").click();
+  await expect(pressed(mp, "45秒")).toBeVisible();
+  await segment(hp, "8").click();
+  await expect(pressed(mp, "8")).toBeVisible();
   await toggle(hp, "早期決着").click();
   await expect(toggle(mp, "早期決着")).toHaveText("オン");
   await toggle(hp, "ホスト決着").click();
@@ -148,7 +157,7 @@ test("failure: host-only, schema, start-mismatch and lock rejections hold", asyn
   const cases: Array<[Page, string, unknown, string]> = [
     [member, "updateLobby", { mode: "live" }, "not-host"],
     [host, "updateLobby", { turnSeconds: 15 }, "invalid-envelope"],
-    [host, "updateLobby", { rounds: 9 }, "invalid-envelope"],
+    [host, "updateLobby", { rounds: 10 }, "invalid-envelope"],
     [host, "updateLobby", { liveSeconds: 42 }, "invalid-envelope"],
   ];
   for (const [page, type, payload, code] of cases) {

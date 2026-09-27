@@ -117,6 +117,7 @@ export const onMemberJoined = (
     readonly joinOrder: number;
     readonly displayName: string | null;
     readonly lobbyWaiting: boolean;
+    readonly platform: string;
   },
   gameExists: boolean,
 ): void => {

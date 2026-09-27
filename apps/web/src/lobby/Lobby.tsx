@@ -12,6 +12,7 @@ import { Dialog } from "../ui/Dialog";
 import { ChoiceEditor } from "./ChoiceEditor";
 import { GameSettings } from "./GameSettings";
 import { GenerationControls } from "./GenerationControls";
+import { InviteButton } from "./InviteButton";
 import { startGateReason } from "./lobby-gate";
 import { Roster } from "./Roster";
 import type { RoomView } from "./room-view";
@@ -69,7 +70,6 @@ export function Lobby({
   const ready = lobby.ready.includes(selfId);
   const proposal = view.choiceProposal;
   const generationError = view.generationError;
-  const [copied, setCopied] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   // The leave button asks before acting — one accidental tap must not
   // eject a member (Task 27 dialog contract).
@@ -124,19 +124,7 @@ export function Lobby({
           へや <code className={styles.code}>{roomId.slice(0, 8)}</code>
         </h1>
         <div className={styles.headerButtons}>
-          {isHost && inviteUrl !== null && (
-            <button
-              type="button"
-              onClick={() => {
-                void navigator.clipboard.writeText(inviteUrl).then(() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1500);
-                });
-              }}
-            >
-              {copied ? "コピーしました" : "招待リンクをコピー"}
-            </button>
-          )}
+          <InviteButton inviteUrl={inviteUrl} isHost={isHost} onError={setSendError} />
           <button type="button" onClick={() => setConfirmLeave(true)}>
             へやを出る
           </button>

@@ -12,6 +12,7 @@ import { CreatureStage } from "../game/CreatureStage";
 import { GameHud } from "../game/GameHud";
 import feedStyles from "../game/MessageFeed.module.css";
 import { PlayerSeats } from "../game/PlayerSeats";
+import { PullCue } from "../game/PullCue";
 import { ScenarioStrip } from "../game/ScenarioStrip";
 import { useSeatAnchors } from "../game/seats";
 import { usePostReaction } from "../game/usePostReaction";
@@ -20,6 +21,7 @@ import { Results } from "../results/Results";
 import { latestRoomDist, roomEventLine, roomGoals, roomHud, roomSamples } from "./room-arena";
 import { RoomDock } from "./RoomDock";
 import type { RoomView } from "./room-view";
+import { useOutcomeReveal } from "./useOutcomeReveal";
 import { memberName } from "./view-members";
 
 interface RoomGameProps {
@@ -52,6 +54,10 @@ export function RoomGame({
   const feedRef = useRef<HTMLUListElement | null>(null);
 
   const outcome = view.outcome;
+  // Task 40: the dialog waits a beat — the veil carries the suspense.
+  const reveal = useOutcomeReveal(outcome);
+  // The seat the latest verdict pulled toward (pulse on the chip too).
+  const [pulledId, setPulledId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 250);
@@ -113,7 +119,9 @@ export function RoomGame({
           currentId={currentId}
           nameOf={nameOf}
           goals={roomGoals(view)}
+          pulledId={pulledId}
         />
+        <PullCue view={view} seats={seats} onPulled={setPulledId} />
         <BubbleLayer posts={view.posts} roster={view.roster} seats={seats} />
         <div className={arena.feedWrap}>
           <ul
@@ -133,7 +141,12 @@ export function RoomGame({
             ))}
           </ul>
         </div>
-        {outcome !== null && (
+        {reveal.showingVeil && (
+          <div className={arena.revealVeil} data-testid="results-reveal" role="status">
+            <span>さあ、けっかは…</span>
+          </div>
+        )}
+        {outcome !== null && reveal.revealed && (
           <Results
             view={view}
             isHost={view.hostPlayerId === selfId}

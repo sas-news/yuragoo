@@ -11,9 +11,9 @@ export interface GameSettings {
   readonly seed: number; // safe int, drives the initial roster shuffle
   readonly rosterSize: number; // set by the host from joined players
   readonly devMode?: boolean; // sandbox: rosterSize 1 + free-range timing knobs
-  readonly turnSeconds?: number; // TURN slot length: 10|20|30, default 20
-  readonly rounds?: number; // TURN rounds 1..5, default 3
-  readonly liveSeconds?: number; // LIVE match length: 60|120|180, default 120
+  readonly turnSeconds?: number; // TURN slot length: 10|20|30|45|60, default 20
+  readonly rounds?: number; // TURN rounds 1..8, default 3
+  readonly liveSeconds?: number; // LIVE match length: 60|120|180|300|600, default 120
   readonly maxPendingPerPlayer?: number; // LIVE pending posts/player, default 1
   readonly adhesionSeconds?: number; // early-decision dwell hold, default 3
   readonly settleSeconds?: number; // settlement window, default 8
@@ -46,13 +46,13 @@ export const ROSTER_SIZE_MAX = 6;
 // ceilings — ?turn=/live=/rounds= tuning and the dev harness rely on them;
 // production rooms never set devMode so the discrete contract applies.
 export const TURN_SECONDS_DEFAULT = 20;
-export const TURN_SECONDS_CHOICES = [10, 20, 30] as const;
+export const TURN_SECONDS_CHOICES = [10, 20, 30, 45, 60] as const;
 export const TURN_SECONDS_MAX = 300;
 export const ROUNDS_DEFAULT = 3;
-export const ROUNDS_CONTRACT_MAX = 5;
+export const ROUNDS_CONTRACT_MAX = 8;
 export const ROUNDS_MAX = 12;
 export const LIVE_SECONDS_DEFAULT = 120;
-export const LIVE_SECONDS_CHOICES = [60, 120, 180] as const;
+export const LIVE_SECONDS_CHOICES = [60, 120, 180, 300, 600] as const;
 export const LIVE_SECONDS_MAX = 1800;
 export const MAX_PENDING_DEFAULT = 1;
 export const MAX_PENDING_MAX = 4;

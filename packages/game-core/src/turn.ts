@@ -11,11 +11,25 @@ import {
   type PostedInput,
 } from "./state";
 
-// Turn order is a plain repeating cycle of the roster: ABAB for two
-// players, ABCABC for three — no per-round rotation (players found the
-// boundary repeat ("A again") confusing).
-export const orderForRound = (roster: readonly Player[], _round: number): PlayerId[] =>
-  roster.map((p) => p.id);
+// Turn order is a plain repeating cycle of the roster, rotated so the
+// HOST goes first every round: roster order is slot order, and slot
+// order follows the arena's canonical angles, so play sweeps the seats
+// in one direction starting from the host's post — "ホストから時計回り".
+// No per-round rotation (players found the boundary repeat confusing).
+export const orderForRound = (
+  roster: readonly Player[],
+  _round: number,
+  hostId?: string,
+): PlayerId[] => {
+  const hostIndex =
+    hostId === undefined
+      ? 0
+      : Math.max(
+          0,
+          roster.findIndex((p) => p.id === hostId),
+        );
+  return roster.map((_, i) => roster[(hostIndex + i) % roster.length]?.id ?? "");
+};
 
 export const currentTurnPlayer = (state: GameState): PlayerId => {
   const id = state.turnOrder[state.turnIndex];
@@ -65,7 +79,8 @@ export const advanceTurn = (state: GameState, nowMs: number): GameTransition => 
   }
   // The order only changes on a round boundary; within a round the same
   // array is shared with the previous state.
-  const turnOrder = turnIndex === 0 ? orderForRound(state.roster, round) : state.turnOrder;
+  const turnOrder =
+    turnIndex === 0 ? orderForRound(state.roster, round, state.settings.hostId) : state.turnOrder;
   const deadlineAtMs = nowMs + state.settings.turnSeconds * 1000;
   const next: GameState = {
     ...state,

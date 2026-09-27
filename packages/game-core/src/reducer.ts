@@ -96,7 +96,7 @@ const createGame = (state: GameState | null, action: CreateAction): GameTransiti
     settings,
     phase: "lobby",
     roster,
-    turnOrder: orderForRound(roster, 0),
+    turnOrder: orderForRound(roster, 0, settings.hostId),
     round: 0,
     turnIndex: 0,
     deadlineAtMs: action.nowMs,

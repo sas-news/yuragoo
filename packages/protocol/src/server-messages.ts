@@ -34,6 +34,9 @@ export const roomPlayerViewSchema = z.strictObject({
   lobbyWaiting: z.boolean(),
   // Task 20: derived from the heartbeat lease at snapshot-build time.
   connected: z.boolean(),
+  // The join's platform ("browser" | "discord") — presentation-only: the
+  // lobby may tag Discord members, and the game never branches on it.
+  platform: z.string().max(24).optional(),
 });
 export type RoomPlayerView = z.infer<typeof roomPlayerViewSchema>;
 

@@ -9,25 +9,25 @@ import { adhereTo, created, dwell, ids, live, rejected, settings, started } from
 test("Task 26 contract: only the fixed duration/round menus are accepted", () => {
   const mk = (over: Partial<GameSettings>) =>
     ({ type: "create", settings: settings(over), playerIds: ids(4), nowMs: 0 }) as const;
-  // TURN slots: 10/20/30 only — in-between and out-of-menu values reject.
-  for (const bad of [5, 15, 40, 60, 300]) {
+  // TURN slots: 10/20/30/45/60 only — in-between and out-of-menu values reject.
+  for (const bad of [5, 15, 40, 90, 300]) {
     rejected(null, mk({ turnSeconds: bad }), "bad-state");
   }
-  for (const good of [10, 20, 30]) {
+  for (const good of [10, 20, 30, 45, 60]) {
     expect(reduce(null, mk({ turnSeconds: good })).state.settings.turnSeconds).toBe(good);
   }
-  // Rounds: integer 1..5 — 6+ and non-integers reject.
+  // Rounds: integer 1..8 — 9+ and non-integers reject.
   rejected(null, mk({ rounds: 0 }), "bad-state");
-  rejected(null, mk({ rounds: 6 }), "bad-state");
+  rejected(null, mk({ rounds: 9 }), "bad-state");
   rejected(null, mk({ rounds: 2.5 }), "bad-state");
-  for (const good of [1, 5]) {
+  for (const good of [1, 5, 8]) {
     expect(reduce(null, mk({ rounds: good })).state.settings.rounds).toBe(good);
   }
-  // LIVE durations: 60/120/180 only.
+  // LIVE durations: 60/120/180/300/600 only.
   for (const bad of [30, 90, 240, 1800]) {
     rejected(null, mk({ liveSeconds: bad }), "bad-state");
   }
-  for (const good of [60, 120, 180]) {
+  for (const good of [60, 120, 180, 300, 600]) {
     expect(reduce(null, mk({ liveSeconds: good })).state.settings.liveSeconds).toBe(good);
   }
   // devMode keeps the sandbox ranges (local /play tuning).

@@ -1,0 +1,49 @@
+/* Center-out verdict arrow: a thin slot-colored shaft with a triangle
+   head, animated outward then fading — purely decorative (aria-hidden). */
+.wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.arrow {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  height: 0;
+  transform-origin: 0 0;
+  animation: cueFly 1.7s ease-out forwards;
+}
+
+.shaft {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--cue-color, var(--ink-muted));
+  opacity: 0.85;
+}
+
+.head {
+  width: 0;
+  height: 0;
+  border-block: 7px solid transparent;
+  border-inline-start: 12px solid var(--cue-color, var(--ink-muted));
+}
+
+@keyframes cueFly {
+  0% {
+    opacity: 0;
+    scale: 0.55 1;
+  }
+  18% {
+    opacity: 1;
+    scale: 1 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

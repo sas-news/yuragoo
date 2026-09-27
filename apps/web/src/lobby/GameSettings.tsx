@@ -54,9 +54,19 @@ const MODES = [
   { value: "turn" as const, label: "じゅんばん" },
   { value: "live" as const, label: "いっせいに" },
 ];
-const TURN_SECONDS = ([10, 20, 30] as const).map((v) => ({ value: v, label: `${v}秒` }));
-const ROUNDS = ([1, 2, 3, 4, 5] as const).map((v) => ({ value: v, label: `${v}` }));
-const LIVE_SECONDS = ([60, 120, 180] as const).map((v) => ({ value: v, label: `${v}秒` }));
+const TURN_SECONDS = ([10, 20, 30, 45, 60] as const).map((v) => ({ value: v, label: `${v}秒` }));
+const ROUNDS = ([1, 2, 3, 4, 5, 6, 8] as const).map((v) => ({ value: v, label: `${v}` }));
+// Long sittings: the live menu jumps to minutes past 3 — a 10-minute
+// round is a real "のんびり" session, not a typo for 600秒.
+const LIVE_SECONDS = (
+  [
+    [60, "60秒"],
+    [120, "120秒"],
+    [180, "180秒"],
+    [300, "5分"],
+    [600, "10分"],
+  ] as const
+).map(([value, label]) => ({ value, label }));
 
 export function GameSettings({ settings, editable, onChange, onError }: GameSettingsProps) {
   const send = (patch: LobbySettings): void => {

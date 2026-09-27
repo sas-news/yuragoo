@@ -71,6 +71,7 @@ export function Roster({ view, selfId, onTransferHost }: RosterProps) {
               <span className={styles.srOnly}>{ready.has(p.playerId) ? "準備OK" : "未準備"}</span>
             </>
           )}
+          {p.platform === "discord" && <span className={styles.platformTag}>Discord</span>}
         </li>
       ))}
     </ul>

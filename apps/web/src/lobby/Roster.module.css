@@ -92,6 +92,16 @@
   color: var(--paper-raised);
 }
 
+/* Discord-joined members carry a small platform tag — join provenance is
+   informational only, the game treats every seat the same. */
+.platformTag {
+  font-size: 10.5px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #5865f2;
+  color: #fff;
+}
+
 /* Host hand-off affordance — a small sharp-cornered text button inside
    the chip, visible only to the current host on connected members. */
 .hostGive {

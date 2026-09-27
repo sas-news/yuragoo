@@ -11,20 +11,25 @@
 | knob | default | range | 意味 |
 | --- | --- | --- | --- |
 | `rosterSize` | — | 2..6 | 参加人数。`devMode` 時のみ 1 人 sandbox 可 |
-| `turnSeconds` | 30 | 1..300 | TURN の1ターン制限時間 |
-| `rounds` | 3 | 1..12 | TURN の周回数 |
-| `liveSeconds` | 120 | 1..1800 | LIVE の試合時間 |
+| `turnSeconds` | 20 | 10/20/30/45/60 | TURN の1ターン制限時間（ルーム契約メニュー） |
+| `rounds` | 3 | 1..8 | TURN の周回数（devMode のみ 12 まで） |
+| `liveSeconds` | 120 | 60/120/180/300/600 | LIVE の試合時間（ルーム契約メニュー） |
 | `maxPendingPerPlayer` | 1 | 1..4 | LIVE の未評価投稿数上限/人 |
 | `adhesionSeconds` | 3 | 1..60 | dwell 早期終了に必要な吸着保持秒数 |
 | `settleSeconds` | 8 | 1..30 | settle 猶予の上限（timeout backstop） |
 | `hostId` | `playerIds[0]` | roster内 | request-end の権限者（シャッフル前の作成者） |
 | `seed` | — | safe int | 初期 roster shuffle 用 |
 
+（devMode = ローカル /play の sandbox だけが自由値。本番ルームは上の
+離散メニューのみ受理 — lobbySettingsSchema と GameSettings.tsx が一致）
+
 ### フェーズ遷移
 
 - `create → start → playing → complete → finished`
 - **TURN**: `turnOrder` 順に投稿。post受理で `turnIndex` 進行。`deadline-reached`
   はそのターンをパス。`round × rosterSize` 投稿で rounds 消化 → complete。
+  `turnOrder` は roster（＝座席スロット順）を hostId 起点に回転したもの —
+  つまり「ホストから時計回り」。ラウンドまたぎでも同じ順。
 - **LIVE**: 全員いつでも投稿可（未評価は `maxPendingPerPlayer` まで）。
   `deadline-reached`（liveSeconds）で complete。
 - **早期終了**:

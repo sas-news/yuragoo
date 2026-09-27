@@ -86,10 +86,25 @@
   text-overflow: ellipsis;
   max-inline-size: 100%;
   box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: var(--paper-raised);
   border: 2px solid rgb(39 169 139 / 0.55);
   border-radius: 999px;
   filter: drop-shadow(2px 2px 0 rgb(23 118 99 / 0.12));
+}
+
+/* The ○A slot identity moved here from the icon — the avatar is a face
+   now, so the tag carries the seat label beside the name. */
+.tag {
+  flex: none;
+  padding: 0 7px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--paper-raised);
+  background: var(--seat-color, var(--ink-muted));
+  border-radius: 999px;
 }
 
 .goal {
@@ -147,6 +162,31 @@
     animation: none;
     filter: drop-shadow(2px 2px 0 rgb(23 118 99 / 0.14))
       drop-shadow(0 0 6px color-mix(in srgb, var(--seat-color, #f0a03c) 65%, transparent));
+  }
+  .seat[data-pulled="true"] .avatar {
+    animation: none;
+    filter: drop-shadow(0 0 10px var(--seat-color, #f0a03c));
+  }
+}
+
+/* Post-verdict cue: the pulled seat's icon lurches outward and glows —
+   the "it went THIS way" read that pairs with the center arrow. */
+.seat[data-pulled="true"] .avatar {
+  animation: seatPulled 1.7s ease-out;
+}
+
+@keyframes seatPulled {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  30% {
+    transform: scale(1.28);
+    filter: drop-shadow(0 0 14px var(--seat-color, #f0a03c));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(2px 2px 0 rgb(23 118 99 / 0.14));
   }
 }
 

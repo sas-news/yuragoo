@@ -46,9 +46,9 @@ export type LobbyChoice = z.infer<typeof lobbyChoiceSchema>;
 // startGame payload may only confirm these, never contradict them.
 export const lobbySettingsViewSchema = z.strictObject({
   mode: z.enum(["turn", "live"]),
-  turnSeconds: z.literal([10, 20, 30]),
-  rounds: z.number().int().min(1).max(5),
-  liveSeconds: z.literal([60, 120, 180]),
+  turnSeconds: z.literal([10, 20, 30, 45, 60]),
+  rounds: z.number().int().min(1).max(8),
+  liveSeconds: z.literal([60, 120, 180, 300, 600]),
   earlyDecision: z.boolean(),
   hostDecision: z.boolean(),
 });

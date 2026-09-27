@@ -73,7 +73,8 @@ export const roomHud = (view: RoomView): HudSnapshot => {
   const turnSeconds = settings?.turnSeconds ?? view.lobby.settings.turnSeconds;
   const liveSeconds = settings?.liveSeconds ?? view.lobby.settings.liveSeconds;
   const round = view.turn?.round ?? 0;
-  const turnOrder = orderForRound(view.roster, round);
+  const hostId = settings?.hostId ?? view.hostPlayerId ?? undefined;
+  const turnOrder = orderForRound(view.roster, round, hostId);
   const turnIndex = view.turn === null ? 0 : Math.max(0, turnOrder.indexOf(view.turn.playerId));
   return {
     phase: view.phase,
@@ -123,6 +124,29 @@ export const roomGoals = (
   view: RoomView,
 ): readonly { readonly symbol: string; readonly label: string }[] =>
   committedChoices(view).map((c, i) => ({ symbol: SLOT_SYMBOLS[i] ?? "?", label: c.label }));
+
+// The seat a landed verdict pulled toward: the slot with the highest
+// normalized weight in the newest distribution. Ties resolve to the
+// earlier slot (stable, matches "引き分け気味" reads) — a null dist or an
+// all-flat pull yields undefined (no arrow for "nowhere").
+export const pulledSlot = (
+  distribution: readonly DecisionDistribution[] | null,
+  view: RoomView,
+): number | null => {
+  if (distribution === null) return null;
+  const choices = committedChoices(view);
+  let bestSlot: number | null = null;
+  let best = 0;
+  for (const d of distribution) {
+    const slot = choices.findIndex((c) => c.choiceId === d.choiceId);
+    if (slot >= 0 && d.probability > best) {
+      best = d.probability;
+      bestSlot = slot;
+    }
+  }
+  // A flat pull (max weight <= uniform share) isn't a direction — no cue.
+  return bestSlot !== null && best > 1 / Math.max(1, choices.length) ? bestSlot : null;
+};
 
 // The corner log renders the room's event stream (joins, turns, posts,
 // result) — posts carry their text so the log doubles as the feed.

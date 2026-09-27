@@ -104,3 +104,60 @@ button.scenarioStrip:focus-visible {
   inset-inline-start: 10px;
   inline-size: min(340px, 46%);
 }
+
+/* Task 40 results reveal: a translucent veil with one line of suspense,
+   shown for ~2.4s between the finished event and the Results dialog.
+   Centered, non-blocking, and announced via role=status. */
+.revealVeil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--paper, #fdf6ec) 55%, transparent);
+  z-index: 5;
+  animation: veilIn 0.4s ease-out;
+}
+
+.revealVeil > span {
+  padding: 10px 22px;
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 2px solid rgb(39 169 139 / 0.55);
+  border-radius: 999px;
+  animation: veilText 2.4s ease-in-out forwards;
+}
+
+@keyframes veilIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes veilText {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revealVeil,
+  .revealVeil > span {
+    animation: none;
+  }
+}

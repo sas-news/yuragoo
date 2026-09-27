@@ -19,9 +19,9 @@ const safeInt = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 export const lobbySettingsSchema = z.strictObject({
   mode: z.enum(["turn", "live"]).optional(),
   seed: z.number().int().optional(),
-  turnSeconds: z.literal([10, 20, 30]).optional(),
-  rounds: z.number().int().min(1).max(5).optional(),
-  liveSeconds: z.literal([60, 120, 180]).optional(),
+  turnSeconds: z.literal([10, 20, 30, 45, 60]).optional(),
+  rounds: z.number().int().min(1).max(8).optional(),
+  liveSeconds: z.literal([60, 120, 180, 300, 600]).optional(),
   maxPendingPerPlayer: z.number().int().min(1).max(4).optional(),
   adhesionSeconds: z.number().int().min(1).max(60).optional(),
   settleSeconds: z.number().int().min(1).max(30).optional(),
