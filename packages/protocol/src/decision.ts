@@ -87,7 +87,11 @@ export interface DecisionEnvelope {
   readonly body: JevSystemOneRequest;
 }
 
-const INSTRUCTIONS = "各選択肢がどれほど引かれるかを確率で答えてください。";
+// 毒・罠など危険が示された選択肢は「何もしない」類の選択肢よりも必ず
+// 低く評価してほしい。ja-v1 の poison-label(毒札きのこ < 我慢)でモデルが
+// 危険側を上位に置く失敗が観測されたため、無行動を選択肢として明示する。
+const INSTRUCTIONS =
+  "各選択肢がどれほど引かれるかを確率で答えてください。「何もしない」「我慢する」などの行動しない選択肢も有効です。危険が示唆されたものより安全なら、それを高く評価してください。迷う余地があるほど魅力が近い選択肢には、近い確率を割り当ててください。";
 
 export const createJevRequestBody = (state: DecisionState): JevSystemOneRequest => {
   const valid = parseDecisionState(state);
