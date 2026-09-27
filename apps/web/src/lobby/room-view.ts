@@ -15,9 +15,7 @@ import { membershipPatch } from "./view-members";
 export type RoomPhase = "lobby" | "playing" | "complete" | "finished";
 export type RoomOutcome = NonNullable<SnapshotPayload["state"]>["outcome"];
 
-// Task 25: the in-flight one-shot generation proposal (ephemeral — the
-// durable spent flag is lobby.generationSpent). lobbyRevision is the
-// request-time capture; applying uses the CURRENT lobby revision.
+// Task 25: the ephemeral generation proposal; apply uses the CURRENT revision.
 export interface ChoiceProposal {
   readonly lobbyRevision: number;
   readonly memberCount: number;
@@ -30,9 +28,7 @@ export interface GenerationError {
   readonly slotSpent: boolean;
 }
 
-// The wire RoomPlayerView plus the member profile fields the folded view
-// keeps for presentation — avatarUrl mirrors the (optional) protocol
-// field, so a snapshot/event carrying it lands here untouched.
+// Wire player view + presentation extras (avatarUrl rides the wire field).
 export type RoomPlayer = RoomPlayerView & { readonly avatarUrl?: string | undefined };
 
 export interface RoomView {
@@ -99,8 +95,7 @@ export const initialView = (): RoomView => ({
   epoch: 0,
 });
 
-// The snapshot is the heal point — every field it carries replaces the
-// folded state outright; the feed log survives across resyncs.
+// The snapshot is the heal point: it replaces the fold outright.
 export const applySnapshot = (
   view: RoomView,
   p: SnapshotPayload,

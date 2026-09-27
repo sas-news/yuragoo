@@ -69,8 +69,7 @@ export interface RoomPlayer {
   // Task 35: the verified Discord user id owning this seat (NULL for
   // browser joins). Seat dedupe + the unique index key on room_players.
   readonly discordUserId: string | null;
-  // CDN avatar URL resolved at join time (Discord seats only); NULL for
-  // browser joins and avatar-less accounts.
+  // Join-time Discord CDN avatar (NULL for browsers/avatar-less users).
   readonly avatarUrl: string | null;
   readonly sessionHash: string;
   readonly reconnectHash: string;
@@ -160,8 +159,7 @@ export const findPlayerByDiscordId = (
   return row === undefined ? null : toRoomPlayer(row);
 };
 
-// Rejoin on an existing seat: rotate both token hashes and refresh the
-// stored name/avatar when the verified profile changed them.
+// Rejoin on an existing seat: rotate token hashes, refresh name+avatar.
 export const updateDiscordSeat = (
   sql: SqlStorage,
   playerId: string,

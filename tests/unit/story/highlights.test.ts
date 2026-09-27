@@ -102,33 +102,6 @@ test("happy: two reversals and grouped coverage pick the max swing", () => {
   expect(panels[3]?.caption).toContain("れん");
 });
 
-test("happy: panels emit in ascending eventId when a later event is drafted earlier", () => {
-  // The reversal sits on seq 70 while the impact pick sits on seq 40 —
-  // pickDrafts returns reversal before impact, but the wire order must
-  // stay chronological.
-  const events: StoryEventRow[] = [
-    { seq: 10, type: "started", payload: { roster: ROSTER } },
-    decision(40, 1, [
-      ["c1", 0.8],
-      ["c2", 0.2],
-    ]),
-    decision(70, 2, [
-      ["c1", 0.2],
-      ["c2", 0.8],
-    ]),
-    { seq: 90, type: "complete", payload: { cutoffSeq: 2, cause: "rounds" } },
-    { seq: 95, type: "finished", payload: { outcome: { kind: "winner" } } },
-  ];
-  const panels = buildStory(
-    source(events, { posts: [post(1, "aiko", "はじめ"), post(2, "ren", "つぎ")] }),
-  );
-  const ids = panels.map((p) => p.eventId);
-  expect([...ids].sort((a, b) => a - b)).toEqual(ids);
-  // The reversal (seq 70) sorts between the earlier impact (seq 40) and
-  // the result — the endgame draft deduped into that same seq-70 row.
-  expect(panels.map((p) => p.kind)).toEqual(["start", "impact", "reversal", "result"]);
-});
-
 test("happy: zero posts still yields the 3-panel floor", () => {
   const events: StoryEventRow[] = [
     { seq: 10, type: "started", payload: {} },

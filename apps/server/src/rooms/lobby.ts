@@ -67,10 +67,8 @@ export const readLobby = (sql: SqlStorage): LobbyState => {
       "SELECT revision, scenario, choices, ready, committed_count FROM lobby WHERE id = 1",
     )
     .toArray()[0];
-  // Task 25: generationSpent is derived (not a stored column) so every
-  // snapshot/lobbyChanged reports the slot ledger's truth directly.
-  // Task 26: settings is likewise derived — the sanitized patch view is
-  // identical on every member's screen.
+  // generationSpent + settings are derived views — every member reads the
+  // same slot ledger / sanitized patch truth (Task 25/26).
   return {
     revision: row?.revision ?? 0,
     scenario: row?.scenario ?? "",
@@ -118,8 +116,7 @@ export const onMemberJoined = (
     readonly displayName: string | null;
     readonly lobbyWaiting: boolean;
     readonly platform: string;
-    // Matches roomPlayerViewSchema's optional field — undefined drops the
-    // key out of the memberJoined payload.
+    // Optional like the wire field — undefined drops the key entirely.
     readonly avatarUrl?: string | undefined;
   },
   gameExists: boolean,
