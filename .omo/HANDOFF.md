@@ -193,3 +193,12 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - ついでに live probe で2件観測・修正: (a) Qwen3 が英語でお題を返す → プロンプトに「出力は必ず日本語で」+プリセット例行を追加、(b) 10s deadline が Workers AI コールドスタートで slot を燃やす → `GENERATION_TIMEOUT_MS=20_000`。
 - 招待ボタン: shareInvite が RPC エラーを丸呑みしてたので `console.warn("[yuragoo] ...")` で実エラーを iframe console に出す（platform pkg は DOM lib 無しなので structural console）。DM 通話では guildId null → dialog 不可 → 「招待できませんでした」は仕様通りの失敗。
 - staging probe 手順: `tmp/probe-scenario-staging.ts`（create→join→ticket→WS generateScenario、実 API を叩く — gitignore 済み tmp/ に配置）。live で scenarioGenerated 正常確認済み（日本語応答）。
+
+### Task 45 — solo ホストの選択肢 prep + 日本語プロンプト統一（commit 80ae221、staging 0cab962e）
+
+- **要件**: 「メンバーいないうちに選択肢を準備したい」→ `generateChoices` の 2人以上ゲート撤廃。solo ホストは **6席分** を生成、2人以上は表示中行数分（orphan行も埋める）。適用時に `updateLobbyContent` が連番 `c{n}` append を受理（LOBBY_SEAT_COUNT=6 上限、飛び番は unknown-choice）。既存 orphan 機構に自然に載る — joiner は prep 済みラベルの座席に入る。
+- **日本語プロンプト**: choices も scenario と同じく「出力は必ず日本語で」+出力例を明記（実機で英語ラベル混入を観測したため）。`buildChoicePrompt` の人数引数は座席数として使用。
+- client: `applyProposal` が全ラベルを送る（`lobby.choices[i]?.choiceId ?? c${i}`）。
+- tests: `choice-prep.test.ts` 新設（solo→6件生成→append適用→非連番拒否）。gates テストから lobby-too-few 断言を除去。unit 187 / workers 130 / check green。
+- **live 検証済**: solo 部屋で `generateChoices` → 6件日本語ラベル（「無人店で物を盗む」等）。`tmp/probe-prep-staging.ts`（snapshot→revision取得→scenario設定→generateChoices）。1度 `generation-invalid` 観測 — Qwen3 の出力揺らぎで parse 失敗すると slot 消費（one-shot 設計どおりだが flake 耐性は弱い）。
+- **招待ログの見方**: `console.warn("[yuragoo] ...")` はクライアント側（Activity iframe の devtools console）に出る — wrangler tail 等サーバーログには出ない。Discord は bundle を強くキャッシュするのでハードリロード必要な場合あり。
