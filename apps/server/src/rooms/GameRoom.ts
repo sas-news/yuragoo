@@ -14,6 +14,7 @@ import { drainDecisionJobs, resolveJobDeps } from "./decision-jobs";
 import type { Books } from "./due";
 import { kickEnding } from "./ending";
 import { type ChoiceGenRequest, runChoiceGeneration } from "./generate-choices";
+import { type ScenarioGenRequest, runScenarioGeneration } from "./generate-scenario";
 import { resolveGenerationDeps } from "./generation-deps";
 import { spendGenerationSlot } from "./generation-slots";
 import { resolveLimits, type RoomLimits } from "./limits";
@@ -32,8 +33,7 @@ import type { ApplyResult } from "./storage";
 import * as transport from "./transport";
 import type { SocketAttachment } from "./wire";
 
-export { RoomError } from "./api";
-export type { ApplyInput, CreateRoomInit, RoomSnapshotView } from "./api";
+export { RoomError, type ApplyInput, type CreateRoomInit, type RoomSnapshotView } from "./api";
 
 export class GameRoom extends DurableObject<ServerBindings> implements transport.SocketHost {
   private books: Books | null = null;
@@ -114,8 +114,8 @@ export class GameRoom extends DurableObject<ServerBindings> implements transport
   roomLimits(): RoomLimits {
     return resolveLimits(this.env);
   }
-  // ControlPlane active-room bookkeeping (WS create/rematch path only —
-  // the RPC create path registers inside room-ledger.createRoomAt).
+  // ControlPlane active-room bookkeeping — the RPC create path registers
+  // inside room-ledger.createRoomAt; the WS path comes through here.
   registerRoom(): void {
     registerActiveRoom(this.ctx, this.env, this.roomId);
   }
@@ -139,8 +139,7 @@ export class GameRoom extends DurableObject<ServerBindings> implements transport
   async rearm(): Promise<void> {
     const min = minDeadlineRunAt(this.ctx.storage.sql);
     // Never push the alarm later — workerd cancels a pending delivery when
-    // setAlarm lands mid-flight, so heartbeat re-arms would starve every
-    // clock. An earlier armed time is harmless: the handler re-checks.
+    // setAlarm lands mid-flight; an earlier armed time is harmless anyway.
     const armed = await this.ctx.storage.getAlarm();
     if (min === null) {
       if (armed !== null) await this.ctx.storage.deleteAlarm();
@@ -164,9 +163,7 @@ export class GameRoom extends DurableObject<ServerBindings> implements transport
     return run;
   }
 
-  // Decision runner (body: drainDecisionJobs); a committed settle funnels
-  // into the outbox flush; the tail rearm covers a dwell clock a landed
-  // eval may have armed (Task 26). The outbox dies with the room's close.
+  // Task 26: decision runner — a settle tail drives outbox + ending lanes.
   driveDecisionJobs(): Promise<void> {
     return this.drive("jobs", () =>
       drainDecisionJobs(this, resolveJobDeps(this.env)).finally(async () => {
@@ -193,20 +190,23 @@ export class GameRoom extends DurableObject<ServerBindings> implements transport
     return Promise.resolve(spendGenerationSlot(this, slot));
   }
 
-  // Task 25: generateChoices commits only an ack — the attempt itself runs
-  // under waitUntil so the command path never blocks on the LLM.
+  // Task 25/44: generation commits only an ack; the attempt runs under waitUntil.
+  private kickGeneration(run: () => Promise<void>): void {
+    this.ctx.waitUntil((this.closed ? Promise.resolve() : run()).catch(() => {}));
+  }
   startChoiceGeneration(request: ChoiceGenRequest): void {
-    const run = this.closed
-      ? Promise.resolve()
-      : runChoiceGeneration(this, resolveGenerationDeps(this.env), request);
-    this.ctx.waitUntil(run.catch(() => {}));
+    this.kickGeneration(() => runChoiceGeneration(this, resolveGenerationDeps(this.env), request));
+  }
+  startScenarioGeneration(request: ScenarioGenRequest): void {
+    this.kickGeneration(() =>
+      runScenarioGeneration(this, resolveGenerationDeps(this.env), request),
+    );
   }
   async retireRoom(): Promise<void> {
     await retireRoomNow(this, this.ctx, this.env);
   }
 
   // --- room-auth RPC (bodies in ./auth-rpc) ---
-
   initRoom(input: api.InitRoomInput): void {
     this.assertOpen();
     this.ctx.storage.transactionSync(() => commitInitRoom(this.ctx.storage.sql, input));

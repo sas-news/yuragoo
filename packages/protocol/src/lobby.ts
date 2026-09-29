@@ -77,6 +77,8 @@ export const lobbyStateSchema = z.strictObject({
   // Task 25: the one-shot pre-game AI generation slot was spent. Derived
   // from the generation_slots ledger at read time (not a stored column).
   generationSpent: z.boolean(),
+  // Task 44: the one-shot scenario (お題) generation slot, same ledger.
+  scenarioSpent: z.boolean(),
   // Task 26: the shared mode/ending settings — identical on every member's
   // screen; a host edit bumps revision and clears `ready` in the same
   // broadcast.

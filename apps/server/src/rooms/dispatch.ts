@@ -21,6 +21,7 @@ import type { ClientEnvelope, LobbySettings, UpdateLobbyContentPayload } from "@
 import { type RoomPlayer, writeLease } from "./auth-storage";
 import type { Books } from "./due";
 import { type ChoiceGenRequest, planChoiceGeneration } from "./generate-choices";
+import { planScenarioGeneration, type ScenarioGenRequest } from "./generate-scenario";
 import { playerIsConnected } from "./host-election";
 import { readPresence, rearmLeaseSweep } from "./leases";
 import { assertGameStartAllowed, type RoomLimits } from "./limits";
@@ -46,8 +47,9 @@ export type Plan =
   | { readonly kind: "back-to-lobby" }
   // Host-only explicit hand-off to a connected member.
   | { readonly kind: "transfer-host"; readonly targetId: string }
-  // Task 25: host-only one-shot AI generation request.
+  // Task 25/44: host-only one-shot AI generation requests — own slots.
   | { readonly kind: "generate-choices"; readonly request: ChoiceGenRequest }
+  | { readonly kind: "generate-scenario"; readonly request: ScenarioGenRequest }
   // Task 26: host-only settings patch — lands through the lobby executor
   // so the merge, the ready-clear and the broadcast commit atomically.
   | { readonly kind: "lobby-settings"; readonly payload: LobbySettings };
@@ -173,6 +175,13 @@ export const planFor = ({
         kind: "generate-choices",
         request: planChoiceGeneration(sql, players, playerId, books !== null, env.commandId),
       };
+    case "generateScenario":
+      // Task 44: same click-only/host-only/pre-game contract as choices,
+      // on its own slot so both assists fit in one lobby.
+      return {
+        kind: "generate-scenario",
+        request: planScenarioGeneration(sql, players, playerId, books !== null, env.commandId),
+      };
     case "leave": {
       const me = players.find((p) => p.playerId === playerId);
       if (me === undefined) {
@@ -224,21 +233,13 @@ export const planFor = ({
       requireGame(books);
       return {
         kind: "action",
-        action: {
-          type: "post",
-          playerId,
-          text: env.payload.text,
-          nowMs: Date.now(),
-        },
+        action: { type: "post", playerId, text: env.payload.text, nowMs: Date.now() },
       };
     case "pass":
       return { kind: "action", action: passAction(requireGame(books).state, playerId) };
     case "requestDecision":
       requireGame(books);
-      return {
-        kind: "action",
-        action: { type: "request-end", playerId, nowMs: Date.now() },
-      };
+      return { kind: "action", action: { type: "request-end", playerId, nowMs: Date.now() } };
     case "syncRequest":
       throw new CommandError("internal", "syncRequest is handled before dispatch");
   }

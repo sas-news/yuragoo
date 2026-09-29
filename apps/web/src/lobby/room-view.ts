@@ -13,6 +13,7 @@ import {
 import { deadlineFor } from "./room-arena";
 import { decisionPatch } from "./view-decisions";
 import { membershipPatch } from "./view-members";
+import { proposalPatch } from "./view-proposals";
 
 export type RoomPhase = "lobby" | "playing" | "complete" | "finished";
 export type RoomOutcome = NonNullable<SnapshotPayload["state"]>["outcome"];
@@ -22,6 +23,12 @@ export interface ChoiceProposal {
   readonly lobbyRevision: number;
   readonly memberCount: number;
   readonly labels: readonly string[];
+}
+
+// Task 44: the scenario-generation proposal — same apply contract, own slot.
+export interface ScenarioProposal {
+  readonly lobbyRevision: number;
+  readonly scenario: string;
 }
 
 export interface GenerationError {
@@ -46,6 +53,7 @@ export interface RoomView {
   // template-only finish reports `generated:false` until generation lands.
   readonly ending: EndingStory | null;
   readonly choiceProposal: ChoiceProposal | null;
+  readonly scenarioProposal: ScenarioProposal | null;
   readonly generationError: GenerationError | null;
   // Task 28: the live turn pointer and the game roster, folded from the
   // snapshot + ordered events so the input dock never needs the raw
@@ -78,6 +86,7 @@ const EMPTY_LOBBY: LobbyState = {
   ready: [],
   committedCount: 0,
   generationSpent: false,
+  scenarioSpent: false,
   settings: LOBBY_SETTINGS_DEFAULT,
 };
 
@@ -91,6 +100,7 @@ export const initialView = (): RoomView => ({
   outcome: null,
   ending: null,
   choiceProposal: null,
+  scenarioProposal: null,
   generationError: null,
   turn: null,
   roster: [],
@@ -172,27 +182,10 @@ export const applyEvent = (view: RoomView, env: ServerEnvelope): RoomView => {
     case "hostChanged":
       return { ...view, feed, clockOffset, epoch, ...membershipPatch(view, env) };
     case "choicesGenerated":
-      // The proposal is a suggestion only — landing it in the view never
-      // touches the lobby fields; the slot is spent either way.
-      return {
-        ...view,
-        feed,
-        clockOffset,
-        epoch,
-        lobby: { ...view.lobby, generationSpent: true },
-        choiceProposal: env.payload,
-        generationError: null,
-      };
+    case "scenarioGenerated":
     case "generationFailed":
-      return {
-        ...view,
-        feed,
-        clockOffset,
-        epoch,
-        lobby: env.payload.slotSpent ? { ...view.lobby, generationSpent: true } : view.lobby,
-        choiceProposal: null,
-        generationError: env.payload,
-      };
+      // Proposal/failure folds live in view-proposals.ts (LOC split).
+      return { ...view, feed, clockOffset, epoch, ...proposalPatch(view, env) };
     case "endingReady":
       // Fires twice per game (template, then generated) — last write wins.
       return { ...view, feed, clockOffset, epoch, ending: env.payload };

@@ -17,4 +17,5 @@ export * from "./eval-runner";
 export * from "./generative-provider";
 export * from "./workers-ai-provider";
 export * from "./choice-generation";
+export * from "./scenario-generation";
 export * from "./ending-generation";

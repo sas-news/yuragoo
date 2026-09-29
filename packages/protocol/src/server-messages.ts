@@ -7,7 +7,7 @@
 import { z } from "zod";
 import { moodIdSchema } from "./decision";
 import { choiceIdSchema } from "./ids";
-import { lobbyStateSchema } from "./lobby";
+import { lobbyStateSchema, scenarioTextSchema } from "./lobby";
 import { gameOutcomeSchema, gameStateSchema, postedInputSchema } from "./snapshot";
 import { endingStorySchema } from "./story";
 
@@ -160,7 +160,16 @@ export const serverEnvelopeSchema = z.discriminatedUnion("type", [
       code: z.string(),
       message: z.string(),
       slotSpent: z.boolean(),
+      // Task 44: which slot the failure burned — absent on pre-Task-44
+      // events means the choices slot (the only one that existed).
+      scope: z.enum(["choices", "scenario"]).optional(),
     }),
+  ),
+  // Task 44: the scenario-generation proposal — same proposal/apply
+  // contract as choicesGenerated, on its own slot.
+  envelope(
+    "scenarioGenerated",
+    z.strictObject({ lobbyRevision: safeInt, scenario: scenarioTextSchema }),
   ),
   // Task 31/32: the game's kamishibai panel set. Fires once right after
   // finish with template text, then again once the post-game generation

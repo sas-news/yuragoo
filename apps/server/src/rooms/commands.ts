@@ -8,6 +8,7 @@ import { listRoomPlayers } from "./auth-storage";
 import { executePlan, replayedAck } from "./commits";
 import { planFor } from "./dispatch";
 import type { ChoiceGenRequest } from "./generate-choices";
+import type { ScenarioGenRequest } from "./generate-scenario";
 import type { Books } from "./due";
 import { displayHostId } from "./host-election";
 import type { RoomLimits } from "./limits";
@@ -34,9 +35,10 @@ export interface CommandHost extends WireHost {
   // Task 21/22: best-effort ControlPlane active-room bookkeeping — every
   // path that starts a game registers the mapping close later revokes.
   registerRoom(): void;
-  // Task 25: kick the async choice-generation attempt (fire-and-forget;
-  // the provider call rides ctx.waitUntil inside the implementation).
+  // Task 25/44: kick the async generation attempt (fire-and-forget; the
+  // provider call rides ctx.waitUntil inside the implementation).
   startChoiceGeneration(request: ChoiceGenRequest): void;
+  startScenarioGeneration(request: ScenarioGenRequest): void;
 }
 
 export interface CommandOutcome {

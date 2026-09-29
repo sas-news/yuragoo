@@ -10,9 +10,8 @@
 // commits only the first `memberCount` rows (committed_count).
 //
 // Broadcast rule: a lobbyChanged row is written only when the emitted
-// payload actually changed — memberJoined/memberLeft rows already carry
-// the membership delta, and a no-op setReady or a re-activated orphan
-// must not bump the revision under the host's in-flight edit.
+// payload actually changed — membership rows already carry their delta,
+// and a no-op setReady must not bump the revision mid-edit.
 import {
   CHOICE_LABEL_MAX_GRAPHEMES,
   countGraphemes,
@@ -76,6 +75,7 @@ export const readLobby = (sql: SqlStorage): LobbyState => {
     ready: stringArray(row?.ready ?? "[]"),
     committedCount: row?.committed_count ?? 0,
     generationSpent: slotSpent(sql, "pre"),
+    scenarioSpent: slotSpent(sql, "scenario"),
     settings: lobbySettingsView(readLobbyPatch(sql)),
   };
 };

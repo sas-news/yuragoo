@@ -35,6 +35,7 @@ const input: EndingGenerationInput = {
 
 const request = {
   prompt: buildEndingPrompt(input),
+  kind: "ending" as const,
   jsonSchema: endingJsonSchema(input.panels.map((p) => p.eventId)),
   count: input.panels.length,
 };

@@ -222,6 +222,12 @@ export class RoomConnection {
       : this.client.generateChoices();
   }
 
+  generateScenario(): ReturnType<RoomClient["generateScenario"]> {
+    return this.client === null
+      ? Promise.reject(new Error("not connected"))
+      : this.client.generateScenario();
+  }
+
   leaveRoom(): ReturnType<RoomClient["leaveRoom"]> {
     return this.client === null
       ? Promise.reject(new Error("not connected"))

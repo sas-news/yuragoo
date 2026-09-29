@@ -7,9 +7,8 @@
 import type { LobbyState, ServerEnvelope } from "@yuragoo/protocol";
 import { deleteRoomPlayer, writeLease } from "./auth-storage";
 import type { CommandHost } from "./commands";
-import type { Plan } from "./dispatch";
 import type { Books } from "./due";
-import type { ChoiceGenRequest } from "./generate-choices";
+import type { Plan } from "./dispatch";
 import { applyHostElection } from "./host-election";
 import { deleteDeadlineIds, replaceDeadline } from "./deadlines";
 import {
@@ -128,13 +127,14 @@ const commitLeave = (
   return { result, events, committed: true, closeRoom: false, dropPlayerIds: [playerId] };
 };
 
-// `generate-choices` (Task 25): the commit is only the dedupe row — the
-// slot spend, daily reserve and provider call are all async work kicked
-// afterwards so a rejected request can never reach the provider. The
-// outcome arrives later as choicesGenerated / generationFailed events.
+// `generate-choices` / `generate-scenario` (Task 25/44): the commit is
+// only the dedupe row — the slot spend, daily reserve and provider call
+// are all async work kicked afterwards so a rejected request can never
+// reach the provider. The outcome arrives later as *Generated /
+// generationFailed events.
 const commitGenerationRequest = (
   host: CommandHost,
-  request: ChoiceGenRequest,
+  kick: () => void,
   dedupe: DedupeKey | null,
 ): LobbyPlanOutcome => {
   const result = host.txn(() => {
@@ -150,7 +150,7 @@ const commitGenerationRequest = (
     }
     return r;
   });
-  host.startChoiceGeneration(request);
+  kick();
   return { result, events: [], committed: false, closeRoom: false, dropPlayerIds: [] };
 };
 
@@ -174,7 +174,13 @@ export const executeLobbyPlan = (
     case "transfer-host":
       return executeLifecyclePlan(host, plan, dedupe);
     case "generate-choices":
-      return commitGenerationRequest(host, plan.request, dedupe);
+      return commitGenerationRequest(host, () => host.startChoiceGeneration(plan.request), dedupe);
+    case "generate-scenario":
+      return commitGenerationRequest(
+        host,
+        () => host.startScenarioGeneration(plan.request),
+        dedupe,
+      );
     default:
       throw new Error(`not a lobby plan: ${plan.kind}`);
   }

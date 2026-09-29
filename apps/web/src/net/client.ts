@@ -20,10 +20,9 @@ export interface RoomClientOptions {
   readonly ticket: string;
   // Full ws(s):// URL override for tests; otherwise derived from location.
   readonly url?: string;
-  // Presence heartbeat cadence (Task 20). The production contract is 15s;
-  // the server's lease is always >= 3x this so one missed beat never drops
-  // presence. Tests may pass a compressed value — the server never reads
-  // timing from the payload, the interval only decides when we send.
+  // Presence heartbeat cadence (Task 20): 15s in production; the server's
+  // lease is always >= 3x so one missed beat never drops presence. Tests
+  // may pass a compressed value — the server never reads timing back.
   readonly heartbeatMs?: number | undefined;
   readonly onSnapshot?: (payload: SnapshotPayload, envelope: ServerEnvelope) => void;
   readonly onEvent?: (envelope: ServerEnvelope) => void;
@@ -160,11 +159,15 @@ export class RoomClient {
     return this.send("updateLobby", settings);
   }
 
-  // Task 25: host-only one-shot AI choice generation. The ack only means
-  // the request was accepted — the proposal/failure arrives later as
-  // choicesGenerated / generationFailed ordered events.
+  // Task 25/44: host-only one-shot AI generation. The ack only means the
+  // request was accepted — the proposal/failure arrives later as
+  // choicesGenerated / scenarioGenerated / generationFailed events.
   generateChoices(): Promise<ServerEnvelope> {
     return this.send("generateChoices", {});
+  }
+
+  generateScenario(): Promise<ServerEnvelope> {
+    return this.send("generateScenario", {});
   }
 
   leaveRoom(): Promise<ServerEnvelope> {

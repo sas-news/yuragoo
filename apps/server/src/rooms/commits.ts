@@ -198,8 +198,9 @@ export const executePlan = (
     case "leave":
     case "back-to-lobby":
     case "transfer-host":
-    case "generate-choices": {
-      // Task 24/25 plans land through the lobby executor (./lobby-commit).
+    case "generate-choices":
+    case "generate-scenario": {
+      // Task 24/25/44 plans land through the lobby executor (./lobby-commit).
       return executeLobbyPlan(host, plan, dedupe);
     }
   }

@@ -221,7 +221,10 @@ export default function RoomPage() {
           updateSettings={(patch) => connRef.current?.updateLobby(patch)}
           transferHost={(id: string) => connRef.current?.send("transferHost", { playerId: id })}
           generateChoices={() => connRef.current?.generateChoices()}
-          dismissProposal={() => setView((v) => ({ ...v, choiceProposal: null }))}
+          generateScenario={() => connRef.current?.generateScenario()}
+          dismissProposal={() =>
+            setView((v) => ({ ...v, choiceProposal: null, scenarioProposal: null }))
+          }
           onLeave={onLeave}
         />
       )}

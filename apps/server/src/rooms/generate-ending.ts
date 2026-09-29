@@ -12,8 +12,7 @@
 // Unlike the lobby runner this emits NO failure event: panels already
 // carry readable template prose, and generated captions either fully
 // replace them or never land — a half-generated story reads like two
-// authors fighting, so the template is the once-only fallback and a
-// rejected result is only logged.
+// authors fighting, so a rejected result is only logged.
 import {
   buildEndingPrompt,
   type EndingGenerationInput,
@@ -28,7 +27,7 @@ import { latencyBucket, type LatencyBucket, logEvent } from "../observability";
 import { utcDay } from "../control/budgets";
 import type { Books } from "./due";
 import { readEnding, writeEnding } from "./ending";
-import { GENERATION_RESERVE_KIND } from "./generate-choices";
+import { GENERATION_RESERVE_KIND } from "./generation-run";
 import type { GenerationDeps } from "./generation-deps";
 import { slotSpent } from "./generation-slots";
 import { readLobby } from "./lobby";
@@ -133,6 +132,7 @@ const callProvider = async (
   const controller = new AbortController();
   const request = {
     prompt: buildEndingPrompt(input),
+    kind: "ending" as const,
     jsonSchema: endingJsonSchema(input.panels.map((p) => p.eventId)),
     count: input.panels.length,
   };

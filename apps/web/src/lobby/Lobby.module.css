@@ -162,6 +162,13 @@
   font-size: 13px;
 }
 
+/* お題プリセット + AI生成を並べる行 (Task 44). */
+.scenarioButtons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .badge {
   font-size: 12px;
   padding: 1px 6px;

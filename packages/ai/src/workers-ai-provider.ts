@@ -80,11 +80,17 @@ export class HttpGenerativeProvider implements GenerativeProvider {
 }
 
 // Deterministic local default (APP_ENV=local without a fixture URL):
-// returns contract-valid labels derived from the request count so dev
-// pages exercise the full proposal flow without any network call.
+// returns a contract-valid payload per request kind so dev pages exercise
+// the full proposal flow without any network call.
 export class MockGenerativeProvider implements GenerativeProvider {
   async generate(request: GenerationRequest, signal?: AbortSignal): Promise<unknown> {
     signal?.throwIfAborted();
+    if (request.kind === "scenario") {
+      return { scenario: "深夜のコンビニで、レジの神さまがひとつだけ願いを聞いてくれる" };
+    }
+    if (request.kind === "ending") {
+      return { panels: [] }; // parse never accepts this — keeps the fixture honest
+    }
     return {
       choices: Array.from({ length: request.count }, (_, i) => `サンプル案${i + 1}`),
     };
