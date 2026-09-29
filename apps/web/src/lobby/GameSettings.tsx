@@ -2,8 +2,8 @@
 // durations and the two optional early-end switches — identical on every
 // member's screen. The host edits through the normal updateLobby command;
 // members see the same controls read-only. The server's lobbyChanged
-// (new view + cleared ready flags) is the only truth this panel renders
-// — nothing is applied optimistically.
+// (new view; ready flags cleared only when the mode moved) is the only
+// truth this panel renders — nothing is applied optimistically.
 import type { LobbySettings, LobbySettingsView } from "@yuragoo/protocol";
 import styles from "./Lobby.module.css";
 
@@ -144,7 +144,7 @@ export function GameSettings({ settings, editable, onChange, onError }: GameSett
       ))}
 
       <p className={styles.note}>
-        この設定は全員に表示されます。変更すると全員の準備OKがリセットされます。
+        この設定は全員に表示されます。モードを変えると全員の準備OKがリセットされます。
       </p>
     </section>
   );
