@@ -8,7 +8,7 @@ import {
   GenerationProviderError,
   parseChoiceLabels,
 } from "@yuragoo/ai";
-import { countGraphemes } from "@yuragoo/protocol";
+import { countGraphemes, LOBBY_SEAT_COUNT } from "@yuragoo/protocol";
 import { latencyBucket, logEvent } from "../observability";
 import { utcDay } from "../control/budgets";
 import type { RoomPlayer } from "./auth-storage";
@@ -32,7 +32,7 @@ export interface ChoiceGenRequest {
   readonly token: string; // reserve idempotency key: gen:<commandId>
   readonly lobbyRevision: number;
   readonly scenario: string;
-  readonly memberCount: number;
+  readonly labelCount: number;
 }
 
 // The synchronous gate the command dispatch runs before accepting the
@@ -54,19 +54,20 @@ export const planChoiceGeneration = (
   if (slotSpent(sql, "pre")) {
     throw new CommandError("generation-spent", "choices were already generated this game");
   }
-  const members = activeMembers(players);
-  if (members.length < 2) {
-    throw new CommandError("lobby-too-few", "at least two members are required to generate");
-  }
   const lobby = readLobby(sql);
   if (countGraphemes(lobby.scenario.trim()) === 0) {
     throw new CommandError("lobby-scenario-empty", "the scenario is empty");
   }
+  // A solo host preps the whole seat sheet (labels land as orphan drafts
+  // that activate as members join); otherwise fill the visible rows.
+  const members = activeMembers(players);
+  const labelCount =
+    members.length === 1 ? LOBBY_SEAT_COUNT : Math.max(lobby.choices.length, members.length);
   return {
     token: `gen:${commandId}`,
     lobbyRevision: lobby.revision,
     scenario: lobby.scenario,
-    memberCount: members.length,
+    labelCount,
   };
 };
 
@@ -117,12 +118,12 @@ export const runChoiceGeneration = async (
   try {
     const raw = await callProvider(provider, deps, {
       kind: "choices",
-      prompt: buildChoicePrompt(req.scenario, req.memberCount),
-      jsonSchema: choiceLabelsJsonSchema(req.memberCount),
-      count: req.memberCount,
+      prompt: buildChoicePrompt(req.scenario, req.labelCount),
+      jsonSchema: choiceLabelsJsonSchema(req.labelCount),
+      count: req.labelCount,
     });
     try {
-      labels = parseChoiceLabels(raw, req.memberCount);
+      labels = parseChoiceLabels(raw, req.labelCount);
     } catch {
       code = "generation-invalid";
     }
@@ -138,7 +139,7 @@ export const runChoiceGeneration = async (
     logEvent({ eventCode: "choice-gen", latencyBucket: latencyBucket(deps.nowMs() - sentAt) });
     emitOutcome(host, "choicesGenerated", {
       lobbyRevision: req.lobbyRevision,
-      memberCount: req.memberCount,
+      memberCount: req.labelCount,
       labels,
     });
   } else {

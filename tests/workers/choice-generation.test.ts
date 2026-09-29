@@ -1,7 +1,5 @@
-// Task 25: one-shot AI choice generation — click-only, server-authoritative,
-// slot + daily budget accounting, proposal-not-write semantics. Real
-// WebSocketPair clients + real GameRoom/ControlPlane DOs; only the model
-// provider is injected per test (mock/failure/hang — never a real call).
+// Task 25: one-shot AI choice generation — slot + daily budget accounting,
+// proposal-not-write semantics. Real WS clients + DOs; provider injected.
 import { afterEach, expect, test } from "vitest";
 import { env } from "cloudflare:test";
 import type { GenerationRequest, GenerativeProvider } from "@yuragoo/ai";
@@ -10,7 +8,7 @@ import { injectGenerationDeps } from "../../apps/server/src/rooms/generation-dep
 import { utcDay } from "../../apps/server/src/control/budgets";
 import { controlStub, poll } from "./budget-helpers";
 import { execSql, must } from "./room-helpers";
-import { armLobby, createRoom, joinRoom, latestLobby, setupRoom, Sock } from "./ws-helpers";
+import { armLobby, joinRoom, latestLobby, setupRoom, Sock } from "./ws-helpers";
 
 const isType = (type: ServerEnvelope["type"]) => (e: ServerEnvelope) => e.type === type;
 const isError = (code: string) => (e: ServerEnvelope) =>
@@ -109,7 +107,7 @@ test("happy: proposal carries the captured revision; host applies it", async () 
   for (const s of socks) s.close();
 });
 
-test("gates: non-host, empty scenario and too-few reject for free", async () => {
+test("gates: non-host and empty scenario reject for free", async () => {
   const stub = stubProvider();
   inject(stub);
   const { room, socks, host } = await lobby(2, false);
@@ -118,13 +116,7 @@ test("gates: non-host, empty scenario and too-few reject for free", async () => 
   expect((await guest.next(isError("not-host"))).type).toBe("error");
   host.sendCmd(room.roomId, "h", "generateChoices", {});
   expect((await host.next(isError("lobby-scenario-empty"))).type).toBe("error");
-  const solo = await createRoom();
-  const j = await joinRoom(solo);
-  const alone = await Sock.connect(solo.roomId, j.sessionToken);
-  alone.sendCmd(solo.roomId, "s", "generateChoices", {});
-  expect((await alone.next(isError("lobby-too-few"))).type).toBe("error");
   expect(stub.calls).toBe(0);
-  alone.close();
   for (const s of socks) s.close();
 });
 

@@ -2,20 +2,16 @@
 // choice drafts and ready flags, persisted in the `lobby` table so an
 // evicted DO recovers the host's in-progress setup exactly.
 //
-// choiceIds are server-assigned at growth time (`c0`, `c1`, … — append
-// only, so the index form is always fresh) and stable across label edits
-// and member-count changes. Shrinking membership never deletes rows: the
-// tail past the current member count becomes orphan drafts that
-// re-activate with their stable ids when the count regrows. startGame
-// commits only the first `memberCount` rows (committed_count).
-//
-// Broadcast rule: a lobbyChanged row is written only when the emitted
-// payload actually changed — membership rows already carry their delta,
-// and a no-op setReady must not bump the revision mid-edit.
+// choiceIds are server-assigned at growth (`c0`, `c1`, … append-only) and
+// stable across edits/member-count changes. Shrinking never deletes rows:
+// the tail becomes orphan drafts that re-activate when the count regrows.
+// startGame commits only the first `memberCount` rows (committed_count).
+// lobbyChanged writes only on real change — a no-op never bumps revision.
 import {
   CHOICE_LABEL_MAX_GRAPHEMES,
   countGraphemes,
   labelKey,
+  LOBBY_SEAT_COUNT,
   type LobbyChoice,
   type LobbyState,
   SCENARIO_MAX_GRAPHEMES,
@@ -66,8 +62,7 @@ export const readLobby = (sql: SqlStorage): LobbyState => {
       "SELECT revision, scenario, choices, ready, committed_count FROM lobby WHERE id = 1",
     )
     .toArray()[0];
-  // generationSpent + settings are derived views — every member reads the
-  // same slot ledger / sanitized patch truth (Task 25/26).
+  // generationSpent + settings are derived views (Task 25/26).
   return {
     revision: row?.revision ?? 0,
     scenario: row?.scenario ?? "",
@@ -80,9 +75,8 @@ export const readLobby = (sql: SqlStorage): LobbyState => {
   };
 };
 
-// Persist + publish in one step; callers run inside transactionSync so
-// the write and the event row commit atomically. Exported for the Task 26
-// settings-patch writer in ./lobby-settings.
+// Persist + publish in one step inside transactionSync. Exported for the
+// Task 26 settings-patch writer in ./lobby-settings.
 export const commitLobby = (sql: SqlStorage, state: LobbyState): number => {
   sql.exec(
     "INSERT OR REPLACE INTO lobby (id, revision, scenario, choices, ready, committed_count) " +
@@ -101,8 +95,7 @@ export const commitLobby = (sql: SqlStorage, state: LobbyState): number => {
 export const activeMembers = (players: readonly RoomPlayer[]): RoomPlayer[] =>
   players.filter((p) => !p.lobbyWaiting);
 
-// Exported for backToLobby: promoted lobbyWaiting members need the seat
-// count AFTER the flag flip, so the reopened ledger grows rows for them.
+// For backToLobby: the seat count AFTER the lobbyWaiting flag flip.
 export const activeMemberCount = (sql: SqlStorage): number =>
   sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM room_players WHERE lobby_waiting = 0").one().n;
 
@@ -169,9 +162,15 @@ export const applyLobbyContent = (
     const next = lobby.choices.map((c) => ({ ...c }));
     const index = new Map(next.map((c, i) => [c.choiceId, i] as const));
     for (const edit of patch.choices) {
-      const at = index.get(edit.choiceId);
+      let at = index.get(edit.choiceId);
       if (at === undefined) {
-        throw new CommandError("unknown-choice", `no lobby choice ${edit.choiceId}`);
+        // Prep append: only the next sequential id may grow a seat row.
+        if (edit.choiceId !== `c${next.length}` || next.length >= LOBBY_SEAT_COUNT) {
+          throw new CommandError("unknown-choice", `no lobby choice ${edit.choiceId}`);
+        }
+        at = next.length;
+        next.push({ choiceId: edit.choiceId, label: "" });
+        index.set(edit.choiceId, at);
       }
       if (countGraphemes(edit.label) > CHOICE_LABEL_MAX_GRAPHEMES) {
         throw new CommandError(

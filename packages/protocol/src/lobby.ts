@@ -10,6 +10,10 @@ import { countGraphemes } from "./text";
 
 export const SCENARIO_MAX_GRAPHEMES = 1000;
 export const CHOICE_LABEL_MAX_GRAPHEMES = 40;
+// The arena seats at most six players — the choice ledger and AI
+// generation are bounded by it (prep rows beyond the member count are
+// orphan drafts that activate as members join).
+export const LOBBY_SEAT_COUNT = 6;
 
 const safeInt = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 

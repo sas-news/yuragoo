@@ -113,9 +113,12 @@ export function Lobby({
 
   const applyProposal = (): void => {
     if (proposal === null) return;
-    const edits = lobby.choices
-      .slice(0, proposal.labels.length)
-      .map((c, i) => ({ choiceId: c.choiceId, label: proposal.labels[i] ?? "" }));
+    // Labels past the current rows append prep seats (server allows the
+    // next sequential ids, capped at the seat count).
+    const edits = proposal.labels.map((label, i) => ({
+      choiceId: lobby.choices[i]?.choiceId ?? `c${i}`,
+      label,
+    }));
     void sendPatch({ choices: edits }, lobby.revision)
       ?.then(() => dismissProposal())
       .catch((e: Error) => setSendError(e.message));

@@ -24,7 +24,9 @@ export const buildChoicePrompt = (scenario: string, memberCount: number): string
     "- シナリオからある程度理解できる",
     "- 少し変な選択肢があってもよい",
     `- 短い（各${CHOICE_LABEL_MAX_GRAPHEMES}文字以内）`,
+    "- 出力は必ず日本語で（英語や他言語は不可）",
     '出力はJSONのみで返してください: {"choices": ["選択肢1", "選択肢2", ...]}',
+    '出力例: {"choices": ["こっそり入れ替える", "大声で歌いながら運ぶ", "その場で寝る"]}',
   ].join("\n");
 
 // Structured-output schema: exactly `count` distinct short labels.
