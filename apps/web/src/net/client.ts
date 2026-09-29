@@ -159,15 +159,11 @@ export class RoomClient {
     return this.send("updateLobby", settings);
   }
 
-  // Task 25/44: host-only one-shot AI generation. The ack only means the
+  // Task 25: host-only one-shot AI generation. The ack only means the
   // request was accepted — the proposal/failure arrives later as
-  // choicesGenerated / scenarioGenerated / generationFailed events.
+  // choicesGenerated / generationFailed events.
   generateChoices(): Promise<ServerEnvelope> {
     return this.send("generateChoices", {});
-  }
-
-  generateScenario(): Promise<ServerEnvelope> {
-    return this.send("generateScenario", {});
   }
 
   leaveRoom(): Promise<ServerEnvelope> {

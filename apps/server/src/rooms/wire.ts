@@ -182,10 +182,9 @@ const ROOM_FRAME_TYPES = new Set([
   "lobbyReopened",
   "memberJoined",
   "memberLeft",
-  // Task 25/44: the one-shot generation outcome rows — the proposals and
+  // Task 25: the one-shot generation outcome rows — the proposal and
   // the failure ride the same persisted stream as every other room event.
   "choicesGenerated",
-  "scenarioGenerated",
   "generationFailed",
   // Task 32: kamishibai panels — fired at finish, then once generated.
   "endingReady",

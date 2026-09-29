@@ -14,7 +14,7 @@ import { drainDecisionJobs, resolveJobDeps } from "./decision-jobs";
 import type { Books } from "./due";
 import { kickEnding } from "./ending";
 import { type ChoiceGenRequest, runChoiceGeneration } from "./generate-choices";
-import { type ScenarioGenRequest, runScenarioGeneration } from "./generate-scenario";
+
 import { resolveGenerationDeps } from "./generation-deps";
 import { spendGenerationSlot } from "./generation-slots";
 import { resolveLimits, type RoomLimits } from "./limits";
@@ -196,11 +196,6 @@ export class GameRoom extends DurableObject<ServerBindings> implements transport
   }
   startChoiceGeneration(request: ChoiceGenRequest): void {
     this.kickGeneration(() => runChoiceGeneration(this, resolveGenerationDeps(this.env), request));
-  }
-  startScenarioGeneration(request: ScenarioGenRequest): void {
-    this.kickGeneration(() =>
-      runScenarioGeneration(this, resolveGenerationDeps(this.env), request),
-    );
   }
   async retireRoom(): Promise<void> {
     await retireRoomNow(this, this.ctx, this.env);

@@ -11,8 +11,6 @@
 //                     panels ({eventId} enum), {response: {title,
 //                     panels: every enum id captioned}} so the post-
 //                     game ending call gets its all-or-nothing reply
-//                     — or, when the schema asks for {scenario}, a
-//                     fixed お題 string (Task 44 scenario generation)
 //   mode "garbage" -> {response: <non-JSON text>} — parse fails, the
 //                     attempt is still spent (send happened)
 // Every request line is logged for the failure evidence file.
@@ -37,7 +35,6 @@ export const startGenerationFixture = (port = 8792): Promise<GenerationFixture> 
       state.requests.push(`${new Date().toISOString()} ${req.method} ${req.url} ${body}`);
       let count = 4;
       let panelIds: number[] | null = null;
-      let wantsScenario = false;
       try {
         const parsed = JSON.parse(body) as {
           response_format?: {
@@ -45,7 +42,6 @@ export const startGenerationFixture = (port = 8792): Promise<GenerationFixture> 
               properties?: {
                 choices?: { maxItems?: number };
                 panels?: { items?: { properties?: { eventId?: { enum?: unknown } } } };
-                scenario?: unknown;
               };
             };
           };
@@ -59,25 +55,13 @@ export const startGenerationFixture = (port = 8792): Promise<GenerationFixture> 
         if (Array.isArray(ids) && ids.every((id) => typeof id === "number")) {
           panelIds = ids;
         }
-        // Task 44: a {scenario} property marks the お題-generation call.
-        wantsScenario = props?.scenario !== undefined;
       } catch {
         // Fall through — a malformed request still gets a shaped answer.
       }
       const answer = (): void => {
         res.setHeader("content-type", "application/json");
         if (state.mode === "garbage") {
-          // A bare string parses as a VALID scenario (the parser accepts
-          // plain text), so scenario garbage needs a non-string shape.
-          res.end(
-            JSON.stringify({
-              response: wantsScenario ? 42 : "この返答はJSONの選択肢ではありません",
-            }),
-          );
-          return;
-        }
-        if (wantsScenario) {
-          res.end(JSON.stringify({ response: { scenario: "雨の日のピクニック大作戦" } }));
+          res.end(JSON.stringify({ response: "この返答はJSONの選択肢ではありません" }));
           return;
         }
         if (panelIds !== null) {

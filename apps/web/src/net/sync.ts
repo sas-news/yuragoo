@@ -21,9 +21,8 @@ const ORDERED = new Set([
   "lobbyReopened",
   "memberJoined",
   "memberLeft",
-  // Task 25/44: the generation outcome rows share the persisted stream.
+  // Task 25: the generation outcome rows share the persisted stream.
   "choicesGenerated",
-  "scenarioGenerated",
   "generationFailed",
   // Task 32: the kamishibai panel set shares the persisted event stream —
   // dropped frames here would leave the results screen stuck on "pending".

@@ -127,7 +127,7 @@ const commitLeave = (
   return { result, events, committed: true, closeRoom: false, dropPlayerIds: [playerId] };
 };
 
-// `generate-choices` / `generate-scenario` (Task 25/44): the commit is
+// `generate-choices` (Task 25): the commit is
 // only the dedupe row — the slot spend, daily reserve and provider call
 // are all async work kicked afterwards so a rejected request can never
 // reach the provider. The outcome arrives later as *Generated /
@@ -175,12 +175,6 @@ export const executeLobbyPlan = (
       return executeLifecyclePlan(host, plan, dedupe);
     case "generate-choices":
       return commitGenerationRequest(host, () => host.startChoiceGeneration(plan.request), dedupe);
-    case "generate-scenario":
-      return commitGenerationRequest(
-        host,
-        () => host.startScenarioGeneration(plan.request),
-        dedupe,
-      );
     default:
       throw new Error(`not a lobby plan: ${plan.kind}`);
   }

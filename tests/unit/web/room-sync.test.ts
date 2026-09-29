@@ -79,7 +79,6 @@ describe("room event sync machine", () => {
       "hostChanged",
       "presenceChanged",
       "choicesGenerated",
-      "scenarioGenerated",
       "generationFailed",
       "decisionUpdated",
       "endingReady",
@@ -89,7 +88,7 @@ describe("room event sync machine", () => {
       expect(r.ingest.kind).toBe("ordered");
       m = r.machine;
     }
-    expect(m.lastSeq).toBe(13);
+    expect(m.lastSeq).toBe(12);
   });
 
   test("acks and errors are control frames outside ordering", () => {

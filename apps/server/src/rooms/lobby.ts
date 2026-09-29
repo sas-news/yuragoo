@@ -70,7 +70,6 @@ export const readLobby = (sql: SqlStorage): LobbyState => {
     ready: stringArray(row?.ready ?? "[]"),
     committedCount: row?.committed_count ?? 0,
     generationSpent: slotSpent(sql, "pre"),
-    scenarioSpent: slotSpent(sql, "scenario"),
     settings: lobbySettingsView(readLobbyPatch(sql)),
   };
 };

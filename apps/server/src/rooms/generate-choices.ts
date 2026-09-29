@@ -76,7 +76,6 @@ const fail = (host: GenerationHost, code: string, spent: boolean, elapsedMs?: nu
     code,
     spent,
     message: "選択肢の生成に失敗しました — 手入力で続けられます",
-    scope: "choices",
     elapsedMs,
   });
 

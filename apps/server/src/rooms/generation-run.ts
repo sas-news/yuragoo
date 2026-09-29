@@ -39,7 +39,7 @@ export interface GenerationHost extends BroadcastHost {
 // row at all: the result is discarded, never half-applied.
 export const emitOutcome = (
   host: GenerationHost,
-  type: "choicesGenerated" | "scenarioGenerated" | "generationFailed",
+  type: "choicesGenerated" | "generationFailed",
   payload: unknown,
 ): void => {
   try {
@@ -60,9 +60,6 @@ export interface FailOutcomeInput {
   readonly code: string;
   readonly spent: boolean;
   readonly message: string;
-  // Which one-shot slot this failure belongs to — the client flips only
-  // that slot's spent flag when `spent` is true.
-  readonly scope: "choices" | "scenario";
   readonly elapsedMs?: number | undefined;
   readonly eventCode?: string | undefined;
 }
@@ -79,7 +76,6 @@ export const failOutcome = (host: GenerationHost, o: FailOutcomeInput): void => 
     code: o.code,
     message: o.message,
     slotSpent: o.spent,
-    scope: o.scope,
   });
 };
 

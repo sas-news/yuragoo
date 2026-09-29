@@ -11,11 +11,11 @@ import type { Books } from "./due";
 import { writeMeta } from "./storage";
 import type { DecisionJobHost } from "./decision-jobs";
 
-export type GenerationSlot = "pre" | "post" | "scenario";
-export const GENERATION_SLOTS: readonly GenerationSlot[] = ["pre", "post", "scenario"];
+export type GenerationSlot = "pre" | "post";
+export const GENERATION_SLOTS: readonly GenerationSlot[] = ["pre", "post"];
 
 const parseSlot = (slot: string): GenerationSlot | null =>
-  slot === "pre" || slot === "post" || slot === "scenario" ? slot : null;
+  slot === "pre" || slot === "post" ? slot : null;
 
 export const slotSpent = (sql: SqlStorage, slot: GenerationSlot): boolean =>
   sql.exec("SELECT slot FROM generation_slots WHERE slot = ?", slot).toArray().length > 0;

@@ -20,7 +20,6 @@ const lobby = (over: Partial<LobbyState> = {}): LobbyState => ({
   ready: [],
   committedCount: 0,
   generationSpent: false,
-  scenarioSpent: false,
   settings: LOBBY_SETTINGS_DEFAULT,
   ...over,
 });

@@ -202,3 +202,11 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - tests: `choice-prep.test.ts` 新設（solo→6件生成→append適用→非連番拒否）。gates テストから lobby-too-few 断言を除去。unit 187 / workers 130 / check green。
 - **live 検証済**: solo 部屋で `generateChoices` → 6件日本語ラベル（「無人店で物を盗む」等）。`tmp/probe-prep-staging.ts`（snapshot→revision取得→scenario設定→generateChoices）。1度 `generation-invalid` 観測 — Qwen3 の出力揺らぎで parse 失敗すると slot 消費（one-shot 設計どおりだが flake 耐性は弱い）。
 - **招待ログの見方**: `console.warn("[yuragoo] ...")` はクライアント側（Activity iframe の devtools console）に出る — wrangler tail 等サーバーログには出ない。Discord は bundle を強くキャッシュするのでハードリロード必要な場合あり。
+
+### Task 46 — お題AI生成を撤去（ユーザー判断）
+
+- ユーザーが「いらない気もする」→ 確認の上で撤去。Task 44 の scenario 系のみ外科的除去（choices 側の共有配管 generation-run.ts / kind / prep は維持）。
+- 削除: `generate-scenario.ts` / `scenario-generation.ts` / `use-scenario-generation.ts` / `scenario-generation.test.ts` / `scenario-gen.spec.ts`、protocol の `generateScenario`/`scenarioGenerated`/`LobbyState.scenarioSpent`、`generationFailed.scope`、generation_slots の "scenario" スロット、ScenarioEditor の生成UI、RoomView.scenarioProposal、gen-fixture の scenario 分岐。
+- 維持: `GenerationRequest.kind`（choices/ending 識別に使用中）、`GENERATION_DAILY_ATTEMPTS`（choices/ending で消費）、solo prep（Task 45）。
+- 既存DBの "scenario" slot 行は残り得るが読み側は slot 名で引くだけなので無害（parseSlot からは除去）。
+- unit 187 / workers 127 / check green。staging `7f4654aa` デプロイ済。

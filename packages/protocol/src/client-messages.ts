@@ -66,10 +66,6 @@ export const clientEnvelopeSchema = z.discriminatedUnion("type", [
   // server captures scenario/member count/lobbyRevision itself; the
   // proposal arrives later as a choicesGenerated event.
   envelope("generateChoices", emptyPayload),
-  // Task 44: host-only one-shot AI scenario (お題) generation — its own
-  // slot, independent of the choices slot; proposal arrives as
-  // scenarioGenerated.
-  envelope("generateScenario", emptyPayload),
   // Task 24: self-removal from the room membership. Roster members are
   // refused mid-game (lobby-waiting joiners may still leave); leaving
   // shrinks the member count and orphans the trailing choice drafts.

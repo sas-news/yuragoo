@@ -19,7 +19,6 @@ import type { RoomView } from "./room-view";
 import { seatedMembers } from "./view-members";
 import { ScenarioEditor } from "./ScenarioEditor";
 import { useLobbyDrafts } from "./use-lobby-drafts";
-import { useScenarioGeneration } from "./use-scenario-generation";
 import styles from "./Lobby.module.css";
 
 interface LobbyProps {
@@ -43,9 +42,8 @@ interface LobbyProps {
   // Host-only hand-off to another connected member (Roster renders the
   // per-member button; the server broadcasts hostChanged).
   readonly transferHost: (playerId: string) => Promise<unknown> | undefined;
-  // Task 25/44: one-shot AI generation — request kicks + proposal dismiss.
+  // Task 25: one-shot AI generation — request kick + proposal dismiss.
   readonly generateChoices: () => Promise<unknown> | undefined;
-  readonly generateScenario: () => Promise<unknown> | undefined;
   readonly dismissProposal: () => void;
   readonly onLeave: () => void;
 }
@@ -62,7 +60,6 @@ export function Lobby({
   updateSettings,
   transferHost,
   generateChoices,
-  generateScenario,
   dismissProposal,
   onLeave,
 }: LobbyProps) {
@@ -82,15 +79,6 @@ export function Lobby({
   const { drafts, fieldValue, fieldConflict, onEdit } = useLobbyDrafts(
     lobby,
     sendPatch,
-    setSendError,
-  );
-  // Task 44: the scenario-generation flow — busy flag, proposal apply and
-  // dismiss all live in the hook; the UI reads a plain props object.
-  const scenarioGeneration = useScenarioGeneration(
-    view,
-    sendPatch,
-    generateScenario,
-    dismissProposal,
     setSendError,
   );
 
@@ -178,7 +166,6 @@ export function Lobby({
         value={fieldValue("scenario", lobby.scenario)}
         conflict={fieldConflict("scenario")}
         onEdit={(v) => onEdit("scenario", v)}
-        generation={isHost ? scenarioGeneration : undefined}
       />
 
       <ChoiceEditor

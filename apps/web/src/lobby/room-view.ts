@@ -25,12 +25,6 @@ export interface ChoiceProposal {
   readonly labels: readonly string[];
 }
 
-// Task 44: the scenario-generation proposal — same apply contract, own slot.
-export interface ScenarioProposal {
-  readonly lobbyRevision: number;
-  readonly scenario: string;
-}
-
 export interface GenerationError {
   readonly code: string;
   readonly message: string;
@@ -53,7 +47,6 @@ export interface RoomView {
   // template-only finish reports `generated:false` until generation lands.
   readonly ending: EndingStory | null;
   readonly choiceProposal: ChoiceProposal | null;
-  readonly scenarioProposal: ScenarioProposal | null;
   readonly generationError: GenerationError | null;
   // Task 28: the live turn pointer and the game roster, folded from the
   // snapshot + ordered events so the input dock never needs the raw
@@ -86,7 +79,6 @@ const EMPTY_LOBBY: LobbyState = {
   ready: [],
   committedCount: 0,
   generationSpent: false,
-  scenarioSpent: false,
   settings: LOBBY_SETTINGS_DEFAULT,
 };
 
@@ -100,7 +92,6 @@ export const initialView = (): RoomView => ({
   outcome: null,
   ending: null,
   choiceProposal: null,
-  scenarioProposal: null,
   generationError: null,
   turn: null,
   roster: [],
@@ -182,7 +173,6 @@ export const applyEvent = (view: RoomView, env: ServerEnvelope): RoomView => {
     case "hostChanged":
       return { ...view, feed, clockOffset, epoch, ...membershipPatch(view, env) };
     case "choicesGenerated":
-    case "scenarioGenerated":
     case "generationFailed":
       // Proposal/failure folds live in view-proposals.ts (LOC split).
       return { ...view, feed, clockOffset, epoch, ...proposalPatch(view, env) };
