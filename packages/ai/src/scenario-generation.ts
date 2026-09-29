@@ -18,12 +18,14 @@ export const buildScenarioPrompt = (memberCount: number): string =>
     `人数: ${memberCount}人`,
     "",
     "条件:",
+    "- 出力は必ず日本語で（英語や他言語は不可）",
     "- 状況と問いかけがひとめで分かる一行",
     "- 明らかな正解を作らない",
     "- プレイヤーごとに違う答えが出せる",
     "- 少し変な切り口でもよい",
     "- 日常と非日常の間くらいの題材",
     `- 短い（${GENERATED_SCENARIO_MAX_GRAPHEMES}文字以内）`,
+    "例: 無人島に流れ着いた一行。あしたの朝、まず何をするか",
     '出力はJSONのみで返してください: {"scenario": "お題文"}',
   ].join("\n");
 

@@ -31,7 +31,9 @@ export interface GenerationDeps {
   readonly timeoutMs: number;
 }
 
-export const GENERATION_TIMEOUT_MS = 10_000; // contract deadline
+// 20s: Workers AI cold starts can exceed the old 10s contract and burn
+// the slot on a pure latency false-negative.
+export const GENERATION_TIMEOUT_MS = 20_000;
 
 // Test/dev seam — resolved per run inside the room's own I/O context.
 let injectedDeps: Partial<GenerationDeps> | null = null;

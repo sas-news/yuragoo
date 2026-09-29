@@ -102,6 +102,13 @@ export type ShareInviteResult = "shared" | "cancelled" | "failed";
 // CREATE_INSTANT_INVITE bit (0x1) in the channel permissions bitfield.
 const CREATE_INSTANT_INVITE = 0x1n;
 
+// This package's tsconfig has no DOM lib — reach console structurally.
+const warn = (message: string, error?: unknown): void =>
+  (globalThis as { console?: { warn?: (m: string, e?: unknown) => void } }).console?.warn?.(
+    message,
+    error,
+  );
+
 const canOpenInviteDialog = async (sdk: DiscordSdkLike): Promise<boolean> => {
   if (sdk.guildId === null) return false;
   try {
@@ -124,14 +131,20 @@ export const shareInvite = async (
       // success:false = the modal was dismissed; do not double-prompt.
       return res.success === false ? "cancelled" : "shared";
     }
-  } catch {
-    // fall through to the invite dialog
+  } catch (err) {
+    // fall through to the invite dialog — but keep the RPC error visible
+    // for real-client debugging (Discord errors carry {code,message}).
+    warn("[yuragoo] shareLink threw, trying invite dialog", err);
   }
-  if (!(await canOpenInviteDialog(sdk))) return "failed";
+  if (!(await canOpenInviteDialog(sdk))) {
+    warn("[yuragoo] invite dialog unavailable (DM context or no CREATE_INSTANT_INVITE)");
+    return "failed";
+  }
   try {
     await sdk.commands.openInviteDialog();
     return "shared";
-  } catch {
+  } catch (err) {
+    warn("[yuragoo] openInviteDialog failed", err);
     return "failed";
   }
 };
