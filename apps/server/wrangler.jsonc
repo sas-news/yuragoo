@@ -54,7 +54,10 @@
         "ALLOWED_ORIGINS": "https://yuragoo-staging.sasshinbun0655.workers.dev",
         "DISCORD_CLIENT_ID": "1553394215029968926",
         "DISCORD_ORIGINS": ".discordsays.com",
-        "JEV_DAILY_ATTEMPT_CAP": "120"
+        "JEV_DAILY_ATTEMPT_CAP": "120",
+        // Task 44 fix: unset -> parseCap fail-closed denied EVERY
+        // generation reserve (choices/scenario/ending share the counter).
+        "GENERATION_DAILY_ATTEMPTS": "60"
       },
       "durable_objects": {
         "bindings": [
