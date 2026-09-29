@@ -5,6 +5,7 @@
 // syncRequest -> snapshot. stateRevision/gameEpoch ride every frame so a
 // client can always tell which game generation a frame belongs to.
 import { z } from "zod";
+import { moodIdSchema } from "./decision";
 import { choiceIdSchema } from "./ids";
 import { lobbyStateSchema } from "./lobby";
 import { gameOutcomeSchema, gameStateSchema, postedInputSchema } from "./snapshot";
@@ -85,6 +86,9 @@ export const serverEnvelopeSchema = z.discriminatedUnion("type", [
           z.array(z.strictObject({ choiceId: choiceIdSchema, probability: z.number() })),
         )
         .optional(),
+      // Task 43: Jev's picked mood per postId — parallel to decisions so a
+      // reconnecting client restores the face with the pull it belongs to.
+      moods: z.record(z.string(), moodIdSchema).optional(),
       // Task 32: the persisted kamishibai ending — a reconnecting client
       // must heal panels from the snapshot because ordered frames older
       // than the healed revision are never replayed.
@@ -113,6 +117,8 @@ export const serverEnvelopeSchema = z.discriminatedUnion("type", [
       distribution: z
         .array(z.strictObject({ choiceId: choiceIdSchema, probability: z.number() }))
         .optional(),
+      // Jev's mood verdict for this eval — absent on mood-less answers.
+      mood: moodIdSchema.optional(),
     }),
   ),
   // A decision job died terminally (config missing, cap denied, upstream

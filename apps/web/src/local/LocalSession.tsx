@@ -10,6 +10,8 @@ import type { CreaturePresentation, CreatureRuntime, SceneLayoutSummary } from "
 import type { GameAction, GameEvent, GamePhase, GameState } from "@yuragoo/game-core";
 import type { DecisionDistribution } from "@yuragoo/protocol";
 import { createSessionId } from "../dev/decision-providers";
+import { expressionFor } from "../lobby/room-expression";
+import { latestVerdictPostId, moodOf } from "../lobby/view-decisions";
 import { LocalGame } from "./LocalGame";
 import { createLocalLoop, type DockStatus, type LocalLoop } from "./loop";
 import { selectEvaluate } from "./providers";
@@ -104,15 +106,18 @@ export default function LocalSession() {
   // Creature base presentation: the newest evaluated distribution pulls the
   // attractors; before any eval lands the creature rests on a uniform ring.
   // usePostReaction (in LocalGame) layers the "聞いた" flicker on top.
-  // Expression stays "rest" — the adhering ring was dropped (15b): early
-  // decision is still tracked in the reducer (adhere bookkeeping) but no
-  // longer performed on stage.
+  // Task 43: the face follows the verdict — the provider's mood pick (mock
+  // or live Jev) wins, else the distribution shape derives it. The stage
+  // adhesion ring stays off (15b); only the face varies.
   const presentation = useMemo<CreaturePresentation>(() => {
     const rosterSize = game?.roster.length ?? 4;
-    const dist = game === null ? null : latestEvaluatedDist(game.posts, loop.dists());
+    const dists = loop.dists();
+    const dist = game === null ? null : latestEvaluatedDist(game.posts, dists);
+    const mood =
+      game === null ? null : moodOf(loop.moods(), latestVerdictPostId(game.posts, dists));
     return {
       samples: samplesFor(dist, rosterSize),
-      expression: "rest",
+      expression: expressionFor(dist, mood, rosterSize, 0, game?.round ?? 0),
       reducedMotion: false,
     };
   }, [game, loop]);

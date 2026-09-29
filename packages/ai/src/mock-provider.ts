@@ -3,6 +3,7 @@ import {
   type DecisionDistribution,
   type DecisionResult,
   type DecisionState,
+  type MoodId,
   parseDecisionState,
 } from "@yuragoo/protocol";
 import type { DecisionProvider } from "./provider";
@@ -125,12 +126,19 @@ export class MockDecisionProvider implements DecisionProvider {
       0,
       Math.min(1, (selected.probability - 1 / count) / (1 - 1 / count)),
     );
+    // Mock mood: derived from the fixture's own pull so /play and local dev
+    // show the same face range a live Jev verdict would — a dominant pull
+    // adheres, a clear one engages, a flat one deliberates. No idle clock
+    // here, so "bored" never fires (it needs a real room's staleness).
+    const top = selected.probability;
+    const mood: MoodId = top >= 0.78 ? "adhering" : top >= 0.5 ? "engaged" : "hesitating";
     return {
       revision: valid.revision,
       model: this.model,
       selectedChoiceId: selected.choiceId,
       confidence,
       distribution,
+      mood,
       usage: { inputTokens: 0, outputTokens: 0 },
     };
   }

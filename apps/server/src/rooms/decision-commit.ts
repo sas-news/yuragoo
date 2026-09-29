@@ -88,6 +88,9 @@ export const commitEvaluated = (
         postId: job.token,
         revision: result.revision,
         distribution: result.distribution,
+        // Jev's mood verdict rides the same persisted row — reconnecting
+        // clients replay it like every other ledger event.
+        ...(result.mood === undefined ? {} : { mood: result.mood }),
       });
       setAiJobState(host.sql, job.token, "done");
       next = trackEvaluated(

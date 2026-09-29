@@ -103,7 +103,8 @@ test("happy: envelope metadata never leaks into the wire body", () => {
   expect(Object.keys(body).sort()).toEqual(["model", "questions", "state"]);
   expect("revision" in body.state).toBe(false);
   expect("mockScenarioKey" in body.state).toBe(false);
-  expect(Object.keys(body.questions)).toEqual(["attraction"]);
+  // The mood question's five criteria are covered in mood.test.ts (Task 43).
+  expect(Object.keys(body.questions).sort()).toEqual(["attraction", "mood"]);
   expect(body.questions.attraction.type).toBe("choice");
   const criteria = body.questions.attraction.criteria;
   expect(Object.keys(criteria)).toEqual(["a", "b", "c", "d"]);

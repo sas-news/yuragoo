@@ -10,7 +10,7 @@ import {
   type PlayerId,
   reduce,
 } from "@yuragoo/game-core";
-import type { DecisionDistribution } from "@yuragoo/protocol";
+import type { DecisionDistribution, MoodId } from "@yuragoo/protocol";
 import { createDwell } from "./dwell";
 import { LOCAL_PLAYER_IDS } from "./scenario";
 import type { LocalEvaluate } from "./providers";
@@ -41,6 +41,7 @@ export interface LocalLoop {
   epoch(): number;
   events(): readonly GameEvent[];
   dists(): ReadonlyMap<string, readonly DecisionDistribution[]>;
+  moods(): ReadonlyMap<string, MoodId>;
 }
 
 // Grace after gameplay closes: the last evaluations get this long to land
@@ -54,6 +55,9 @@ export const createLocalLoop = (deps: LocalLoopDeps): LocalLoop => {
   let evaluator: LocalEvaluate | null = null;
   const events: GameEvent[] = [];
   const dists = new Map<string, readonly DecisionDistribution[]>();
+  // Jev's mood pick per postId (Task 43) — lands with the verdict, dies
+  // with the epoch like dists.
+  const moods = new Map<string, MoodId>();
   const timers = new Set<ReturnType<typeof setTimeout>>();
   let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -88,6 +92,7 @@ export const createLocalLoop = (deps: LocalLoopDeps): LocalLoop => {
       (evaluation) => {
         if (epoch !== myEpoch) return; // rematch mid-flight: drop the answer
         dists.set(postId, evaluation.result.distribution);
+        if (evaluation.result.mood !== undefined) moods.set(postId, evaluation.result.mood);
         deps.onStatus("idle");
         try {
           dispatch({ type: "evaluated", postId });
@@ -202,6 +207,7 @@ export const createLocalLoop = (deps: LocalLoopDeps): LocalLoop => {
     settleTimer = null;
     dwell.reset();
     dists.clear();
+    moods.clear();
     events.length = 0;
     state = null;
     deps.onStatus("idle");
@@ -228,5 +234,6 @@ export const createLocalLoop = (deps: LocalLoopDeps): LocalLoop => {
     epoch: () => epoch,
     events: () => [...events],
     dists: () => new Map(dists),
+    moods: () => new Map(moods),
   };
 };

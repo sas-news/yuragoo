@@ -21,6 +21,7 @@ import { Results } from "../results/Results";
 import {
   committedCount,
   latestRoomDist,
+  latestRoomMood,
   roomEventLine,
   roomGoals,
   roomHud,
@@ -88,7 +89,13 @@ export function RoomGame({
       newest === undefined ? 0 : Math.max(0, now + view.clockOffset - newest.postedAtMs);
     return {
       samples: roomSamples(dist, view),
-      expression: expressionFor(dist, committedCount(view), idleMs, view.turn?.round ?? 0),
+      expression: expressionFor(
+        dist,
+        latestRoomMood(view),
+        committedCount(view),
+        idleMs,
+        view.turn?.round ?? 0,
+      ),
       reducedMotion: false,
     };
   }, [view, now]);

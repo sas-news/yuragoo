@@ -18,7 +18,7 @@ import {
   type ServerEnvelope,
   type WireGameEvent,
 } from "@yuragoo/protocol";
-import { landedDecisions } from "./ai-jobs";
+import { landedDecisions, landedMoods } from "./ai-jobs";
 import type { RoomPlayer } from "./auth-storage";
 import type { Books } from "./due";
 import { readEnding } from "./ending";
@@ -127,6 +127,7 @@ export const snapshotFrame = (
   return frame(host, seq, seq, "snapshot", {
     state: books === null ? null : JSON.parse(JSON.stringify(books.state)),
     decisions: landedDecisions(host.sql),
+    moods: landedMoods(host.sql),
     phase: books?.state.phase ?? "lobby",
     inputSeq: books?.meta.inputSeq ?? 0,
     hostPlayerId,

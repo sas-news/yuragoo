@@ -12,6 +12,8 @@
 // "sent", so a "reserved"/"sent" row found at recovery means an orphaned
 // attempt — it is suppressed to "failed" (consumed, never re-sent), which
 // is the at-most-once fail-safe: the upstream call may have reached Jev.
+import { type MoodId, moodIdSchema } from "@yuragoo/protocol";
+
 export const MAX_JOB_TRIES = 2; // 1 attempt + at most 1 retry (contract)
 
 export interface AiJobRow {
@@ -112,6 +114,21 @@ export const landedDecisions = (
         return Array.isArray(d)
           ? [[row.postId, d as readonly { choiceId: string; probability: number }[]]]
           : [];
+      } catch {
+        return [];
+      }
+    }),
+  );
+
+// Landed mood verdicts for the snapshot's `moods` field — the same
+// ai_results payloads carry result.mood; a corrupt or pre-mood row
+// degrades to "no mood" and the client falls back to shape-derived faces.
+export const landedMoods = (sql: SqlStorage): Record<string, MoodId> =>
+  Object.fromEntries(
+    listAiResults(sql).flatMap((row) => {
+      try {
+        const parsed = moodIdSchema.safeParse((JSON.parse(row.payload) as { mood?: unknown }).mood);
+        return parsed.success ? [[row.postId, parsed.data]] : [];
       } catch {
         return [];
       }

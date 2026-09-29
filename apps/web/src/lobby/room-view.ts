@@ -5,11 +5,13 @@ import {
   type EndingStory,
   LOBBY_SETTINGS_DEFAULT,
   type LobbyState,
+  type MoodId,
   type RoomPlayerView,
   type ServerEnvelope,
   type SnapshotPayload,
 } from "@yuragoo/protocol";
 import { deadlineFor } from "./room-arena";
+import { decisionPatch } from "./view-decisions";
 import { membershipPatch } from "./view-members";
 
 export type RoomPhase = "lobby" | "playing" | "complete" | "finished";
@@ -55,6 +57,10 @@ export interface RoomView {
   // creature's pull, and deadlineAtMs (server clock) drives the HUD bar.
   readonly posts: readonly PostedInput[];
   readonly dists: ReadonlyMap<string, readonly DecisionDistribution[]>;
+  // Jev's mood pick per postId (Task 43) — parallel to dists; a verdict
+  // without a mood simply has no entry and the face falls back to the
+  // distribution-shape heuristic.
+  readonly moods: ReadonlyMap<string, MoodId>;
   readonly deadlineAtMs: number | null;
   // Latest frame's (serverTime - client clock) — the HUD renders `now`
   // on the server clock so the deadline bar can't skew.
@@ -90,6 +96,7 @@ export const initialView = (): RoomView => ({
   roster: [],
   posts: [],
   dists: new Map(),
+  moods: new Map(),
   deadlineAtMs: null,
   clockOffset: 0,
   epoch: 0,
@@ -114,6 +121,7 @@ export const applySnapshot = (
     roster: s?.roster ?? [],
     posts: s?.posts ?? [],
     dists: new Map(Object.entries(p.decisions ?? {})),
+    moods: new Map(Object.entries(p.moods ?? {})),
     // Ordered frames older than the healed revision never replay, so the
     // snapshot is the only path a reconnecting client sees the panels.
     ending: p.ending ?? null,
@@ -129,10 +137,6 @@ export const applySnapshot = (
 
 const push = (view: RoomView, env: ServerEnvelope): readonly ServerEnvelope[] =>
   [...view.feed, env].slice(-60);
-
-// A landed decision (or terminal failure) flips the post out of pending.
-const markEvaluated = (posts: readonly PostedInput[], postId: string): readonly PostedInput[] =>
-  posts.map((p) => (p.postId === postId ? { ...p, status: "evaluated" as const } : p));
 
 export const applyEvent = (view: RoomView, env: ServerEnvelope): RoomView => {
   const feed = push(view, env);
@@ -159,6 +163,7 @@ export const applyEvent = (view: RoomView, env: ServerEnvelope): RoomView => {
         turn: null,
         posts: [],
         dists: new Map(),
+        moods: new Map(),
         deadlineAtMs: null,
       };
     case "memberJoined":
@@ -191,24 +196,10 @@ export const applyEvent = (view: RoomView, env: ServerEnvelope): RoomView => {
     case "endingReady":
       // Fires twice per game (template, then generated) — last write wins.
       return { ...view, feed, clockOffset, epoch, ending: env.payload };
-    case "decisionUpdated": {
-      const { postId, distribution } = env.payload;
-      if (postId === undefined || distribution === undefined) {
-        return { ...view, feed, clockOffset, epoch };
-      }
-      const dists = new Map(view.dists).set(postId, distribution);
-      return { ...view, feed, clockOffset, epoch, dists, posts: markEvaluated(view.posts, postId) };
-    }
+    case "decisionUpdated":
     case "decisionFailed":
-      // The eval is never coming; no dist lands, so latestRoomDist still
-      // skips it — the bubble already shows the text either way.
-      return {
-        ...view,
-        feed,
-        clockOffset,
-        epoch,
-        posts: markEvaluated(view.posts, env.payload.postId),
-      };
+      // Verdict + mood fold lives in view-decisions.ts (LOC split).
+      return { ...view, feed, clockOffset, epoch, ...decisionPatch(view, env) };
     case "phaseChanged":
     case "inputAccepted": {
       const e = env.payload.event;
@@ -231,6 +222,7 @@ export const applyEvent = (view: RoomView, env: ServerEnvelope): RoomView => {
         deadlineAtMs: deadlineFor(view, env),
         posts,
         dists: e.type === "started" ? new Map() : view.dists,
+        moods: e.type === "started" ? new Map() : view.moods,
         // "started" carries the fresh roster (a rematch lands here — it
         // create+starts the next epoch in one commit); "turn" moves the
         // pointer; complete/finished clear it. Other events keep both.

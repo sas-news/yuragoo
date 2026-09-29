@@ -3,12 +3,14 @@
 // lobby, and member names fall back to stable seat labels (never raw ids).
 import { describe, expect, test } from "bun:test";
 import {
+  type ChoiceId,
   LOBBY_SETTINGS_DEFAULT,
   type LobbyState,
   type RoomPlayerView,
   type ServerEnvelope,
 } from "@yuragoo/protocol";
-import { applyEvent, initialView } from "../../../apps/web/src/lobby/room-view";
+import { applyEvent, applySnapshot, initialView } from "../../../apps/web/src/lobby/room-view";
+import { latestVerdictPostId, moodOf } from "../../../apps/web/src/lobby/view-decisions";
 import { memberName } from "../../../apps/web/src/lobby/view-members";
 
 const lobby = (over: Partial<LobbyState> = {}): LobbyState => ({
@@ -128,5 +130,97 @@ describe("room view event fold", () => {
     expect(memberName(players, "b")).toBe("プレイヤー2"); // blank name -> fallback
     expect(memberName(players, "c")).toBe("れん");
     expect(memberName(players, "departed")).toBe("メンバー"); // left the room
+  });
+});
+
+describe("decision verdict fold — mood belongs to its post (Task 43)", () => {
+  const dist = [
+    { choiceId: "c0" as ChoiceId, probability: 0.7 },
+    { choiceId: "c1" as ChoiceId, probability: 0.3 },
+  ];
+  const post = (id: string, seq: number) => ({
+    postId: id,
+    playerId: "a",
+    text: "すすむ",
+    postedAtMs: 0,
+    seq,
+    status: "pending" as const,
+  });
+  const accepted = (id: string, seq: number): ServerEnvelope =>
+    env(
+      "inputAccepted",
+      {
+        event: { type: "posted", postId: id, playerId: "a" },
+        phase: "playing",
+        post: post(id, seq),
+      },
+      seq,
+    );
+
+  test("decisionUpdated lands dist and mood on the same postId", () => {
+    let v = initialView();
+    v = applyEvent(v, accepted("p1", 1));
+    v = applyEvent(
+      v,
+      env("decisionUpdated", { postId: "p1", distribution: dist, mood: "engaged" }, 2),
+    );
+    expect(v.dists.get("p1")).toEqual(dist);
+    expect(v.moods.get("p1")).toBe("engaged");
+    expect(v.posts[0]?.status).toBe("evaluated");
+    // A mood-less verdict still lands its dist — that post's face just
+    // falls back to the shape heuristic; the mood map itself is untouched.
+    v = applyEvent(v, accepted("p2", 3));
+    v = applyEvent(v, env("decisionUpdated", { postId: "p2", distribution: dist }, 4));
+    expect(v.dists.get("p2")).toEqual(dist);
+    expect(v.moods.has("p2")).toBe(false);
+  });
+
+  test("the mood lookup pairs with the post driving the pull", () => {
+    // latestVerdictPostId walks to the newest evaluated post that landed a
+    // dist; moodOf reads THAT post's mood — a newer pull can never wear an
+    // older verdict's face.
+    const posts = [
+      { ...post("p1", 1), status: "evaluated" as const },
+      { ...post("p2", 2), status: "evaluated" as const },
+    ];
+    const dists = new Map([
+      ["p1", dist],
+      ["p2", dist],
+    ]);
+    const moods = new Map([["p1", "bored" as const]]);
+    const id = latestVerdictPostId(posts, dists);
+    expect(id).toBe("p2");
+    expect(moodOf(moods, id)).toBeNull(); // p2 carried no mood — fallback
+    expect(moodOf(moods, "p1")).toBe("bored");
+  });
+
+  test("a new epoch clears moods with the pull memory; snapshots heal them", () => {
+    let v = initialView();
+    v = applyEvent(v, accepted("p1", 1));
+    v = applyEvent(
+      v,
+      env("decisionUpdated", { postId: "p1", distribution: dist, mood: "adhering" }, 2),
+    );
+    v = applyEvent(
+      v,
+      env(
+        "phaseChanged",
+        { event: { type: "started", roster: [{ id: "a", slot: 0 }] }, phase: "playing" },
+        3,
+      ),
+    );
+    expect(v.moods.size).toBe(0);
+    expect(v.dists.size).toBe(0);
+    // A reconnect heals moods straight from the snapshot's parallel map.
+    const healed = applySnapshot(initialView(), {
+      state: null,
+      phase: "lobby",
+      inputSeq: 0,
+      players: [],
+      hostPlayerId: null,
+      lobby: lobby(),
+      moods: { p9: "bored" },
+    });
+    expect(healed.moods.get("p9")).toBe("bored");
   });
 });

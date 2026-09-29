@@ -5,23 +5,25 @@
 // room-view.ts; nothing here fabricates game authority.
 import { type AttractionSample, CANONICAL_SLOT_ANGLES, PULL_GAIN } from "@yuragoo/creature";
 import { orderForRound } from "@yuragoo/game-core";
-import type { DecisionDistribution, ServerEnvelope } from "@yuragoo/protocol";
+import type { DecisionDistribution, MoodId, ServerEnvelope } from "@yuragoo/protocol";
 import type { HudSnapshot } from "../game/hud-types";
 import { SLOT_SYMBOLS } from "../game/slots";
 import type { RoomView } from "./room-view";
+import { latestVerdictPostId, moodOf } from "./view-decisions";
 import { memberName } from "./view-members";
 
 // The newest evaluated post's distribution — the creature chases the
 // latest verdict, exactly like the local loop.
 export const latestRoomDist = (view: RoomView): readonly DecisionDistribution[] | null => {
-  for (let i = view.posts.length - 1; i >= 0; i -= 1) {
-    const post = view.posts[i];
-    if (post === undefined || post.status !== "evaluated") continue;
-    const dist = view.dists.get(post.postId);
-    if (dist !== undefined) return dist;
-  }
-  return null;
+  const postId = latestVerdictPostId(view.posts, view.dists);
+  return postId === null ? null : (view.dists.get(postId) ?? null);
 };
+
+// Jev's mood for the worn verdict (Task 43): keyed to the SAME post the
+// pull came from — never an older post's mood on a newer pull. Null when
+// that verdict carried no mood, so expressionFor falls back to the shape.
+export const latestRoomMood = (view: RoomView): MoodId | null =>
+  moodOf(view.moods, latestVerdictPostId(view.posts, view.dists));
 
 // The committed choice prefix length — startGame commits exactly
 // rosterSize choices, and view.roster IS that roster (folded from the

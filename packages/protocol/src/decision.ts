@@ -26,6 +26,15 @@ export interface DecisionDistribution {
   readonly choiceId: ChoiceId;
   readonly probability: number;
 }
+
+// The creature's mood vocabulary (Task 43): Jev answers a SECOND choice
+// question on the same state — same request, same quota slot — so the face
+// is the model's verdict rather than a shape heuristic over the pull.
+// These ids intentionally mirror creature's CreatureExpression; keeping
+// the list here (not an import) is what lets the wire name them.
+export const MOOD_IDS = ["rest", "hesitating", "engaged", "bored", "adhering"] as const;
+export const moodIdSchema = z.enum(MOOD_IDS);
+export type MoodId = z.infer<typeof moodIdSchema>;
 export interface DecisionUsage {
   readonly inputTokens: number;
   readonly outputTokens: number;
@@ -36,6 +45,9 @@ export interface DecisionResult {
   readonly selectedChoiceId: ChoiceId;
   readonly confidence: number;
   readonly distribution: readonly DecisionDistribution[];
+  // Jev's picked mood for this verdict — absent when the provider doesn't
+  // answer the mood question (mock paths, older upstreams); cosmetic only.
+  readonly mood?: MoodId;
   readonly usage: DecisionUsage;
 }
 
@@ -77,7 +89,10 @@ const requestStateSchema = z.strictObject({
 export const jevRequestBodySchema = z.strictObject({
   state: requestStateSchema,
   model: jevModelSchema,
-  questions: z.strictObject({ attraction: choiceQuestionSchema }),
+  questions: z.strictObject({
+    attraction: choiceQuestionSchema,
+    mood: choiceQuestionSchema,
+  }),
 });
 export type JevSystemOneRequest = z.infer<typeof jevRequestBodySchema>;
 
@@ -93,6 +108,19 @@ export interface DecisionEnvelope {
 const INSTRUCTIONS =
   "各選択肢がどれほど引かれるかを確率で答えてください。「何もしない」「我慢する」などの行動しない選択肢も有効です。危険が示唆されたものより安全なら、それを高く評価してください。迷う余地があるほど魅力が近い選択肢には、近い確率を割り当ててください。";
 
+// The mood question rides every attraction eval: one request answers both
+// "どっちに引かれるか" and "いまどんな気分か". Criteria labels describe the
+// feeling, not the distribution, so the model reads the room on its own.
+const MOOD_INSTRUCTIONS =
+  "この状況とこれまでの言葉をふまえて、生きものがいまいちばん近い気分を一つ選び、各気分の確率で答えてください。";
+const MOOD_CRITERIA: Record<MoodId, string> = {
+  rest: "落ち着いている",
+  hesitating: "迷っている・どっちつかず",
+  engaged: "興味津々・わくわく",
+  bored: "退屈・だるい",
+  adhering: "一つの答えに夢中・のめりこんでいる",
+};
+
 export const createJevRequestBody = (state: DecisionState): JevSystemOneRequest => {
   const valid = parseDecisionState(state);
   const criteria: Record<string, string> = {};
@@ -105,7 +133,10 @@ export const createJevRequestBody = (state: DecisionState): JevSystemOneRequest 
       choices: valid.choices.map((choice) => ({ id: choice.id, label: choice.label })),
     },
     model: "jev-1.13.0",
-    questions: { attraction: { type: "choice", instructions: INSTRUCTIONS, criteria } },
+    questions: {
+      attraction: { type: "choice", instructions: INSTRUCTIONS, criteria },
+      mood: { type: "choice", instructions: MOOD_INSTRUCTIONS, criteria: { ...MOOD_CRITERIA } },
+    },
   };
 };
 
@@ -121,21 +152,47 @@ export const createDecisionEnvelope = (
 };
 
 const tokenCountSchema = z.number().int().min(0);
+const choiceAnswerSchema = z.strictObject({
+  type: z.literal("choice"),
+  choice: z.string(),
+  confidence: z.number().min(0).max(1),
+  probabilities: z.record(z.string(), z.number().min(0).max(1)),
+});
 const jevResponseSchema = z.strictObject({
   model: jevModelSchema,
   answers: z.strictObject({
-    attraction: z.strictObject({
-      type: z.literal("choice"),
-      choice: z.string(),
-      confidence: z.number().min(0).max(1),
-      probabilities: z.record(z.string(), z.number().min(0).max(1)),
-    }),
+    attraction: choiceAnswerSchema,
+    // Mood is cosmetic: `unknown` keeps the envelope strict without letting
+    // a malformed mood answer void the attraction verdict it rode in on.
+    mood: z.unknown().optional(),
   }),
   usage: z.strictObject({
     input_tokens: tokenCountSchema,
     output_tokens: tokenCountSchema,
   }),
 });
+
+// Lenient mood extraction: only a well-formed answer (exact MOOD_IDS key
+// set, unit sum) yields a verdict — the argmax of its probabilities. Any
+// deviation degrades to "no mood", never to a contract rejection.
+const parseMoodAnswer = (input: unknown): MoodId | undefined => {
+  const parsed = choiceAnswerSchema.safeParse(input);
+  if (!parsed.success) return undefined;
+  const expected = new Set<string>(MOOD_IDS);
+  const entries = Object.entries(parsed.data.probabilities);
+  if (entries.length !== expected.size || entries.some(([k]) => !expected.has(k))) {
+    return undefined;
+  }
+  const sum = entries.reduce((acc, [, p]) => acc + p, 0);
+  if (Math.abs(sum - 1) > 1e-3) return undefined;
+  let best: MoodId | undefined;
+  for (const [id, p] of entries) {
+    if (best === undefined || p > (parsed.data.probabilities[best] ?? 0)) {
+      best = moodIdSchema.parse(id);
+    }
+  }
+  return best;
+};
 
 const invalidResponse = (message: string): DecisionContractError =>
   new DecisionContractError("invalid-response", message);
@@ -170,12 +227,14 @@ export const parseJevDecisionResponse = (
     if (raw === undefined) throw invalidResponse("missing probability for a requested choice");
     distribution.push({ choiceId: choiceIdSchema.parse(id), probability: raw / sum });
   }
+  const mood = parseMoodAnswer(parsed.data.answers.mood);
   return {
     revision: envelope.revision,
     model: "jev-1.13.0",
     selectedChoiceId: selected.data,
     confidence: answer.confidence,
     distribution,
+    ...(mood === undefined ? {} : { mood }),
     usage: {
       inputTokens: parsed.data.usage.input_tokens,
       outputTokens: parsed.data.usage.output_tokens,
