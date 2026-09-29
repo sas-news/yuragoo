@@ -186,3 +186,10 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 **staging 再デプロイ済**（commit 4870ec8、version 409af13d-638f-4343-97ee-72d64519e894、/ と /api/health 200確認）。
 
 **残課題**: Task 37 実Discord QA、quota 復帰後の eval:jev フルラン。
+
+### Task 44 フォローアップ — staging 生成が generation-config で全否認（commit eacd51c + 90b35c2）
+
+- **原因**: staging vars に `GENERATION_DAILY_ATTEMPTS` 未設定 → `parseCap` fail-closed で reserve 全否認（choices/scenario/ending 共有カウンタの設計上の正しい動きだが設定漏れ）。`"60"` を staging vars に追加。**production env には vars ブロック自体が無い**ので本番デプロイ時は JEV_DAILY_ATTEMPT_CAP と同様にダッシュボード側で設定必要。
+- ついでに live probe で2件観測・修正: (a) Qwen3 が英語でお題を返す → プロンプトに「出力は必ず日本語で」+プリセット例行を追加、(b) 10s deadline が Workers AI コールドスタートで slot を燃やす → `GENERATION_TIMEOUT_MS=20_000`。
+- 招待ボタン: shareInvite が RPC エラーを丸呑みしてたので `console.warn("[yuragoo] ...")` で実エラーを iframe console に出す（platform pkg は DOM lib 無しなので structural console）。DM 通話では guildId null → dialog 不可 → 「招待できませんでした」は仕様通りの失敗。
+- staging probe 手順: `tmp/probe-scenario-staging.ts`（create→join→ticket→WS generateScenario、実 API を叩く — gitignore 済み tmp/ に配置）。live で scenarioGenerated 正常確認済み（日本語応答）。
