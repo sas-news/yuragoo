@@ -183,4 +183,6 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 
 **LOC注意**: MAX=250行だが split("\n") 計数のため実質 249行が上限（末尾改行が+1）。dispatch.ts は return 圧縮で対応。
 
-**残課題**: Task 37 実Discord QA、quota 復帰後の eval:jev フルラン、staging デプロイ（このコミット後に実施）。
+**staging 再デプロイ済**（commit 4870ec8、version 409af13d-638f-4343-97ee-72d64519e894、/ と /api/health 200確認）。
+
+**残課題**: Task 37 実Discord QA、quota 復帰後の eval:jev フルラン。
