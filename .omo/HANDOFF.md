@@ -221,3 +221,11 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - **お題ポップアップ**: ScenarioEditor が Dialog で SCENARIO_PRESETS 全10件をカード表示 → 選択で onEdit+閉じる。pickScenarioPreset（即時ランダム置換）は削除。`.presetList/.presetOption` CSS追加、e2e に presets spec 追加（editor.spec.ts）。
 - 検証: check / unit 187 / workers 127 全 green。staging `6d9f0a3d-473e-4c7a-aca4-bde2a452ca0c` 稼働確認（/ と /api/health 200）。
 - **残**: Discord 実機で招待ボタンを再試行してもらい、トーストの文言（DM? 権限? RPC code?）を報告してもらう段階。production には未デプロイ — GENERATION_DAILY_ATTEMPTS の vars 設定が先決。
+
+### Task 47b — 空席ボタン + 招待ステータス常設化（commit fc4ff54、staging 0b3d59f9）
+
+ユーザーFB: 生成は成功、ただし空席を作る手段が無い / Discord ではトーストが表示されない。
+
+- **「＋空席をつくる」ボタン**（ChoiceEditor、editable && choices<6 時）→ `updateLobbyContent` で `c{n}`+空ラベル append。サーバー変更不要（空ラベル行は成長時に label:"" で作られる設計、startGame の blank ゲートのみ制約）。workers テスト追加: 空ラベル append で orphan 行増加 + startGame は gated。
+- **招待ステータス常設行**: InviteButton に `status` state（info/ok/error）+ ボタン下の `<p role="status">` — 「Discord に接続中…」「招待画面をひらいています…」「招待を送りました」「（キャンセル）」「失敗＋detail」が画面に残る。トースト非依存。共有エラー行にも引き続き出力。
+- staging `0b3d59f9-165c-4d2f-b5b4-8803b18a6582` 稼働確認。**次回 Discord 実機で招待ボタンを押した時の status 行の文言を聞けば失敗経路が確定する**。
