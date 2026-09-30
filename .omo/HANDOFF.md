@@ -210,3 +210,14 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - 維持: `GenerationRequest.kind`（choices/ending 識別に使用中）、`GENERATION_DAILY_ATTEMPTS`（choices/ending で消費）、solo prep（Task 45）。
 - 既存DBの "scenario" slot 行は残り得るが読み側は slot 名で引くだけなので無害（parseSlot からは除去）。
 - unit 187 / workers 127 / check green。staging `7f4654aa` デプロイ済。
+
+### Task 47 — 4件の現行問題まとめ対応（commit 1b57db3、staging 6d9f0a3d）
+
+ユーザー報告「招待できない/選択し生成できない/soloで準備できない/お題選択はポップアップで」への対応。
+
+- **招待**: `shareInvite` の失敗を型付きに — `{reason: "dm"|"no-invite-permission"|"error", detail}`。iframe devtools がユーザー環境で読めなかったため console.warn ではなく**トースト自体が診断を運ぶ**設計に変更。InviteButton が日本語メッセージに変換（DM/権限なし/RPC詳細付き）。残リスク: `getDiscordSdk` 自体の失敗は従来どおり一律「招待できませんでした」。
+- **生成できない（推定原因）**: シナリオ空で `generateChoices` → `lobby-scenario-empty: the scenario is empty` の英語生toastが出ていた。対策: (a) GenerationControls に `scenarioEmpty` prop — 空なら disabled + 「シナリオを入力すると生成できます」ヒント、(b) `lobby-errors.ts` 新設でコマンド拒否 `code: msg` → 日本語マップ（scenario-empty/spent/not-host/revision-conflict 等）、Lobby.tsx の reportError で全 catch を通す。
+- **solo準備**: サーバー側は Task 45 で実装済（deployed 0cab962e）。表示側は既存 orphan 行「（空き）」で自然に見える。今回新たな変更なし — ユーザー環境が旧バンドルだった可能性が主原因。
+- **お題ポップアップ**: ScenarioEditor が Dialog で SCENARIO_PRESETS 全10件をカード表示 → 選択で onEdit+閉じる。pickScenarioPreset（即時ランダム置換）は削除。`.presetList/.presetOption` CSS追加、e2e に presets spec 追加（editor.spec.ts）。
+- 検証: check / unit 187 / workers 127 全 green。staging `6d9f0a3d-473e-4c7a-aca4-bde2a452ca0c` 稼働確認（/ と /api/health 200）。
+- **残**: Discord 実機で招待ボタンを再試行してもらい、トーストの文言（DM? 権限? RPC code?）を報告してもらう段階。production には未デプロイ — GENERATION_DAILY_ATTEMPTS の vars 設定が先決。
