@@ -177,6 +177,32 @@ test("failure: host-only, revision, label and ready gates all hold", async ({ br
   }
 });
 
+test("presets: お題をえらぶ opens the picker, a pick writes the field", async ({ browser }) => {
+  test.setTimeout(60_000);
+  const room = await createRoom();
+  const host = await seat(browser, room.roomId, room.inviteSecret, "ホスト");
+  const member = await seat(browser, room.roomId, room.inviteSecret, "メンバー");
+  await waitMemberCount(host, 2);
+
+  const dialog = host.getByTestId("scenario-preset-dialog");
+  await host.getByTestId("scenario-preset").click();
+  // All ten built-ins render as choices inside an accessible dialog —
+  // plus the やめる button.
+  await expect(dialog.getByRole("button")).toHaveCount(11);
+  const first = dialog.getByRole("button").first();
+  const picked = await first.textContent();
+  await first.click();
+  await expect(dialog).toHaveCount(0);
+  await expect(host.locator("textarea")).toHaveValue(picked ?? "");
+  await waitScenarioOn(member, picked ?? "");
+
+  // Reopen and dismiss — Escape leaves the field untouched.
+  await host.getByTestId("scenario-preset").click();
+  await host.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(host.locator("textarea")).toHaveValue(picked ?? "");
+});
+
 test("merge: a join mid-edit never clobbers the host's dirty field", async ({ browser }) => {
   test.setTimeout(90_000);
   const room = await createRoom();

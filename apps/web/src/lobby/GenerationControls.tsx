@@ -8,6 +8,9 @@ import styles from "./Lobby.module.css";
 interface Props {
   readonly spent: boolean;
   readonly busy: boolean;
+  // Server rejects generation on an empty scenario — gate the click and
+  // say why instead of letting the rejection toast carry English.
+  readonly scenarioEmpty: boolean;
   readonly proposal: ChoiceProposal | null;
   readonly currentRevision: number;
   readonly onGenerate: () => void;
@@ -18,6 +21,7 @@ interface Props {
 export function GenerationControls({
   spent,
   busy,
+  scenarioEmpty,
   proposal,
   currentRevision,
   onGenerate,
@@ -29,7 +33,7 @@ export function GenerationControls({
       <button
         type="button"
         className={styles.aiButton}
-        disabled={spent || busy}
+        disabled={spent || busy || scenarioEmpty}
         onClick={onGenerate}
       >
         AIで選択肢を生成{" "}
@@ -39,6 +43,7 @@ export function GenerationControls({
           busy && <span className={styles.badge}>生成中…</span>
         )}
       </button>
+      {scenarioEmpty && !spent && <p className={styles.note}>シナリオを入力すると生成できます</p>}
       {proposal !== null && (
         <section className={styles.plate} aria-label="AIの生成案">
           <h2 className={styles.sectionTitle}>AIの生成案</h2>

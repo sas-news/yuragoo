@@ -1,9 +1,8 @@
-// The lobby invite button's three outcomes (Task 42): shareLink's
-// success:false is a DISMISSAL — silent, no fallback — while a thrown
-// shareLink drops to the native invite dialog, itself gated on a guild
-// channel and CREATE_INSTANT_INVITE. A second unready SDK instance used
-// to fire these commands and fail every click; these tests pin the
-// tri-state contract that replaced boolean ok.
+// The lobby invite button's outcomes (Task 42): shareLink's success:false
+// is a DISMISSAL — silent, no fallback — while a thrown shareLink drops
+// to the native invite dialog, itself gated on a guild channel and
+// CREATE_INSTANT_INVITE. Failures carry a typed reason + detail so the
+// toast itself is the diagnostic (iframe devtools are impractical).
 import { describe, expect, test } from "bun:test";
 import { shareInvite, type DiscordSdkLike } from "@yuragoo/platform";
 
@@ -76,7 +75,10 @@ describe("shareInvite", () => {
         return {};
       },
     });
-    expect(await shareInvite(s, "msg", "iid")).toBe("failed");
+    expect(await shareInvite(s, "msg", "iid")).toEqual({
+      reason: "dm",
+      detail: "unsupported",
+    });
     expect(dialogCalls).toBe(0);
   });
 
@@ -87,7 +89,10 @@ describe("shareInvite", () => {
       },
       getChannelPermissions: async () => ({ permissions: "0" }),
     });
-    expect(await shareInvite(s, "msg", "iid")).toBe("failed");
+    expect(await shareInvite(s, "msg", "iid")).toEqual({
+      reason: "no-invite-permission",
+      detail: "unsupported",
+    });
   });
 
   test("invite permission bit set lets the dialog run", async () => {
@@ -106,7 +111,7 @@ describe("shareInvite", () => {
     expect(dialogCalls).toBe(1);
   });
 
-  test("both paths failing reports failed", async () => {
+  test("both paths failing reports the dialog error", async () => {
     const s = sdk({
       shareLink: async () => {
         throw new Error("unsupported");
@@ -115,6 +120,9 @@ describe("shareInvite", () => {
         throw new Error("denied");
       },
     });
-    expect(await shareInvite(s, "msg", "iid")).toBe("failed");
+    expect(await shareInvite(s, "msg", "iid")).toEqual({
+      reason: "error",
+      detail: "denied",
+    });
   });
 });

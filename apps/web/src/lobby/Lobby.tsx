@@ -13,6 +13,7 @@ import { ChoiceEditor } from "./ChoiceEditor";
 import { GameSettings } from "./GameSettings";
 import { GenerationControls } from "./GenerationControls";
 import { InviteButton } from "./InviteButton";
+import { commandErrorText } from "./lobby-errors";
 import { startGateReason } from "./lobby-gate";
 import { Roster } from "./Roster";
 import type { RoomView } from "./room-view";
@@ -76,6 +77,8 @@ export function Lobby({
   const [confirmLeave, setConfirmLeave] = useState(false);
   // Busy spans request->outcome event; it is the double-click guard too.
   const [genBusy, setGenBusy] = useState(false);
+  // Command rejections arrive as "code: english" — translate before toast.
+  const reportError = (e: Error): void => setSendError(commandErrorText(e));
   const { drafts, fieldValue, fieldConflict, onEdit } = useLobbyDrafts(
     lobby,
     sendPatch,
@@ -95,7 +98,7 @@ export function Lobby({
     setGenBusy(true);
     void generateChoices()?.catch((e: Error) => {
       setGenBusy(false);
-      setSendError(e.message);
+      reportError(e);
     });
   };
 
@@ -109,7 +112,7 @@ export function Lobby({
     }));
     void sendPatch({ choices: edits }, lobby.revision)
       ?.then(() => dismissProposal())
-      .catch((e: Error) => setSendError(e.message));
+      .catch((e: Error) => reportError(e));
   };
 
   // Client mirror of the server gate — only for the disabled reason; the
@@ -155,9 +158,7 @@ export function Lobby({
         view={view}
         selfId={selfId}
         onTransferHost={
-          isHost
-            ? (id) => void transferHost(id)?.catch((e: Error) => setSendError(e.message))
-            : undefined
+          isHost ? (id) => void transferHost(id)?.catch((e: Error) => reportError(e)) : undefined
         }
       />
 
@@ -180,6 +181,7 @@ export function Lobby({
         <GenerationControls
           spent={lobby.generationSpent}
           busy={genBusy}
+          scenarioEmpty={lobby.scenario.trim() === ""}
           proposal={proposal}
           currentRevision={lobby.revision}
           onGenerate={onGenerate}

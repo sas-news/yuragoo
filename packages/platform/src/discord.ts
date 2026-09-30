@@ -95,9 +95,13 @@ export const establishDiscordSession = async (
 // a toast. A thrown shareLink (older client / unsupported) falls back to
 // the native invite dialog, which itself needs a guild channel and
 // CREATE_INSTANT_INVITE; both are gated before the call so a DM context
-// or permission-less member skips straight to "failed". Both live behind
-// the adapter — the game UI never touches SDK commands directly.
-export type ShareInviteResult = "shared" | "cancelled" | "failed";
+// or permission-less member skips straight to a typed failure the UI can
+// translate into a concrete Japanese message. Both live behind the
+// adapter — the game UI never touches SDK commands directly.
+export type ShareInviteResult =
+  | "shared"
+  | "cancelled"
+  | { readonly reason: "dm" | "no-invite-permission" | "error"; readonly detail: string };
 
 // CREATE_INSTANT_INVITE bit (0x1) in the channel permissions bitfield.
 const CREATE_INSTANT_INVITE = 0x1n;
@@ -109,14 +113,26 @@ const warn = (message: string, error?: unknown): void =>
     error,
   );
 
-const canOpenInviteDialog = async (sdk: DiscordSdkLike): Promise<boolean> => {
-  if (sdk.guildId === null) return false;
+// Short, non-sensitive diagnostics for the UI message — Discord RPC
+// errors carry {code, message}; either alone is safe to surface.
+const detailOf = (error: unknown): string => {
+  const e = error as { code?: unknown; message?: unknown };
+  const parts = [e?.code, e?.message]
+    .filter((p): p is string => typeof p === "string" && p !== "")
+    .map((p) => p.slice(0, 60));
+  return parts.join(": ");
+};
+
+type DialogGate = "ok" | "dm" | "no-invite-permission";
+
+const canOpenInviteDialog = async (sdk: DiscordSdkLike): Promise<DialogGate> => {
+  if (sdk.guildId === null) return "dm";
   try {
     const res = await sdk.commands.getChannelPermissions?.();
-    if (res === undefined) return true; // older client: try the dialog anyway
-    return (BigInt(res.permissions) & CREATE_INSTANT_INVITE) !== 0n;
+    if (res === undefined) return "ok"; // older client: try the dialog anyway
+    return (BigInt(res.permissions) & CREATE_INSTANT_INVITE) !== 0n ? "ok" : "no-invite-permission";
   } catch {
-    return true; // a permission probe failure shouldn't block the dialog
+    return "ok"; // a permission probe failure shouldn't block the dialog
   }
 };
 
@@ -125,6 +141,7 @@ export const shareInvite = async (
   message: string,
   customId?: string,
 ): Promise<ShareInviteResult> => {
+  let shareError = "";
   try {
     const res = await sdk.commands.shareLink({ message, custom_id: customId });
     if (res !== null && res !== undefined) {
@@ -135,17 +152,19 @@ export const shareInvite = async (
     // fall through to the invite dialog — but keep the RPC error visible
     // for real-client debugging (Discord errors carry {code,message}).
     warn("[yuragoo] shareLink threw, trying invite dialog", err);
+    shareError = detailOf(err);
   }
-  if (!(await canOpenInviteDialog(sdk))) {
-    warn("[yuragoo] invite dialog unavailable (DM context or no CREATE_INSTANT_INVITE)");
-    return "failed";
+  const gate = await canOpenInviteDialog(sdk);
+  if (gate !== "ok") {
+    warn(`[yuragoo] invite dialog unavailable (${gate})`);
+    return { reason: gate, detail: shareError };
   }
   try {
     await sdk.commands.openInviteDialog();
     return "shared";
   } catch (err) {
     warn("[yuragoo] openInviteDialog failed", err);
-    return "failed";
+    return { reason: "error", detail: detailOf(err) || shareError };
   }
 };
 

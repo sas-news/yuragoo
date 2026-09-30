@@ -2,6 +2,7 @@
 // nobody wants to write one. One line each, every prompt open enough
 // that six different answers all make sense — mirroring the AI
 // generator's quality bar (no obvious correct answer, no role overlap).
+// The editor renders the whole list in a picker dialog (Task 46).
 export const SCENARIO_PRESETS: readonly string[] = [
   "宇宙ステーションの食堂で、さいごのプリンをひとつだけ分けなければならない",
   "無人島に流れ着いた一行。あしたの朝、まず何をするか",
@@ -14,11 +15,3 @@ export const SCENARIO_PRESETS: readonly string[] = [
   "海辺のカフェで開く、沈没船の財宝の山分け会議",
   "月面基地の酸素が残りわずか。誰の救命ポッドを先に充填するか",
 ] as const;
-
-// A preset different from `current` when possible, so the button always
-// changes the field instead of re-dealing the same card.
-export const pickScenarioPreset = (current: string, random: () => number = Math.random): string => {
-  const pool = SCENARIO_PRESETS.filter((p) => p.trim() !== current.trim());
-  const list = pool.length > 0 ? pool : SCENARIO_PRESETS;
-  return list[Math.floor(random() * list.length)] ?? "";
-};

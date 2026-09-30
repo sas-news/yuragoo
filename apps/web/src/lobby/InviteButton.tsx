@@ -4,7 +4,7 @@
 // button is for EVERY member (anyone can pull a friend into the VC); the
 // browser link stays host-only so invite secrecy stays with the owner.
 import { useState } from "react";
-import { shareInvite } from "@yuragoo/platform";
+import { shareInvite, type ShareInviteResult } from "@yuragoo/platform";
 import { discordClientId, getDiscordSdk, platformKind } from "../platform/bootstrap";
 
 export interface InviteButtonProps {
@@ -12,6 +12,21 @@ export interface InviteButtonProps {
   readonly isHost: boolean;
   readonly onError: (message: string) => void;
 }
+
+// The toast IS the diagnostic — asking players to open iframe devtools
+// inside Discord is unreasonable, so the failure path carries its reason
+// up from the platform adapter.
+const inviteErrorText = (result: Extract<ShareInviteResult, object>): string => {
+  const detail = result.detail === "" ? "" : `（${result.detail}）`;
+  switch (result.reason) {
+    case "dm":
+      return "DM/グループ通話では招待を作れません — サーバーのボイスチャンネルで開いてください";
+    case "no-invite-permission":
+      return "このチャンネルでは招待を作成する権限がありません";
+    default:
+      return `招待できませんでした${detail}`;
+  }
+};
 
 export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) {
   const [copied, setCopied] = useState(false);
@@ -27,7 +42,8 @@ export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) 
                 (result) => {
                   // "cancelled" = the user closed the share modal — silent,
                   // never an error toast.
-                  if (result === "failed") onError("招待できませんでした");
+                  if (result === "shared" || result === "cancelled") return;
+                  onError(inviteErrorText(result));
                 },
               ),
             )

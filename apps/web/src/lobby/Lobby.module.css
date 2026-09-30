@@ -291,6 +291,25 @@
   gap: 8px;
 }
 
+/* お題プリセット picker (Task 46) — full-width rows inside the dialog. */
+.presetList {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-block-size: 50vh;
+  overflow-y: auto;
+}
+
+.presetOption {
+  inline-size: 100%;
+  text-align: start;
+  padding: 8px 10px;
+  line-height: 1.5;
+}
+
 .error {
   margin: 0;
   padding: 8px 12px;
