@@ -291,6 +291,29 @@
   gap: 8px;
 }
 
+/* Discord 招待ボタンの常設ステータス行 (Task 47) — toasts don't reach
+   the Activity iframe, so the last attempt's detail stays on screen. */
+.inviteWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.inviteStatus {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+  max-inline-size: 240px;
+}
+
+.inviteError {
+  margin: 0;
+  font-size: 12px;
+  color: var(--danger);
+  max-inline-size: 240px;
+}
+
 /* お題プリセット picker (Task 46) — full-width rows inside the dialog. */
 .presetList {
   list-style: none;

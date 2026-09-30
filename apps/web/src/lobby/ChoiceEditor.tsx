@@ -4,7 +4,7 @@
 // when the roster regrows. Choice identity is symbol + letter + assignee,
 // never color alone.
 import type { CSSProperties } from "react";
-import type { LobbyState, RoomPlayerView } from "@yuragoo/protocol";
+import { LOBBY_SEAT_COUNT, type LobbyState, type RoomPlayerView } from "@yuragoo/protocol";
 import { SLOT_LETTERS, SLOT_SYMBOLS, slotColor } from "../game/slots";
 import styles from "./ChoiceEditor.module.css";
 import shared from "./Lobby.module.css";
@@ -15,12 +15,22 @@ interface ChoiceEditorProps {
   readonly editable: boolean;
   readonly drafts: Record<string, { value: string; conflict: boolean }>;
   readonly onEdit: (choiceId: string, value: string) => void;
+  // Task 47: host can append an orphan seat row by hand — same append the
+  // AI proposal uses, so AI generation is not required to prep seats.
+  readonly onAddSeat: () => void;
 }
 
 const memberName = (p: RoomPlayerView | undefined, index: number): string =>
   p?.displayName ?? `プレイヤー${index + 1}`;
 
-export function ChoiceEditor({ lobby, members, editable, drafts, onEdit }: ChoiceEditorProps) {
+export function ChoiceEditor({
+  lobby,
+  members,
+  editable,
+  drafts,
+  onEdit,
+  onAddSeat,
+}: ChoiceEditorProps) {
   const activeCount = members.length;
   return (
     <section className={shared.plate} aria-label="選択肢">
@@ -79,6 +89,11 @@ export function ChoiceEditor({ lobby, members, editable, drafts, onEdit }: Choic
           <li className={shared.note}>メンバーが入ると選択肢ができます</li>
         )}
       </ul>
+      {editable && lobby.choices.length < LOBBY_SEAT_COUNT && (
+        <button type="button" className={shared.presetButton} onClick={onAddSeat}>
+          ＋空席をつくる
+        </button>
+      )}
     </section>
   );
 }

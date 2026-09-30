@@ -115,6 +115,15 @@ export function Lobby({
       .catch((e: Error) => reportError(e));
   };
 
+  // Manual seat prep (Task 47): appending the next sequential id with a
+  // blank label grows an orphan row — members fill it as they join.
+  const addSeat = (): void => {
+    void sendPatch(
+      { choices: [{ choiceId: `c${lobby.choices.length}`, label: "" }] },
+      lobby.revision,
+    )?.catch((e: Error) => reportError(e));
+  };
+
   // Client mirror of the server gate — only for the disabled reason; the
   // server re-checks everything authoritatively on startGame.
   const gateReason = startGateReason(lobby, members);
@@ -175,6 +184,7 @@ export function Lobby({
         editable={isHost}
         drafts={drafts}
         onEdit={onEdit}
+        onAddSeat={addSeat}
       />
 
       {isHost && (

@@ -59,3 +59,25 @@ test("prep: a solo host generates the full seat sheet and applies appends", asyn
   expect((await alone.next(isError("unknown-choice"))).type).toBe("error");
   alone.close();
 });
+
+// Task 47: the ＋空席をつくる button's path — appending a blank-labelled
+// row grows an orphan seat; the start gate still blocks blank labels.
+test("prep: a blank-label append grows an orphan row, start still gated", async () => {
+  const solo = await createRoom();
+  const j = await joinRoom(solo);
+  const alone = await Sock.connect(solo.roomId, j.sessionToken);
+  const cur = must(latestLobby(alone), "lobby");
+  alone.sendCmd(solo.roomId, "add", "updateLobbyContent", {
+    choices: [{ choiceId: `c${cur.choices.length}`, label: "" }],
+    expectedLobbyRevision: cur.revision,
+  });
+  const lc = await alone.next(isType("lobbyChanged"));
+  if (lc.type !== "lobbyChanged") throw new Error("bad frame");
+  expect(lc.payload.choices).toHaveLength(cur.choices.length + 1);
+  expect(lc.payload.choices[lc.payload.choices.length - 1]?.label).toBe("");
+  alone.sendCmd(solo.roomId, "go", "startGame", {});
+  const start = await alone.next((e) => e.type === "error");
+  if (start.type !== "error") throw new Error("bad frame");
+  expect(["lobby-not-ready", "lobby-choice-empty", "lobby-too-few"]).toContain(start.payload.code);
+  alone.close();
+});
