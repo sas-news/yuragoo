@@ -324,32 +324,9 @@
   }
 }
 
-/* Same compact when Discord's layout event says pip (Task 48) — the mode
-   can flip before the iframe finishes resizing, so the media tier alone
-   misses it. The who column goes away entirely: seat icons on the arena
-   already say who is acting. */
+/* PIP is a glance surface, not a play surface (Task 48): the whole tray
+   — who column, textarea, send — hides. Turn and deadline still read from
+   the HUD; playing waits for the focused layout. */
 :global(html[data-pip]) .dock {
-  gap: 6px 8px;
-  padding: 7px 8px 8px;
-}
-
-:global(html[data-pip]) .whoBox {
   display: none;
-}
-
-:global(html[data-pip]) .input {
-  min-block-size: 30px;
-  block-size: 30px;
-  font-size: 13px;
-  padding: 4px 8px;
-}
-
-:global(html[data-pip]) .counter {
-  font-size: 10px;
-}
-
-:global(html[data-pip]) .send {
-  min-block-size: 40px;
-  padding-inline: 14px;
-  font-size: 13px;
 }
