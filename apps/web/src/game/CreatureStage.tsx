@@ -22,11 +22,14 @@ export interface CreatureStageProps {
   // float over the page backdrop — used by the dark /dev/game stage.
   readonly backgroundAlpha?: number;
   readonly onReady?: (runtime: CreatureRuntime) => void;
+  // The pull narrative is over once the outcome lands — hide the corner
+  // status line so the "けっかをみる" reopen chip can sit there alone.
+  readonly statusHidden?: boolean;
 }
 
 export function CreatureStage(props: CreatureStageProps) {
   const { visualState, presentation, initializationDelayMs, forceUnsupported, onReady } = props;
-  const { backgroundAlpha } = props;
+  const { backgroundAlpha, statusHidden } = props;
   const hostRef = useRef<HTMLElement | null>(null);
   const runtimeRef = useRef<CreatureRuntime | null>(null);
   const visualStateRef = useRef(visualState);
@@ -120,11 +123,13 @@ export function CreatureStage(props: CreatureStageProps) {
       {/* Non-numeric DOM alternative for the canvas (DESIGN.md §9): a
           short state line — direction/state words, never numbers — that
           updates only on meaningful changes. role=status announces it. */}
-      <Status
-        text={describeCreature(visualState, presentation)}
-        className={styles.creatureStatus}
-        testId="creature-status"
-      />
+      {statusHidden !== true && (
+        <Status
+          text={describeCreature(visualState, presentation)}
+          className={styles.creatureStatus}
+          testId="creature-status"
+        />
+      )}
     </section>
   );
 }

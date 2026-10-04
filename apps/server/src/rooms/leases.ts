@@ -25,12 +25,20 @@ export const ROOM_EXPIRY_TAG = "room-expiry";
 export const OUTBOX_FLUSH_TAG = "outbox-flush";
 export const ROOM_PURGE_TAG = "room-purge";
 export const WIPE_RETRY_TAG = "wipe-retry";
+// 'vacate' rows (id vacate:<playerId>): a disconnected member's seat is
+// released — the member row is deleted — once the reconnect grace ends.
+export const VACATE_TAG = "vacate";
+export const vacateDeadlineId = (playerId: string): string => `vacate:${playerId}`;
+// Long enough for a reload/navigation to re-admit; short enough that a
+// real departure stops blocking the lobby start gate quickly.
+export const VACATE_GRACE_MS = 120_000;
 export const ROOM_DEADLINE_TAGS = new Set<string>([
   LEASE_SWEEP_TAG,
   ROOM_EXPIRY_TAG,
   OUTBOX_FLUSH_TAG,
   ROOM_PURGE_TAG,
   WIPE_RETRY_TAG,
+  VACATE_TAG,
 ]);
 
 export interface RoomPresenceRow {

@@ -29,7 +29,7 @@ type PresenceRow = {
 const presenceRow = async (stub: RoomStub): Promise<PresenceRow> =>
   (await execSql(stub, "SELECT * FROM room_presence WHERE id = 1"))[0] as unknown as PresenceRow;
 
-// Pin live leases an hour out so non-expiry tests never race the lease.
+// Pin live leases an hour out so tests never race expiry.
 const pinLeases = (stub: RoomStub) =>
   execSql(stub, "UPDATE room_players SET lease_until_ms = ?", Date.now() + 3_600_000);
 
@@ -50,8 +50,7 @@ const connectTwo = async (roomId: string, h: Joined, a: Joined): Promise<[Sock, 
   return [sh, sa];
 };
 
-// Close events reach the DO asynchronously — poll a probe until the
-// committed state shows up instead of sleeping a fixed amount.
+// Close events reach the DO asynchronously — poll, never a fixed sleep.
 const until = async <T>(probe: () => Promise<T | null>, ms = 4_000): Promise<T> => {
   const deadline = Date.now() + ms;
   for (;;) {
@@ -121,7 +120,8 @@ test("empty room persists emptySince and parks only playing deadlines; rejoin sh
   expect(p.paused_at_ms).toBe(p.empty_since_ms); // playing phase -> paused
   const parked = await execSql(stub, "SELECT id, remaining_ms, tag FROM paused_deadlines");
   expect(parked.map((r) => r.tag)).toEqual(["turn"]);
-  expect((await deadlineRows(stub)).map((d) => d.tag).sort()).toEqual(["room-expiry"]);
+  const tags = (await deadlineRows(stub)).map((d) => d.tag).sort();
+  expect(tags).toEqual(["room-expiry", "vacate", "vacate"]); // + vacate:<pid> grace rows
   // Rejoin inside the grace window: the turn clock resumes shifted by the
   // paused duration; the expiry row is gone and presence flips back.
   const sa2 = await Sock.connect(room.roomId, a.sessionToken);

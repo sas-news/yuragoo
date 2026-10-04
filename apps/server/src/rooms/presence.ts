@@ -19,6 +19,9 @@ import {
   rearmLeaseSweep,
   resumePlayingDeadlines,
   ROOM_EXPIRY_TAG,
+  VACATE_GRACE_MS,
+  VACATE_TAG,
+  vacateDeadlineId,
   writePresence,
 } from "./leases";
 import { maxEventSeq, recordRoomEvent } from "./storage";
@@ -73,17 +76,11 @@ export class Acc {
   }
 }
 
-// Shared tail of every disconnect: presence event, host election when the
-// room still has connections, and the empty-room bookkeeping when it does
-// not (emptySince + optional playing-phase pause + expiry arming).
-export const markDisconnected = (
-  host: PresenceHost,
-  playerId: string,
-  nowMs: number,
-  acc: Acc,
-): void => {
-  writeLease(host.sql, playerId, null);
-  acc.saw(recordRoomEvent(host.sql, "presenceChanged", { playerId, connected: false }));
+// Shared tail of every member departure (disconnect or vacate): host
+// election when the room still has connections, and the empty-room
+// bookkeeping when it does not (emptySince + optional playing-phase
+// pause + expiry arming).
+export const departed = (host: PresenceHost, nowMs: number, acc: Acc): void => {
   const connected = connectedPlayerIds(host.sql, nowMs).size;
   if (connected === 0) {
     const presence = readPresence(host.sql);
@@ -106,6 +103,22 @@ export const markDisconnected = (
   if (el.books !== null) acc.books = el.books;
   acc.saw(el.eventSeq);
   acc.host = el.hostPlayerId;
+};
+
+// Disconnect bookkeeping: presence event + a vacate deadline armed at
+// now + grace. If the player never re-admits, the deadline removes the
+// member row entirely (lobby phase only) — a departed player becomes an
+// empty seat instead of blocking the start gate forever.
+export const markDisconnected = (
+  host: PresenceHost,
+  playerId: string,
+  nowMs: number,
+  acc: Acc,
+): void => {
+  writeLease(host.sql, playerId, null);
+  replaceDeadline(host.sql, vacateDeadlineId(playerId), nowMs + VACATE_GRACE_MS, VACATE_TAG);
+  acc.saw(recordRoomEvent(host.sql, "presenceChanged", { playerId, connected: false }));
+  departed(host, nowMs, acc);
 };
 
 // Socket-close path. The generation guard is authoritative: a replaced
@@ -155,6 +168,7 @@ export const admit = (host: PresenceHost, playerId: string, nowMs: number): Pres
     deleteDeadlineIds(host.sql, [ROOM_EXPIRY_TAG]);
   }
   writeLease(host.sql, playerId, nowMs + host.leaseMs());
+  deleteDeadlineIds(host.sql, [vacateDeadlineId(playerId)]);
   rearmLeaseSweep(host.sql);
   let lastSeq: number | null = null;
   if (!wasConnected) {

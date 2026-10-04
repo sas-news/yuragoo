@@ -15,9 +15,9 @@ test("canonical shapes: choices object, bare array, JSON string", () => {
 });
 
 test("tolerant: markdown fences and surrounding prose are sliced out", () => {
-  const fenced = "```json\n" + JSON.stringify({ choices: labels(2) }) + "\n```";
+  const fenced = `\`\`\`json\n${JSON.stringify({ choices: labels(2) })}\n\`\`\``;
   expect(parseChoiceLabels(fenced, 2)).toEqual(labels(2));
-  const chatty = "はい、お作りしました！\n" + JSON.stringify({ choices: labels(2) }) + "\n以上です";
+  const chatty = `はい、お作りしました！\n${JSON.stringify({ choices: labels(2) })}\n以上です`;
   expect(parseChoiceLabels(chatty, 2)).toEqual(labels(2));
 });
 

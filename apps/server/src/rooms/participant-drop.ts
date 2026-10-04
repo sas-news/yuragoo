@@ -1,12 +1,14 @@
 // Discord participant-drop presence path (Task 48): a room member inside
 // the Activity instance reports ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE —
 // any CONNECTED player whose verified discord_user_id is missing left the
-// Activity while their zombie iframe kept the socket/lease alive. The drop
-// reuses markDisconnected (host election + empty-room clock included) and
-// closes the stale socket, so a false report self-heals via the client's
-// normal reconnect instead of sticking a live player as disconnected.
+// Activity while their zombie iframe kept the socket/lease alive. The
+// report is authoritative: in the lobby the seat is vacated immediately
+// (member row deleted, same as `leave`); mid-game it falls back to a
+// plain disconnect so the roster survives a reconnect. The stale socket
+// still closes — a false report self-heals via a fresh invite join.
 import { findRoomPlayer, listRoomPlayers } from "./auth-storage";
 import { Acc, markDisconnected, NONE, type PresenceHost, type PresenceOutcome } from "./presence";
+import { vacateMember } from "./presence-vacate";
 
 export const dropMissingParticipants = (
   host: PresenceHost,
@@ -19,13 +21,15 @@ export const dropMissingParticipants = (
   // instance — a report missing the reporter's own id is meaningless.
   if (reporterDiscord === null || !userIds.includes(reporterDiscord)) return NONE;
   const present = new Set(userIds);
+  const lobby = host.booksView() === null;
   const acc = new Acc();
   for (const p of listRoomPlayers(host.sql)) {
     // Browser members carry no discord id — never dropped by this path.
     if (p.discordUserId === null || present.has(p.discordUserId)) continue;
     if (p.leaseUntilMs === null || p.leaseUntilMs <= nowMs) continue; // already out
     acc.expiredIds.push(p.playerId);
-    markDisconnected(host, p.playerId, nowMs, acc);
+    if (lobby) vacateMember(host, p.playerId, nowMs, acc);
+    else markDisconnected(host, p.playerId, nowMs, acc);
   }
   return acc.done();
 };

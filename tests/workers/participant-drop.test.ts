@@ -4,12 +4,13 @@
 // heartbeat lease stay alive after the user leaves the Activity. A report
 // that omits the reporter's own id is refused; rejoiners reconnect through
 // the normal socket flow.
-import { SELF } from "cloudflare:test";
+import { env, SELF } from "cloudflare:test";
 import { afterEach, expect, test } from "vitest";
 import {
   type DiscordFetch,
   injectDiscordApiDeps,
 } from "../../apps/server/src/auth/discord-membership";
+import { execSql } from "./room-helpers";
 import { GOOD_ORIGIN, Sock } from "./ws-helpers";
 
 const BASE = "https://ws.test";
@@ -68,7 +69,7 @@ afterEach(() => injectDiscordApiDeps(null));
 const ALICE: FxUser = { id: "111", username: "alice_u", global_name: "Alice", avatar: null };
 const BOB: FxUser = { id: "222", username: "bob_u", global_name: null, avatar: null };
 
-test("reportParticipants drops a member missing from the instance list", async () => {
+test("reportParticipants vacates a lobby member missing from the instance list", async () => {
   const fx = fixture();
   injectDiscordApiDeps({ fetch: fx.api });
   const instanceId = `inst-${crypto.randomUUID()}`;
@@ -77,15 +78,23 @@ test("reportParticipants drops a member missing from the instance list", async (
   const sAlice = await Sock.connect(alice.roomId, alice.sessionToken);
   const sBob = await Sock.connect(bob.roomId, bob.sessionToken);
 
-  // Alice reports the instance list — Bob (discord 222) is gone.
+  // Alice reports the instance list — Bob (discord 222) is gone. The
+  // report is authoritative: in the lobby his member row is deleted
+  // outright (memberLeft), not merely marked disconnected.
   sAlice.sendCmd(alice.roomId, "rp1", "reportParticipants", { userIds: [ALICE.id] });
   await sAlice.next((e) => e.type === "ack" && e.payload.commandId === "rp1");
   const drop = await sAlice.next(
-    (e) => e.type === "presenceChanged" && e.payload.playerId === bob.playerId,
+    (e) => e.type === "memberLeft" && e.payload.playerId === bob.playerId,
   );
-  expect(drop.type).toBe("presenceChanged");
-  if (drop.type === "presenceChanged") expect(drop.payload.connected).toBe(false);
-  // The stale socket closes — a false drop self-heals via reconnect.
+  expect(drop.type).toBe("memberLeft");
+  const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromString(alice.roomId));
+  const rows = await execSql(
+    stub,
+    "SELECT COUNT(*) AS n FROM room_players WHERE player_id = ?",
+    bob.playerId,
+  );
+  expect(rows[0]?.n).toBe(0); // the seat is vacated, not just offline
+  // The stale socket closes — a false drop re-enters via a fresh join.
   const closed = await sBob.waitClose();
   expect(closed.reason).toBe("lease-expired");
   sAlice.close();

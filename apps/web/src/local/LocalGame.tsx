@@ -142,6 +142,7 @@ function ArenaView(
             presentation={reacted}
             backgroundAlpha={0}
             onReady={onReady}
+            statusHidden={game.phase === "finished"}
           />
         </div>
         <ScenarioStrip>

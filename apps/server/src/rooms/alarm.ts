@@ -16,8 +16,10 @@ import {
   ROOM_DEADLINE_TAGS,
   ROOM_EXPIRY_TAG,
   ROOM_PURGE_TAG,
+  VACATE_TAG,
 } from "./leases";
-import { markExpired, sweepExpiredLeases } from "./presence";
+import { Acc, markExpired, sweepExpiredLeases } from "./presence";
+import { fireVacateDeadlines } from "./presence-vacate";
 import { maxEventSeq } from "./storage";
 import { attachmentOf, broadcastNewEvents, type SocketAttachment } from "./wire";
 import type { SocketHost } from "./transport";
@@ -41,11 +43,24 @@ export const handleAlarm = async (host: SocketHost): Promise<void> => {
   host.storage().transactionSync(() => {
     const due = dueDeadlines(host.sql, nowMs);
     const dueTags = new Set(due.map((d) => d.tag));
+    const vacateDue = due.filter((d) => d.tag === VACATE_TAG);
+    if (vacateDue.length > 0) {
+      deleteDeadlineIds(
+        host.sql,
+        vacateDue.map((d) => d.id),
+      );
+      const acc = new Acc();
+      fireVacateDeadlines(host, vacateDue, nowMs, acc);
+      const out = acc.done();
+      sweptIds = [...sweptIds, ...out.expiredIds];
+      sweepSeq = out.lastEventSeq ?? sweepSeq;
+      if (out.books !== null) booksUpdate = out.books;
+    }
     if (dueTags.has(LEASE_SWEEP_TAG)) {
       deleteDeadlineIds(host.sql, [LEASE_SWEEP_TAG]);
       const out = sweepExpiredLeases(host, nowMs);
-      sweptIds = [...out.expiredIds];
-      sweepSeq = out.lastEventSeq;
+      sweptIds = [...sweptIds, ...out.expiredIds];
+      sweepSeq = out.lastEventSeq ?? sweepSeq;
       if (out.books !== null) booksUpdate = out.books;
     }
     if (dueTags.has(ROOM_PURGE_TAG)) {

@@ -124,6 +124,7 @@ export function RoomGame({
             presentation={reacted}
             backgroundAlpha={0}
             onReady={setRuntime}
+            statusHidden={view.outcome !== null}
           />
         </div>
         {view.lobby.scenario.trim() !== "" && <ScenarioStrip>{view.lobby.scenario}</ScenarioStrip>}
