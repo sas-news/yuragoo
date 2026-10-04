@@ -65,31 +65,44 @@ const labelField = (item: unknown): unknown =>
     ? (item as { label?: unknown }).label
     : item;
 
-// raw is the provider's response payload: an object with `choices` (the
-// schema shape), a bare array, or a JSON string of either.
+// raw is the provider's response payload. Normalization peels envelopes
+// ({choices}/{response} wraps, stringify levels, fences/prose) up to a few
+// layers deep, then the contract applies: an array of exactly `count`
+// distinct short labels (over-production truncates; under fails).
 export const parseChoiceLabels = (raw: unknown, count: number): string[] => {
   let value: unknown = raw;
-  if (typeof value === "string") {
-    const text = value;
-    try {
-      value = JSON.parse(text);
-    } catch {
+  for (let depth = 0; depth < 4; depth += 1) {
+    if (typeof value === "string") {
+      const text = value;
       try {
-        value = JSON.parse(jsonSlice(text));
+        value = JSON.parse(text);
       } catch {
-        throw invalid("response was not JSON");
+        try {
+          value = JSON.parse(jsonSlice(text));
+        } catch {
+          throw invalid("response was not JSON");
+        }
       }
+      continue;
     }
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      const o = value as { choices?: unknown; response?: unknown };
+      if (o.choices !== undefined) value = o.choices;
+      else if (o.response !== undefined) value = o.response;
+      else break;
+      continue;
+    }
+    break;
   }
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    value = (value as { choices?: unknown }).choices;
-  }
-  if (!Array.isArray(value) || value.length !== count) {
-    throw invalid(`expected exactly ${count} choices`);
+  if (!Array.isArray(value)) throw invalid("response was not an array");
+  let list: unknown[] = value;
+  if (list.length > count) list = list.slice(0, count);
+  if (list.length !== count) {
+    throw invalid(`expected exactly ${count} choices, got ${list.length}`);
   }
   const labels: string[] = [];
   const seen = new Set<string>();
-  for (const item of value.map(labelField)) {
+  for (const item of list.map(labelField)) {
     if (typeof item !== "string") throw invalid("a choice was not a string");
     const label = item.trim();
     if (label === "") throw invalid("a choice was empty");

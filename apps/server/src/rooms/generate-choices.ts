@@ -157,7 +157,11 @@ export const runChoiceGeneration = async (
 const invalidTag = (error: unknown): string => {
   const msg = error instanceof Error ? error.message : "";
   if (msg.includes("not JSON")) return "json";
-  if (msg.includes("not an array") || msg.includes("expected exactly")) return "shape";
+  // "expected exactly N choices, got M" -> count-MofN — the actual count
+  // the model returned decides the next fix (short vs malformed).
+  const cm = /expected exactly (\d+) choices, got (\d+)/.exec(msg);
+  if (cm !== null) return `count-${cm[2]}of${cm[1]}`;
+  if (msg.includes("not an array")) return "noarr";
   if (msg.includes("not a string")) return "type";
   if (msg.includes("empty")) return "empty";
   if (msg.includes("graphemes")) return "long";

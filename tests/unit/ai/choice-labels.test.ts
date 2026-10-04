@@ -26,9 +26,19 @@ test("tolerant: {label} entries unwrap to their label string", () => {
   expect(parseChoiceLabels(raw, 2)).toEqual(["案A", "案B"]);
 });
 
+test("tolerant: double wraps and over-produced arrays normalize", () => {
+  // {response: JSON.stringify({choices})} — a stringify level deeper.
+  expect(parseChoiceLabels({ response: JSON.stringify({ choices: labels(2) }) }, 2)).toEqual(
+    labels(2),
+  );
+  // Over-production keeps the first `count`; labels stay distinct so it lands.
+  expect(parseChoiceLabels({ choices: [...labels(2), "案3", "案4"] }, 2)).toEqual(labels(2));
+});
+
 test("strict: wrong count, empty, overlong and duplicate labels reject", () => {
   const bad = (raw: unknown, n: number) => () => parseChoiceLabels(raw, n);
-  expect(bad({ choices: labels(3) }, 2)).toThrow(GenerationProviderError);
+  expect(bad({ choices: labels(1) }, 2)).toThrow(GenerationProviderError); // under-production
+  expect(bad({ response: { unrelated: true } }, 2)).toThrow(GenerationProviderError); // no choices
   expect(bad({ choices: ["案A", "  "] }, 2)).toThrow(GenerationProviderError);
   expect(bad({ choices: ["あ".repeat(41), "案B"] }, 2)).toThrow(GenerationProviderError);
   expect(bad({ choices: ["案A", "案A"] }, 2)).toThrow(GenerationProviderError);
