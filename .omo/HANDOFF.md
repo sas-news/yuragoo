@@ -281,3 +281,14 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 5. エラー可視化 — toast 非依存の常設 status 行（fc4ff54）が全診断を可能にした
 
 **残りの Discord 実機 QA**（ブロッカー待ち）: 招待経由の joiner 着席確認、PIP、DM コンテキストの失敗メッセージ確認。
+
+### Task 48 — PIP 専用コンパクトデザイン（staging デプロイ済み）
+
+ユーザー実機報告「PIPは文字サイズそのままに小さく頑張ってるけど崩れる。専用デザインで情報減らすべき」→ **ロビー側に PIP 対応が全くなかった**のが本体（ゲーム画面は既存の 460px/480px メディアティアが feed 非表示・strip 縮小・dock 単行化済み）。
+
+- `apps/web/src/platform/use-pip-mode.ts` — Discord `watchLayout` の `layout==="pip"` または viewport メディア `(max-width:460px)/(max-height:480px)` で `html[data-pip]` をトグル。RoomPage が呼ぶので lobby/game 両画面をカバー。イベント購読失敗は黙殺して matchMedia フォールバック
+- `Lobby.module.css` — pip ブロック: 設定パネル `section[data-settings=panel]` 非表示、ロビー内 `.note` ヒント非表示（ページ直下の stage メッセージは温存）、`.code`（部屋コード）非表示、プレート padding 18→8px、入力 16→13px、シナリオ textarea 96→40px
+- `Roster.module.css` — チップ 44→26px、名 15→12px（max 8em）、hostGive/waitBadge 11px
+- `ChoiceEditor.module.css` — 行高 42→30px、diamond 26→20px、assignee 120→52px
+- `arena.module.css` — 既存 px メディアと同じ 3 ルールを `html[data-pip]` にも適用（イベントが先行してサイズ追従が遅れるケース用）
+- **イベント駆動の意義**: iframe 実寸が閾値ギリギリ/未追従でも Discord の ACTIVITY_LAYOUT_MODE_UPDATE が発火すれば確実に compact 化。focused/grid 復帰で属性除去

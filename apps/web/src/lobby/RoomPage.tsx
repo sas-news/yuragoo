@@ -7,6 +7,7 @@ import type { SnapshotPayload } from "@yuragoo/protocol";
 import { StatsLink } from "../info/Stats";
 import { RoomConnection } from "../net/reconnect";
 import { inviteUrl as buildInviteUrl } from "../net/urls";
+import { usePipMode } from "../platform/use-pip-mode";
 import { useVisualViewportHeight } from "../ui/useVisualViewport";
 import { Lobby } from "./Lobby";
 import { NamePanel } from "./NamePanel";
@@ -38,6 +39,9 @@ const roomIdOf = (): string => window.location.pathname.split("/")[2] ?? "";
 
 export default function RoomPage() {
   const roomId = roomIdOf();
+  // PIP compact layout (Task 48): flips html[data-pip] from Discord's
+  // layout event or the seats.ts pixel tier — covers lobby AND game.
+  usePipMode();
   // One-shot page inputs: the fragment secret and an optional ?name=.
   const [inviteSecret] = useState(() => readInviteFragment());
   const [nameParam] = useState(() => new URLSearchParams(window.location.search).get("name"));

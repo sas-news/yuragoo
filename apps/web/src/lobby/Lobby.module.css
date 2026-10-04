@@ -360,3 +360,110 @@
     max-inline-size: 860px;
   }
 }
+
+/* PIP compact (Task 48): html[data-pip] flips on Discord's layout event
+   or the seats.ts pixel tier. The pop-out is for glancing — secondary
+   info (settings panel, hint notes, room code) hides, plates compress,
+   type steps down. Interactive controls stay reachable. */
+:global(html[data-pip]) .page {
+  padding: 6px;
+}
+
+:global(html[data-pip]) .lobby {
+  gap: 8px;
+}
+
+:global(html[data-pip]) .title {
+  font-size: 14px;
+}
+
+:global(html[data-pip]) .code {
+  display: none;
+}
+
+:global(html[data-pip]) .headerButtons {
+  gap: 4px;
+}
+
+:global(html[data-pip]) .headerButtons button {
+  font-size: 12px;
+  padding: 4px 8px;
+  min-block-size: 32px;
+}
+
+:global(html[data-pip]) .plate {
+  padding: 8px 10px;
+  filter: drop-shadow(2px 2px 0 rgb(23 118 99 / 0.15));
+}
+
+:global(html[data-pip]) .sectionTitle {
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+
+:global(html[data-pip]) .field {
+  margin-block-end: 6px;
+}
+
+:global(html[data-pip]) .fieldLabel {
+  font-size: 12px;
+}
+
+:global(html[data-pip]) .input,
+:global(html[data-pip]) .scenarioInput {
+  font-size: 13px;
+  padding: 5px 8px;
+}
+
+:global(html[data-pip]) .scenarioInput {
+  min-block-size: 40px;
+}
+
+:global(html[data-pip]) .scenarioRead {
+  font-size: 13px;
+}
+
+:global(html[data-pip]) .presetButton {
+  margin-block-start: 4px;
+  font-size: 12px;
+}
+
+:global(html[data-pip]) .aiButton {
+  font-size: 12px;
+}
+
+:global(html[data-pip]) .badge,
+:global(html[data-pip]) .conflictBadge {
+  font-size: 11px;
+}
+
+/* Hints collapse inside the lobby only — page-level stage messages
+   (left/closed/error) keep their .note outside .lobby and stay visible. */
+:global(html[data-pip]) .lobby .note {
+  display: none;
+}
+
+:global(html[data-pip]) .inviteStatus,
+:global(html[data-pip]) .inviteError {
+  max-inline-size: none;
+  font-size: 11px;
+}
+
+:global(html[data-pip]) .proposalList {
+  font-size: 13px;
+  padding-inline-start: 16px;
+}
+
+:global(html[data-pip]) .gateReason {
+  font-size: 12px;
+}
+
+:global(html[data-pip]) .error {
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+/* The settings panel is pure info in the pop-out — pop back to edit. */
+:global(html[data-pip]) section[data-settings="panel"] {
+  display: none;
+}

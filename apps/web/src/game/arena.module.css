@@ -119,6 +119,23 @@ button.scenarioStrip:focus-visible {
   }
 }
 
+/* Same compact when Discord's layout event says pip — the iframe may not
+   have resized yet when the mode flips (Task 48). */
+:global(html[data-pip]) .feedWrap {
+  display: none;
+}
+
+:global(html[data-pip]) .scenarioStrip {
+  inset-block-start: 40px;
+  max-inline-size: 52%;
+  padding: 2px 8px;
+  font-size: 11.5px;
+}
+
+:global(html[data-pip]) .hudWrap {
+  inset-block-start: 2px;
+}
+
 .feedWrap {
   position: absolute;
   inset-block-end: 10px;

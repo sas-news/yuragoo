@@ -118,3 +118,41 @@
   color: var(--ink);
   border-color: var(--ink);
 }
+
+/* PIP compact (Task 48): chips slim to status dots + names — transfer and
+   readiness stay readable but lose their padding. */
+:global(html[data-pip]) .roster {
+  gap: 4px;
+}
+
+:global(html[data-pip]) .chip {
+  min-block-size: 26px;
+  padding: 2px 6px;
+  gap: 4px;
+}
+
+:global(html[data-pip]) .avatar {
+  inline-size: 16px;
+  block-size: 16px;
+}
+
+:global(html[data-pip]) .chipName {
+  font-size: 12px;
+  max-inline-size: 8em;
+}
+
+:global(html[data-pip]) .selfMark,
+:global(html[data-pip]) .hostMark {
+  font-size: 11px;
+}
+
+:global(html[data-pip]) .readyOn,
+:global(html[data-pip]) .readyOff,
+:global(html[data-pip]) .waitBadge,
+:global(html[data-pip]) .hostGive {
+  font-size: 11px;
+}
+
+:global(html[data-pip]) .hostGive {
+  padding: 1px 5px;
+}

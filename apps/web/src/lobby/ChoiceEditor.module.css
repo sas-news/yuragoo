@@ -108,3 +108,41 @@
     flex: 1 1 100%;
   }
 }
+
+/* PIP compact (Task 48): rows slim — smaller diamond, tighter assignee
+   column, 13px fields. */
+:global(html[data-pip]) .choiceRow,
+:global(html[data-pip]) .choiceRowOrphan {
+  min-block-size: 30px;
+  gap: 5px;
+}
+
+:global(html[data-pip]) .choiceList {
+  gap: 4px;
+}
+
+:global(html[data-pip]) .slotBadge {
+  inline-size: 20px;
+  block-size: 20px;
+  font-size: 11px;
+}
+
+:global(html[data-pip]) .slotBadge::after {
+  inset: 2px;
+}
+
+:global(html[data-pip]) .slotLetter {
+  font-size: 11px;
+  inline-size: 11px;
+}
+
+:global(html[data-pip]) .assignee {
+  font-size: 11px;
+  flex-basis: 52px;
+}
+
+:global(html[data-pip]) .choiceInput,
+:global(html[data-pip]) .choiceRead {
+  font-size: 13px;
+  padding: 3px 6px;
+}
