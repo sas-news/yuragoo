@@ -21,7 +21,6 @@ import {
 import { latencyBucket, logEvent } from "../observability";
 import type { Books } from "./due";
 import type { GenerationDeps } from "./generation-deps";
-import { type GenerationSlot, slotSpent } from "./generation-slots";
 import { maxEventSeq, recordRoomEvent } from "./storage";
 import { broadcastNewEvents, type BroadcastHost } from "./wire";
 
@@ -101,20 +100,28 @@ export const callProvider = async (
   }
 };
 
-// The durable send boundary: the slot row and the lobby-still-live
-// re-check commit atomically — exactly once, or the grant is released.
-export const claimSlot = (
+// Re-generation is allowed: the "pre" slot row now records only that a
+// proposal landed at least once (the lobby's generationSpent flag). The
+// gate against concurrent sends is a separate in-flight marker row —
+// inserted in the same txn that re-verifies the lobby is still live and
+// deleted by whichever outcome lands, so a second click during a send
+// gets "busy" instead of a second upstream call.
+const FLIGHT_SLOT = "pre-flight";
+
+export const claimFlight = (
   host: GenerationHost,
   deps: GenerationDeps,
-  slot: GenerationSlot,
-): "send" | "spent" | "late" => {
+): "send" | "busy" | "late" => {
   try {
     return host.txn(() => {
       if (host.isClosed() || host.booksView() !== null) return "late" as const;
-      if (slotSpent(host.sql, slot)) return "spent" as const;
+      const inFlight = host.sql
+        .exec("SELECT slot FROM generation_slots WHERE slot = ?", FLIGHT_SLOT)
+        .toArray();
+      if (inFlight.length > 0) return "busy" as const;
       host.sql.exec(
         "INSERT INTO generation_slots (slot, spent_at_ms) VALUES (?, ?)",
-        slot,
+        FLIGHT_SLOT,
         deps.nowMs(),
       );
       return "send" as const;
@@ -124,15 +131,27 @@ export const claimSlot = (
   }
 };
 
-// A failed attempt hands the slot back: the row deletes so the host may
-// retry. Honest accounting still holds — the daily quota was already
-// consumed via control.consume; only the per-room one-shot gate resets.
-export const releaseSlot = (host: GenerationHost, slot: GenerationSlot): void => {
+export const releaseFlight = (host: GenerationHost): void => {
   try {
     host.txn(() => {
-      host.sql.exec("DELETE FROM generation_slots WHERE slot = ?", slot);
+      host.sql.exec("DELETE FROM generation_slots WHERE slot = ?", FLIGHT_SLOT);
     });
   } catch {
-    // Storage torn down mid-flight — the slot dies with the room anyway.
+    // Storage torn down mid-flight — the marker dies with the room anyway.
+  }
+};
+
+// Success records the one-shot flag: INSERT OR IGNORE keeps the first
+// landing's timestamp across re-generations.
+export const markPreSpent = (host: GenerationHost, deps: GenerationDeps): void => {
+  try {
+    host.txn(() => {
+      host.sql.exec(
+        "INSERT OR IGNORE INTO generation_slots (slot, spent_at_ms) VALUES ('pre', ?)",
+        deps.nowMs(),
+      );
+    });
+  } catch {
+    // Storage torn down mid-flight — the flag dies with the room anyway.
   }
 };

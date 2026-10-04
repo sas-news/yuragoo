@@ -20,10 +20,13 @@ const parseSlot = (slot: string): GenerationSlot | null =>
 export const slotSpent = (sql: SqlStorage, slot: GenerationSlot): boolean =>
   sql.exec("SELECT slot FROM generation_slots WHERE slot = ?", slot).toArray().length > 0;
 
-// How many slot rows exist — used to seed meta.generationAttempts when a
-// game is created after a lobby-phase ("pre") spend.
+// How many spent slot rows exist — used to seed meta.generationAttempts
+// when a game is created after a lobby-phase ("pre") spend. The
+// "pre-flight" in-flight marker never counts as a spend.
 export const spentSlotCount = (sql: SqlStorage): number =>
-  sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM generation_slots").one().n;
+  sql
+    .exec<{ n: number }>("SELECT COUNT(*) AS n FROM generation_slots WHERE slot IN ('pre', 'post')")
+    .one().n;
 
 export const clearGenerationSlots = (sql: SqlStorage): void => {
   sql.exec("DELETE FROM generation_slots");

@@ -9,6 +9,7 @@ const TEXT: Readonly<Record<string, string>> = {
   "generation-unavailable": "いまは生成できません — あとで試してください",
   "generation-timeout": "生成が時間切れになりました — もう一度試してください",
   "generation-upstream": "生成サーバーが応答しませんでした — もう一度試してください",
+  "generation-busy": "いま生成中です — 少し待ってください",
   "not-host": "ホストだけが操作できます",
   "bad-state": "いまはその操作はできません",
   "already-started": "ゲームはすでに始まっています",

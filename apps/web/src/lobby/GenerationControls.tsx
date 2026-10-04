@@ -1,6 +1,6 @@
-// Task 25 host-only generation controls: the one-shot trigger button
-// (disabled + 生成済み once the slot is spent, 生成中… while the request
-// is in flight) and the proposal plate the host applies or dismisses.
+// Task 25 host-only generation controls: the trigger button (regenerates
+// freely — "もう一度生成" once a proposal has landed; 生成中… while in
+// flight) and the proposal plate the host applies, rerolls or dismisses.
 // Lobby renders this only for the host — members never see any of it.
 import type { ChoiceProposal } from "./room-view";
 import styles from "./Lobby.module.css";
@@ -33,17 +33,13 @@ export function GenerationControls({
       <button
         type="button"
         className={styles.aiButton}
-        disabled={spent || busy || scenarioEmpty}
+        disabled={busy || scenarioEmpty}
         onClick={onGenerate}
       >
-        AIで選択肢を生成{" "}
-        {spent ? (
-          <span className={styles.badge}>生成済み</span>
-        ) : (
-          busy && <span className={styles.badge}>生成中…</span>
-        )}
+        {spent ? "もう一度生成" : "AIで選択肢を生成"}{" "}
+        {busy && <span className={styles.badge}>生成中…</span>}
       </button>
-      {scenarioEmpty && !spent && <p className={styles.note}>シナリオを入力すると生成できます</p>}
+      {scenarioEmpty && <p className={styles.note}>シナリオを入力すると生成できます</p>}
       {proposal !== null && (
         <section className={styles.plate} aria-label="AIの生成案">
           <h2 className={styles.sectionTitle}>AIの生成案</h2>
@@ -61,6 +57,9 @@ export function GenerationControls({
           <div className={styles.proposalButtons}>
             <button type="button" className={styles.primary} onClick={onApply}>
               生成案を適用
+            </button>
+            <button type="button" disabled={busy} onClick={onGenerate}>
+              もう一度生成
             </button>
             <button type="button" onClick={onDismiss}>
               やめる

@@ -54,7 +54,8 @@ const seat = async (
   return page;
 };
 
-const genButton = (page: Page) => page.getByRole("button", { name: /AIで選択肢を生成/ });
+const genButton = (page: Page) =>
+  page.getByRole("button", { name: /AIで選択肢を生成|もう一度生成/ });
 
 test("happy: host generates, applies the proposal, edits stay manual", async ({ browser }) => {
   test.setTimeout(120_000);
@@ -91,9 +92,9 @@ test("happy: host generates, applies the proposal, edits stay manual", async ({ 
     await waitChoiceLabelOn(member0, `c${i}`, `生成案${i + 1}`);
   }
   for (const m of members.slice(1)) await waitChoiceLabelOn(m, "c3", "生成案4");
-  // The slot is spent: the button stays disabled and shows 生成済み.
-  await expect(genButton(host)).toBeDisabled();
-  await expect(genButton(host)).toContainText("生成済み");
+  // Re-generation is allowed: the button stays enabled, now もう一度生成.
+  await expect(genButton(host)).toBeEnabled();
+  await expect(genButton(host)).toContainText("もう一度生成");
 
   // Manual editing still works after apply — the host rewrites c0.
   await host.locator('[data-choice-id="c0"] input').fill("手直しのおやつ");

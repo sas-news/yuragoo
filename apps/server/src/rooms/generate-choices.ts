@@ -15,14 +15,14 @@ import type { RoomPlayer } from "./auth-storage";
 import type { GenerationDeps } from "./generation-deps";
 import {
   callProvider,
-  claimSlot,
+  claimFlight,
   emitOutcome,
   failOutcome,
   GENERATION_RESERVE_KIND,
   type GenerationHost,
-  releaseSlot,
+  markPreSpent,
+  releaseFlight,
 } from "./generation-run";
-import { slotSpent } from "./generation-slots";
 import { readPresence } from "./leases";
 import { activeMembers, readLobby } from "./lobby";
 import { CommandError } from "./wire";
@@ -52,9 +52,8 @@ export const planChoiceGeneration = (
   if (gameStarted) {
     throw new CommandError("bad-state", "the lobby is locked once the game starts");
   }
-  if (slotSpent(sql, "pre")) {
-    throw new CommandError("generation-spent", "choices were already generated this game");
-  }
+  // Re-generation is allowed — the daily quota is the real budget gate,
+  // and the in-flight marker in the runner stops concurrent sends.
   const lobby = readLobby(sql);
   if (countGraphemes(lobby.scenario.trim()) === 0) {
     throw new CommandError("lobby-scenario-empty", "the scenario is empty");
@@ -72,13 +71,13 @@ export const planChoiceGeneration = (
   };
 };
 
-const fail = (host: GenerationHost, code: string, spent: boolean, elapsedMs?: number): void =>
-  failOutcome(host, {
-    code,
-    spent,
-    message: "選択肢の生成に失敗しました — もう一度試すか手入力で続けられます",
-    elapsedMs,
-  });
+const fail = (
+  host: GenerationHost,
+  code: string,
+  spent: boolean,
+  elapsedMs?: number,
+  message = "選択肢の生成に失敗しました — もう一度試すか手入力で続けられます",
+): void => failOutcome(host, { code, spent, message, elapsedMs });
 
 export const runChoiceGeneration = async (
   host: GenerationHost,
@@ -106,10 +105,12 @@ export const runChoiceGeneration = async (
     fail(host, `generation-${grant.reason ?? "denied"}`, false);
     return;
   }
-  const verdict = claimSlot(host, deps, "pre");
+  const verdict = claimFlight(host, deps);
   if (verdict !== "send") {
     await control.release({ token: req.token }).catch(() => {});
-    if (verdict === "spent") fail(host, "generation-spent", false);
+    if (verdict === "busy") {
+      fail(host, "generation-busy", false, undefined, "いま生成中です — 少し待ってください");
+    }
     return;
   }
   let labels: string[] | null = null;
@@ -141,13 +142,15 @@ export const runChoiceGeneration = async (
   await control.consume({ token: req.token }).catch(() => {});
   if (labels !== null) {
     logEvent({ eventCode: "choice-gen", latencyBucket: latencyBucket(deps.nowMs() - sentAt) });
+    markPreSpent(host, deps);
+    releaseFlight(host);
     emitOutcome(host, "choicesGenerated", {
       lobbyRevision: req.lobbyRevision,
       memberCount: req.labelCount,
       labels,
     });
   } else {
-    releaseSlot(host, "pre");
+    releaseFlight(host);
     fail(host, code, false, deps.nowMs() - sentAt);
   }
 };

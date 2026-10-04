@@ -222,7 +222,7 @@ test("late arrival after game start is discarded; grant still consumed", async (
   for (const s of socks) s.close();
 });
 
-test("double click: two commands race but only one attempt is sent", async () => {
+test("double click: the in-flight marker turns the second call busy", async () => {
   const stub = stubProvider();
   stub.mode = "hold";
   inject(stub);
@@ -233,12 +233,15 @@ test("double click: two commands race but only one attempt is sent", async () =>
   const g = await host.next(isType("choicesGenerated"));
   if (g.type !== "choicesGenerated") throw new Error("bad frame");
   expect(stub.calls).toBe(1);
-  // The loser either errored at the gate or reported the spent slot.
-  const spent = await host.next(
-    (e) =>
-      (e.type === "error" && e.payload.code === "generation-spent") ||
-      (e.type === "generationFailed" && e.payload.code === "generation-spent"),
+  // The loser sees generation-busy — re-generation itself is allowed.
+  const busy = await host.next(
+    (e) => e.type === "generationFailed" && e.payload.code === "generation-busy",
   );
-  expect(spent.type === "error" || spent.type === "generationFailed").toBe(true);
+  expect(busy.type).toBe("generationFailed");
+  // And a deliberate second generation lands another proposal.
+  host.sendCmd(room.roomId, "gen-2", "generateChoices", {});
+  const g2 = await host.next(isType("choicesGenerated"));
+  expect(g2.type).toBe("choicesGenerated");
+  expect(stub.calls).toBe(2);
   for (const s of socks) s.close();
 });
