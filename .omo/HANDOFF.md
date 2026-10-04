@@ -237,3 +237,10 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - **原因**: `DiscordGate.tsx` が `/r/<id>?platform=discord` へ遷移する際、Discord 注入の `frame_id`/`instance_id`/`platform`/`guild_id` を全て破棄。部屋ページで `new DiscordSDK()` が location.search から frame_id を読めずコンストラクタが即 throw — SDK v2 の必須パラメータ（frame_id/instance_id/platform=desktop|mobile のみ）。
 - **修正**: `location.assign(`/r/${id}${window.location.search}`)` でクエリ丸ごと引き継ぎ。`platformKind()` は frame_id で判定されるので platform=discord マーカー不要（SDK にとっては不正値だった）。
 - 招待ステータス行（47b）がこの診断を可能にした — 設計意図どおりトースト非依存で原因可視化。
+
+### Task 47d — 「ひらいています…」ハング対策（commit a8e2146、staging adee1052）
+
+- **原因候補2点**: (a) 部屋ページの DiscordSDK は ready()/authenticate() 未実行（ゲートで完結してるが別ページロードなので新規インスタンス）→ `sendCommand` は `pendingCommands` に応答待ちで**タイムアウト機構が無く無応答だと永久ハング**。Discord が unauthenticated コマンドを無音で落とすとこの症状になる。(b) shareLink モーダルが iframe 背面に開いて見えない。
+- **修正**: InviteButton が `bootPlatform` を再実行（prompt:none で再同意は無音）→ ready+authenticate 済みブリッジを保証。`shareInvite` が `sdk.ready()` を明示 await（15s 上限）し、shareLink/openInviteDialog に30s deadline — ハングではなく `timeout:sdk-ready / timeout:share-link / timeout:invite-dialog` がステータス行に出る。
+- platform pkg は DOM lib 無し → `globalThis.setTimeout` structural 参照（warn と同型）。
+- 次回報告で `timeout:*` が出ればどの段階で Discord が応答を返していないか確定できる。
