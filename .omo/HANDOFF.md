@@ -229,3 +229,11 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - **「＋空席をつくる」ボタン**（ChoiceEditor、editable && choices<6 時）→ `updateLobbyContent` で `c{n}`+空ラベル append。サーバー変更不要（空ラベル行は成長時に label:"" で作られる設計、startGame の blank ゲートのみ制約）。workers テスト追加: 空ラベル append で orphan 行増加 + startGame は gated。
 - **招待ステータス常設行**: InviteButton に `status` state（info/ok/error）+ ボタン下の `<p role="status">` — 「Discord に接続中…」「招待画面をひらいています…」「招待を送りました」「（キャンセル）」「失敗＋detail」が画面に残る。トースト非依存。共有エラー行にも引き続き出力。
 - staging `0b3d59f9-165c-4d2f-b5b4-8803b18a6582` 稼働確認。**次回 Discord 実機で招待ボタンを押した時の status 行の文言を聞けば失敗経路が確定する**。
+
+### Task 47c — 招待失敗の根本原因修正（commit c83a757、staging 6f1c5457）
+
+ユーザーの status 行報告「招待できませんでした（frame_id query param is not defined）」で確定。
+
+- **原因**: `DiscordGate.tsx` が `/r/<id>?platform=discord` へ遷移する際、Discord 注入の `frame_id`/`instance_id`/`platform`/`guild_id` を全て破棄。部屋ページで `new DiscordSDK()` が location.search から frame_id を読めずコンストラクタが即 throw — SDK v2 の必須パラメータ（frame_id/instance_id/platform=desktop|mobile のみ）。
+- **修正**: `location.assign(`/r/${id}${window.location.search}`)` でクエリ丸ごと引き継ぎ。`platformKind()` は frame_id で判定されるので platform=discord マーカー不要（SDK にとっては不正値だった）。
+- 招待ステータス行（47b）がこの診断を可能にした — 設計意図どおりトースト非依存で原因可視化。
