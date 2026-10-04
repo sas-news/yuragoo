@@ -307,3 +307,14 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - InputDock `data-pip`: whoBox 非表示（アリーナのアイコンが手番を示すので不要）
 - **生成リトライ修正**: `generate-choices.ts` が provider 失敗でも `spent:true` で fail → 失敗で「生成済み」+再試行不可だった。`releaseSlot`（generation_slots 行削除）を追加し失敗時 `slotSpent:false` — 日次クォータは control.consume で消費済みのまま（honest accounting 維持）、部屋ゲートのみ解放。エラー表示に `（code）` 付与、メッセージを「もう一度試すか手入力で」に更新
 - workers テスト2件書換（slotSpent:false + リトライ成功）、e2e generation.spec.ts 失敗テストを enabled 期待に更新
+
+### Task 48c — eval:jev ja-v1 フルラン完走 + 生成パーサー/プロンプト強化
+
+- **eval:jev 解消**（ブロッカーだった残課題）: `bun run eval:jev -- --suite ja-v1 --max-attempts 60` → **pass 12/12, p95=221ms**。manifest: `artifacts/eval-ja-v1-rerun.json`。quota 枯渇で未確認だった worldview-break 以降も全パス — close-call margin 0.6 緩和と mood verdict パイプラインの回帰なし
+- **選択肢生成 再生成化**（commit 連続）: `generation_slots` の "pre" を「一度でも成功した」フラグ化、並列ガードは "pre-flight" マーカー分離 → 失敗/成功どちらでもリトライ可、2回目クリックは generation-busy。UI は提案カードに「もう一度生成」追加、「やめる」で再生成不能にならない
+- **パーサー大幅頑健化**（noarr 実機発生を受け）: carrier キー11個(result/data/output/content/text/items/options/candidates/answer)、単独配列キー({"候補":[...]})、dict-of-strings、ENTRY_KEYS(label/text/name/choice/title/value)、非JSONテキスト→行/読点区切りリスト化。診断タグ: :noarr/:count-NofM/:json(実質死にタグ)/:type/:empty/:long/:dupe
+- **プロンプト再構成**: シナリオと「ちょうどN個」を末尾移動、例文ブロック削除→1行ミニ例、`/no_think` で Qwen3 思考抑制、max_tokens 1024→2048（思考残存時の JSON 切り詰め防止）
+- **退出検知**: `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE`→`reportParticipants` コマンド→discordUserId 突合で `markDisconnected`（実機未検証）
+- staging 最新: 42aa09f3（生成改善一式）
+
+**残課題（全部ブロッカー/ユーザー側）**: Task 37 実Discord QA（PIP 専用画面・退出検知・招待経由 joiner 着席 — 新規3点は今回デプロイ分）、production デプロイ（GENERATION_DAILY_ATTEMPTS=60 + JEV_DAILY_ATTEMPT_CAP=120 の vars 設定必須）、F1〜F4最終検証。
