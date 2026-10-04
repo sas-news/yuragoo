@@ -35,6 +35,24 @@ test("tolerant: double wraps and over-produced arrays normalize", () => {
   expect(parseChoiceLabels({ choices: [...labels(2), "案3", "案4"] }, 2)).toEqual(labels(2));
 });
 
+test("tolerant: alternate envelopes, dict choices and {text} entries", () => {
+  // A lone array-valued key stands in for `choices` ({"候補": [...]}).
+  expect(parseChoiceLabels({ 候補: labels(2) }, 2)).toEqual(labels(2));
+  // Nested carriers: {result: {response: {choices}}}.
+  expect(parseChoiceLabels({ result: { response: { choices: labels(2) } } }, 2)).toEqual(labels(2));
+  // {choices: {"1": "...", ...}} — a dict of strings flattens to values.
+  expect(parseChoiceLabels({ choices: { "1": "案A", "2": "案B" } }, 2)).toEqual(["案A", "案B"]);
+  // Entry objects reach for other field names; any string property lands.
+  const raw = { choices: [{ text: "案A" }, { choice: "案B" }] };
+  expect(parseChoiceLabels(raw, 2)).toEqual(["案A", "案B"]);
+});
+
+test("tolerant: non-JSON text is treated as a bullet/comma list", () => {
+  expect(parseChoiceLabels("1. 案A\n2. 案B", 2)).toEqual(["案A", "案B"]);
+  expect(parseChoiceLabels("・案A\n・案B", 2)).toEqual(["案A", "案B"]);
+  expect(parseChoiceLabels("案A、案B", 2)).toEqual(["案A", "案B"]);
+});
+
 test("strict: wrong count, empty, overlong and duplicate labels reject", () => {
   const bad = (raw: unknown, n: number) => () => parseChoiceLabels(raw, n);
   expect(bad({ choices: labels(1) }, 2)).toThrow(GenerationProviderError); // under-production

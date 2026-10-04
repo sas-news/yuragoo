@@ -37,7 +37,8 @@ const stubProvider = (): Stub => {
       while (stub.mode === "hold" && !stub.go) {
         await new Promise((r) => setTimeout(r, 20));
       }
-      if (stub.mode === "garbage") return "not-json-at-all";
+      // No carrier key anywhere — the `noarr` shape seen in production.
+      if (stub.mode === "garbage") return { unrelated: true };
       return { choices: Array.from({ length: req.count }, (_, i) => `生成案${i + 1}`) };
     },
   };
@@ -128,7 +129,7 @@ test("failure: invalid response frees the slot; a retry is allowed", async () =>
   host.sendCmd(room.roomId, "gen", "generateChoices", {});
   const f = await host.next(isType("generationFailed"));
   if (f.type !== "generationFailed") throw new Error("bad frame");
-  expect(f.payload.code).toBe("generation-invalid:json");
+  expect(f.payload.code).toBe("generation-invalid:noarr");
   expect(f.payload.slotSpent).toBe(false);
   // The slot row was deleted — a second attempt reaches the provider.
   stub.mode = "ok";

@@ -1,6 +1,6 @@
 // Generative providers (Task 25). Exactly one real upstream exists —
 // the Workers AI binding (@cf/qwen/qwen3-30b-a3b-fp8 per plan ref G1:
-// temperature 0.6, max_tokens 1024, stream=false, JSON-schema output).
+// temperature 0.6, max_tokens 2048, stream=false, JSON-schema output).
 // LOCAL/dev/test NEVER call it: HttpGenerativeProvider posts the same
 // input shape to a fixture URL (GENERATION_UPSTREAM_URL seam, mirroring
 // JEV_UPSTREAM_URL), and MockGenerativeProvider is the deterministic
@@ -18,7 +18,9 @@ export const CHOICE_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
 // HTTP impl so the e2e stand-in emulates env.AI.run faithfully).
 const modelInput = (request: GenerationRequest): Record<string, unknown> => ({
   messages: [{ role: "user", content: request.prompt }],
-  max_tokens: 1024,
+  // 2048: if /no_think misses, a Qwen3 thinking trace alone can eat 1k
+  // and truncate the JSON mid-stream.
+  max_tokens: 2048,
   temperature: 0.6,
   stream: false,
   response_format: { type: "json_schema", json_schema: request.jsonSchema },
