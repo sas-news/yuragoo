@@ -72,9 +72,11 @@ export function DiscordGate({ clientId }: DiscordGateProps) {
         displayName: joined.displayName,
         lobbyWaiting: joined.lobbyWaiting,
       });
-      // ?platform=discord survives the navigation so RoomPage never
-      // mistakes this tab for a browser invite.
-      window.location.assign(`/r/${joined.roomId}?platform=discord`);
+      // Carry the whole query — Discord's injected params (frame_id,
+      // instance_id, platform, guild_id) must survive the navigation:
+      // the room page re-runs platformKind() and new DiscordSDK(), both
+      // of which read them straight off location.search.
+      window.location.assign(`/r/${joined.roomId}${window.location.search}`);
     })();
     return () => {
       cancelled = true;
