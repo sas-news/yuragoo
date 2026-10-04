@@ -252,3 +252,15 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - `establishDiscordSession` に `stage`/`deadlineMs`（任意、各ステップ30s deadline + stage 通知）
 - `bootPlatform(clientId, onStage?)` で InviteButton がライブステージ表示: 「接続中…（authorize）」等。タイムアウトは `timeout:<stage>` → classified `timeout` → status 行に `timeout:<stage>` 表記
 - 次回報告でどのステージで止まるか確定: `sdk-load`=import失敗、`ready`=handshake不成立、`authorize`=同意フロー、`exchange`=token API、`authenticate`=認証
+
+### Task 47f — 根本原因解決: location.assign が RPC ブリッジを殺していた（commit 0a39609、staging f40e967a）
+
+**連鎖の全貌**:
+1. SDK の handshake は `window.parent` に `targetOrigin = document.referrer` で postMessage
+2. 初回ロード時 referrer=`discord.com`（正しい）→ gate の handshake/authorize は成功
+3. `location.assign` で discordsays.com 内遷移 → **referrer が自分自身のプロキシURLに書き換わる**
+4. 部屋ページで `new DiscordSDK()` → handshake を `discordsays.com` 宛に送信 → Discord(=discord.com)は targetOrigin 不一致で無視 → `ready()` 永久ハング
+
+**修正**: DiscordGate は `history.pushState` で `/r/<id>` に遷移し RoomPage をその場で lazy mount。referrer は `discord.com` のまま、注入クエリも残り、**gate で認証済みの SDK インスタンスがモジュール memo 経由でそのまま部屋画面に引き継がれる**。InviteButton の bootPlatform 再実行は ready() 即解決 + prompt:none で無音。
+
+**教訓**: Discord Activity 内では `location.assign`/`location.href` によるフル遷移は RPC ブリッジを破壊する（referrer が変わる）。SPA 遷移のみ使うこと。同じ制約が他の画面遷移にもかかる — 新規の navigation は pushState 経由で。
