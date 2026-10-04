@@ -49,6 +49,7 @@ export function PipLobby({
           <li
             key={p.playerId}
             className={styles.member}
+            data-player-id={p.playerId}
             data-ready={lobby.ready.includes(p.playerId) ? "true" : undefined}
           >
             <span

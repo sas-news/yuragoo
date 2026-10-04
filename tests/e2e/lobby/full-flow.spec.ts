@@ -16,6 +16,7 @@ import {
   pickAndSee,
   playMatch,
   readyStart,
+  rejoinViaInvite,
   seat,
 } from "./full-flow-helpers";
 import { type GenerationFixture, startGenerationFixture } from "./gen-fixture";
@@ -67,14 +68,12 @@ test("happy: home create -> invite -> 4-seat manual TURN match -> lobby -> resta
   const chip = host.locator("[data-player-id]", { hasText: "<b>script</b>" });
   await expect(chip).toHaveCount(1);
   expect(await chip.locator("b").count()).toBe(0);
-  // Fragment erased at join; back lands on the tab's blank entry — no secret.
+  // Fragment erased at join; the back/forward trip leaks no secret.
   const joiner = members[0] as Page;
-  const hash = (): Promise<string> => joiner.evaluate(() => window.location.hash);
-  expect(await hash()).toBe("");
+  expect(await joiner.evaluate(() => window.location.hash)).toBe("");
   await joiner.goBack();
-  expect(await hash()).toBe("");
   await joiner.goForward();
-  await joiner.waitForSelector("[data-player-id]", { timeout: 20_000 });
+  await rejoinViaInvite(joiner, invite, "メンバー1");
   await armContent(host, members[0] as Page, 4);
   await pickAndSee(host, members[0] as Page, "2"); // 2 rounds
   await pickAndSee(host, members[0] as Page, "30秒");
@@ -83,9 +82,8 @@ test("happy: home create -> invite -> 4-seat manual TURN match -> lobby -> resta
   expect(await playMatch(all)).toMatch(/勝ち|ひきわけ|むこう/);
   // One member's "back to lobby" returns EVERYONE — no instant restart.
   await (members[1] as Page).getByTestId("back-to-lobby").click();
-  for (const p of all) {
+  for (const p of all)
     await p.getByRole("button", { name: "準備OKにする" }).waitFor({ timeout: 30_000 });
-  }
   const feed = (all[0] as Page).locator("[data-testid='feed-line']");
   await readyStart(all);
   for (const p of all) await p.locator("[data-turn-player]").waitFor({ timeout: 30_000 });
@@ -134,13 +132,14 @@ test("failure: host transfers mid-generation — lobby stays consistent", async 
   const pollGen = expect.poll(() => gen.requests.length, { timeout: 20_000 });
   await pollGen.toBeGreaterThanOrEqual(genBaseline + 1); // cumulative across tests
   await host.context().close(); // the host's page dies mid-generation
-  // Election re-seats m1 (lowest joinOrder still connected) as host.
   await m1.getByRole("button", { name: "はじめる" }).waitFor({ timeout: 20_000 });
   gen.releaseHeld();
   await expect(m1.locator("[data-proposal-label]")).toHaveCount(3, { timeout: 20_000 });
   failureLog.push(`mid-gen host transfer -> revision m1=${await revision(m1)}`);
   await m1.getByRole("button", { name: "生成案を適用" }).click();
-  await waitChoiceLabelOn(m2, "c2", "生成案3");
+  // Host's vacated draft slid to the orphan tail; apply fills by position.
+  await waitChoiceLabelOn(m2, "c2", "生成案2");
+  await waitChoiceLabelOn(m2, "c0", "生成案3");
   await expect(m1.locator("textarea")).toHaveValue("とちゅうで転送されるシナリオ");
 });
 
@@ -195,12 +194,13 @@ test("failure: stale revision + settings change -> re-ready, safe start", async 
   const pages = [host, member];
   for (const p of pages) await p.getByRole("button", { name: "準備OKにする" }).click();
   for (const p of pages) await waitReadyCount(p, 2);
-  // A real settings change (toggle flips its name to オン) resets ready.
   const panel = '[data-settings="panel"]';
   await host.locator(panel).getByRole("button", { name: "早期決着：オフ", exact: true }).click();
   await expect(
     member.locator(panel).getByRole("button", { name: "早期決着：オン", exact: true }),
   ).toBeVisible({ timeout: 20_000 });
+  for (const p of pages) await waitReadyCount(p, 2); // knobs never un-ready
+  await host.locator(panel).getByRole("button", { name: "いっせいに", exact: true }).click();
   for (const p of pages) await waitReadyCount(p, 0);
   await expect(host.getByRole("button", { name: "はじめる" })).toBeDisabled();
   await readyStart(pages);

@@ -75,6 +75,18 @@ export const joinViaLink = async (
   return page;
 };
 
+// A lobby unload vacates the seat — the stored session dies on the error
+// stage and re-entry joins fresh through the invite link.
+export const rejoinViaInvite = async (page: Page, invite: string, name: string): Promise<void> => {
+  await page.getByText(/招待リンクから入り直してください/).waitFor({ timeout: 20_000 });
+  await page.goto(invite);
+  // Hash-only navigations stay same-document; remount so the fragment is read.
+  await page.reload();
+  await page.getByLabel(/おなまえ/).fill(name);
+  await page.getByRole("button", { name: "へやにはいる" }).click();
+  await page.waitForSelector("[data-player-id]", { timeout: 20_000 });
+};
+
 export const copyInvite = async (host: Page): Promise<string> => {
   await host.getByRole("button", { name: "招待リンクをコピー" }).click();
   const invite = await host.evaluate(() => navigator.clipboard.readText());

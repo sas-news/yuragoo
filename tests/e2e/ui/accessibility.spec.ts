@@ -128,7 +128,9 @@ test("happy: keyboard-only /play — setup, post, result, rematch", async ({ pag
 
 test("happy: leave confirm traps focus, Esc closes, focus returns", async ({ browser }) => {
   const room = await createRoom();
-  const member = await seat(browser, contexts, room.roomId, room.inviteSecret, "メンバー", 375);
+  // 480px keeps the editable lobby — at <=460 the PIP view replaces it and
+  // its 出る button skips the confirm dialog this spec exercises.
+  const member = await seat(browser, contexts, room.roomId, room.inviteSecret, "メンバー", 480);
   await member.getByRole("button", { name: "へやを出る" }).click();
   const dialog = member.getByTestId("leave-confirm");
   await expect(dialog).toBeVisible();
@@ -180,17 +182,18 @@ test("failure: 360px, 200% zoom, soft keyboard — dock and controls hold", asyn
 test("happy: six seats — symbol+label identity, long text, no overflow", async ({ browser }) => {
   test.setTimeout(120_000);
   const room = await createRoom();
-  const host = await seat(browser, contexts, room.roomId, room.inviteSecret, "ホスト", 375);
+  // 480px keeps the editable lobby rows; <=460 collapses into the PIP view.
+  const host = await seat(browser, contexts, room.roomId, room.inviteSecret, "ホスト", 480);
   const member = await seat(
     browser,
     contexts,
     room.roomId,
     room.inviteSecret,
     "すごくながいなまえのプレイヤー",
-    375,
+    480,
   );
   for (const name of ["さん", "よん", "ごう", "ろく"]) {
-    await seat(browser, contexts, room.roomId, room.inviteSecret, name, 375);
+    await seat(browser, contexts, room.roomId, room.inviteSecret, name, 480);
   }
   await waitMemberCount(host, 6);
   const long = "とてもながいこたえのぶんしょうですがぜんぶよめます"; // ~40 with suffix

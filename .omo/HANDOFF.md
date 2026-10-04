@@ -2,6 +2,29 @@
 
 このファイルはセッション間の引継ぎ。最新の状態をここに集約する。
 
+## 🚀 リリース済み（2026-10-04）
+
+**production デプロイ完了**: `https://yuragoo-server.sasshinbun0655.workers.dev`
+- prod version `e3fe53b6-668a-4e84-bd7e-6652fa5a7027` / commit `8a3d262`
+- vars: APP_ENV=production / ALLOWED_ORIGINS=自身URL / DISCORD_CLIENT_ID=1553394215029968926 / DISCORD_ORIGINS=.discordsays.com / JEV_DAILY_ATTEMPT_CAP=120 / GENERATION_DAILY_ATTEMPTS=60
+- secrets: DISCORD_CLIENT_SECRET / JEV_API_KEY（.dev.vars から `wrangler secret put --env production` 済み）
+- 検証済み: /api/health 200 / /api/stats pending / /privacy・/terms 200 / SPA fallback / room 作成 200 / evil origin 403 / discord token 実疎通
+- **F1–F4 全 APPROVE** — `.omo/evidence/yuragoo-development/20261004T131840Z-release/`
+- 公開ページ: `/privacy` `/terms`（`apps/web/public/*/index.html`、Workers Assets が `/x`→`/x/` に307して配信）
+- ゲート結果は `docs/release-checklist.md` に記入済み
+
+### ユーザー側の残作業（Discord Developer Portal）
+
+1. URL Mappings `/` → `yuragoo-server.sasshinbun0655.workers.dev` に張替（`/api` は longest-match で `/` が拾う）
+2. General Information: Terms of Service URL=`https://yuragoo-server.sasshinbun0655.workers.dev/terms`、Privacy Policy URL=同`/privacy`
+3. **staging の Activity は張替時点で使えなくなる**（同一アプリ選択のため）
+
+### 運用
+
+- 再デプロイ: `VITE_DISCORD_CLIENT_ID=1553394215029968926 bun run deploy:production`（build 時に client ID を env で注入必須）
+- ロールバック: 現状前バージョンなし → `git revert` + 再デプロイ
+- rollback 候補に備え `wrangler rollback --env production` は次回 deploy 後から有効
+
 ## 最新（2026-09-27）
 - **staging を workers.dev にデプロイ済み → 固定URL https://yuragoo-staging.sasshinbun0655.workers.dev**。wrangler login済み（sasshinbun0655@gmail.com）。env.staging vars: APP_ENV=production / ALLOWED_ORIGINS=自身URL / DISCORD_CLIENT_ID / DISCORD_ORIGINS=.discordsays.com / JEV_DAILY_ATTEMPT_CAP=120。secrets: DISCORD_CLIENT_SECRET / JEV_API_KEY（.dev.varsからwrangler secret put）。検証済み: /→SPA, /api/health→200, discordsays origin POST /api/rooms→200。Discord URL Mappings の「/」ターゲットは yuragoo-staging.sasshinbun0655.workers.dev（スキームなし）。コード更新は bun run deploy:staging。quick tunnelよりこちらを使う。
 計画書: `.omo/plans/yuragoo-development.md`（todosは実ファイル・テスト存在と照合すること — checkboxは未更新のまま）

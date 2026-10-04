@@ -42,8 +42,8 @@ test("visual: full-flow screens at 375/768/1280", async ({ browser }) => {
     await waitReadyCount(host, 2);
   };
   await arm();
-  await pickAndSee(host, member, "1"); // settings change -> ready reset
-  await arm();
+  // A knob change keeps the ready flags under the current contract.
+  await pickAndSee(host, member, "1");
   await home.goto(`/?${API_Q}`);
   for (const w of WIDTHS) {
     await home.setViewportSize({ width: w, height: 800 });

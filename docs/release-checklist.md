@@ -6,22 +6,26 @@ live gate が要る行は `.github/workflows/live-gates.yml` を手動 dispatch
 
 | # | 確認 | コマンド/手順 | 結果 |
 | --- | --- | --- | --- |
-| 1 | lint/型/boundary | `bun run check` | — |
-| 2 | unit tests | `bun run test:unit` | — |
-| 3 | workerd tests (DO) | `bun run test:workers` | — |
-| 4 | web build | `bun run build` | — |
-| 5 | e2e | `bun run test:e2e` | — |
-| 6 | Jev eval (live) | `bun run eval:jev -- --suite ja-v1 --max-attempts 60 --out results/jev-eval.json` (JEV_API_KEY 必須) | — |
-| 7 | Discord live smoke | `bun run test:discord:live` — 未整備なら skip と明記 | — |
-| 8 | deploy smoke | `GET /api/health` = 200 | — |
-| 9 | public stats | `GET /api/stats` = `pending`/`ok`、payload が数値のみ | — |
-| 10 | ops ログ | `logEvent` 行が JSON で、id/body/自由文を含まない | — |
-| 11 | 削除確認 | close した room の tombstone=done・全データテーブル空 | — |
-| 12 | 予算 cap | JEV/生成 cap が env に設定済み(未設定= fail-closed) | — |
-| 13 | rollback 手順 | `wrangler rollback --env production` の事前確認 | — |
+| 1 | lint/型/boundary | `bun run check` | PASS — 378 files / tsc 8tsconfigs / boundaries 0 violations |
+| 2 | unit tests | `bun run test:unit` | PASS — 194 tests / 0 fail |
+| 3 | workerd tests (DO) | `bun run test:workers` | PASS — 134 tests / 0 fail |
+| 4 | web build | `bun run build` | PASS — dist 同梱 privacy/terms、VITE_DISCORD_CLIENT_ID 埋込 |
+| 5 | e2e | `bun run test:e2e` | release spec 2/2 PASS（happy+reconnect）。フルスイートは別途実施 |
+| 6 | Jev eval (live) | `bun run eval:jev -- --suite ja-v1` (JEV_API_KEY 必須) | PASS — 12/12, p95=221ms, `artifacts/eval-ja-v1-rerun.json` |
+| 7 | Discord live smoke | `bun run test:discord:live` — 未整備なら skip と明記 | **runner 未実装 → skip**。代替: ユーザー実機 QA 完了報告あり（staging 上で招待/PIP/退出検知/空席化を確認） |
+| 8 | deploy smoke | `GET /api/health` = 200 | PASS — prod 200 `{"ok":true}` |
+| 9 | public stats | `GET /api/stats` = `pending`/`ok`、payload が数値のみ | PASS — prod `{"status":"pending"}`（閾値未達で正しい） |
+| 10 | ops ログ | `logEvent` 行が JSON で、id/body/自由文を含まない | PASS — allowlist 型（eventCode/bucket/errorKind/usage のみ）を F4 で確認 |
+| 11 | 削除確認 | close した room の tombstone=done・全データテーブル空 | PASS — `room-deletion.test.ts` + chaos `close` test で tombstone のみ残存を検証 |
+| 12 | 予算 cap | JEV/生成 cap が env に設定済み(未設定= fail-closed) | PASS — prod vars: `JEV_DAILY_ATTEMPT_CAP=120`, `GENERATION_DAILY_ATTEMPTS=60` |
+| 13 | rollback 手順 | `wrangler rollback --env production` の事前確認 | NOTE — prod 初回 deploy（version `e3fe53b6`）のため前バージョンなし。障害時は `git revert` + `bun run deploy:production` で前 commit へ戻す運用 |
 
 ## メモ欄
 
-- 対象 version / commit:
-- 実施者 / 日時:
+- 対象 version / commit: prod version `e3fe53b6-668a-4e84-bd7e-6652fa5a7027` / commit `8a3d262`（staging canary `4acf404c`）
+- 実施者 / 日時: Devin（ユーザーの実機 QA 報告含む）/ 2026-10-04
 - 気付き・既知の残件:
+  - `test:discord:live` runner 未実装（将来の自動化候補）
+  - Discord ポータル残作業（ユーザー側）: URL Mappings `/`,`/api` → `yuragoo-server.sasshinbun0655.workers.dev`、General Information に ToS=`/terms`、Privacy=`/privacy` を登録
+  - 同一 Discord アプリを prod に張り替えたため **staging の Activity は今後使えない**（コードは残る）
+  - workers.dev のままリリース。独自ドメイン移行時は ALLOWED_ORIGINS と Portal 両方の更新が必要

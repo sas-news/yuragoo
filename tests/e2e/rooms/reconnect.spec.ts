@@ -1,8 +1,8 @@
 // Task 20 e2e: the browser client against the real wrangler dev worker —
-// heartbeats hold the compressed lease, an offline drop rotates credentials
-// and re-admits inside the empty grace window, and roomClosed stops the
-// retry loop for good. All traffic goes through window.__roomBridge, which
-// only exists in the e2e build mode.
+// heartbeats hold the compressed lease, a lobby drop vacates the seat so
+// re-admission is refused for good, and roomClosed stops the retry loop.
+// All traffic goes through window.__roomBridge, which only exists in the
+// e2e build mode.
 import { expect, test } from "@playwright/test";
 import type { RoomBridge } from "../../../apps/web/src/net/room-bridge";
 
@@ -44,7 +44,7 @@ const connectAuto = (page: Page, id: string, roomId: string, auth: unknown) =>
     { roomId, auth, clientId: id },
   );
 
-test("happy: heartbeats hold the lease; an offline drop rotates and re-admits", async ({
+test("happy: heartbeats hold the lease; a lobby drop vacates the seat", async ({
   page,
   context,
 }) => {
@@ -66,22 +66,16 @@ test("happy: heartbeats hold the lease; an offline drop rotates and re-admits", 
     auth.playerId,
   );
   expect(drops).toBe(0);
-  // Cut the network: the socket drops, the retry lane sleeps+rotates, and
-  // the 1500ms empty-grace window outlives this offline stretch.
+  // Cut the network: the socket drops and the lobby seat is vacated on the
+  // spot. Back online every retry dies on a 4xx rotation — the lane goes
+  // terminal without ever re-admitting.
   await context.setOffline(true);
   await page.waitForTimeout(700);
   await context.setOffline(false);
-  await page.waitForFunction(() => (window.__roomBridge?.clients.a?.reconnects ?? 0) >= 1, null, {
-    timeout: 10_000,
+  await page.waitForFunction(() => window.__roomBridge?.clients.a?.conn?.finished === true, null, {
+    timeout: 15_000,
   });
-  // Re-admission pushed a fresh snapshot: the player is connected again.
-  const connected = await page.evaluate(
-    (playerId) =>
-      window.__roomBridge?.clients.a?.snapshot?.players.find((p) => p.playerId === playerId)
-        ?.connected,
-    auth.playerId,
-  );
-  expect(connected).toBe(true);
+  expect(await page.evaluate(() => window.__roomBridge?.clients.a?.reconnects)).toBe(0);
 });
 
 test("roomClosed ends the retry loop: no re-admission, no more sockets", async ({ page }) => {

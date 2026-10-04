@@ -118,14 +118,18 @@ test("happy: shared view, host-only edits, ready reset and the start lock", asyn
   await toggle(hp, "ホスト決着").click();
   await expect(toggle(mp, "ホスト決着")).toHaveText("オン");
 
-  // A real settings change resets every ready flag — on both screens.
+  // A knob change keeps ready flags; only an effective mode switch resets.
   for (const page of [host, member]) {
     await page.getByRole("button", { name: "準備OKにする" }).click();
   }
   for (const page of [host, member]) await waitReadyCount(page, 2);
   await segment(hp, "60秒").click();
-  for (const page of [host, member]) await waitReadyCount(page, 0);
   await expect(pressed(mp, "60秒")).toBeVisible();
+  for (const page of [host, member]) await waitReadyCount(page, 2);
+  await segment(hp, "いっせいに").click();
+  for (const page of [host, member]) await waitReadyCount(page, 0);
+  await segment(hp, "じゅんばん").click();
+  await expect(pressed(mp, "じゅんばん")).toBeVisible();
 
   mkdirSync(EVIDENCE_DIR, { recursive: true });
   await host.screenshot({ path: join(EVIDENCE_DIR, "task-26-happy.png") });
