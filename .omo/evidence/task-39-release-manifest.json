@@ -1,0 +1,76 @@
+{
+  "release": "yuragoo-w7",
+  "generatedAt": "2026-09-26T10:25:00Z",
+  "commit": "636e5202a08358ecb0ad331dc75e6f9dfc97b539",
+  "version": "0.0.0",
+  "gates": [
+    {
+      "name": "check",
+      "command": "bun run check",
+      "exitCode": 0,
+      "notes": "biome 342 files, 8 tsconfigs clean, check-boundaries 298 files 0 violations (LOC cap 250)"
+    },
+    {
+      "name": "build",
+      "command": "bun run build",
+      "exitCode": 0,
+      "notes": "tsc --noEmit + vite production build, apps/web/dist emitted"
+    },
+    {
+      "name": "unit",
+      "command": "bun run test:unit",
+      "exitCode": 0,
+      "tests": 157
+    },
+    {
+      "name": "workers",
+      "command": "bun run test:workers",
+      "exitCode": 0,
+      "tests": 124,
+      "notes": "vitest-pool-workers; includes discord-auth, public-stats, release-chaos, room deletion/presence/restart"
+    },
+    {
+      "name": "e2e",
+      "command": "bunx playwright test",
+      "exitCode": 0,
+      "tests": 112,
+      "artifact": ".omo/evidence/task-39-e2e-full.log",
+      "notes": "chromium, vite preview :4173 + wrangler :8787, mock Jev/generation fixtures only"
+    },
+    {
+      "name": "release-chaos",
+      "command": "bun run test:workers -- tests/workers/release-chaos.test.ts",
+      "exitCode": 0,
+      "artifact": "tests/workers/release-chaos.test.ts",
+      "tests": 4,
+      "notes": "10 rooms x 6 members lobby consistency, alarm-survival, credential abuse, close wipe"
+    },
+    {
+      "name": "release-full-game",
+      "command": "bunx playwright test tests/e2e/release",
+      "exitCode": 0,
+      "artifact": ".omo/evidence/task-39-e2e-release.log",
+      "tests": 2,
+      "notes": "full-game happy (create->invite->4-seat->kamishibai->close) + mid-game-reconnect heal"
+    },
+    {
+      "name": "jev-eval-live",
+      "command": "bun run eval:jev -- --suite ja-v1 --max-attempts 60",
+      "exitCode": null,
+      "status": "blocked-credentials",
+      "notes": "requires live JEV_API_KEY on a configured machine"
+    },
+    {
+      "name": "discord-live-qa",
+      "command": "manual Discord Activity smoke (Task 37)",
+      "exitCode": null,
+      "status": "blocked-credentials",
+      "notes": "requires an authorized Discord application, dev Activity and approved test account"
+    }
+  ],
+  "knownGaps": [
+    "Task 37 real-Discord QA is BLOCKED on credentials — adapter/proxy/auth covered by fake-SDK e2e + injected-fetch worker tests only",
+    "Live Jev eval receipt not present in this run",
+    "wrangler env blocks restate durable_objects/migrations (never inherited) — verified by proxy.spec"
+  ]
+}

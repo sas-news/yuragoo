@@ -1,0 +1,485 @@
+{
+  "suite": "ja-v1",
+  "verdict": "pass",
+  "reasons": [],
+  "schemaSuccessRate": 1,
+  "passingCases": 11,
+  "totalCases": 12,
+  "p95LatencyMs": 316,
+  "runs": [
+    {
+      "caseId": "sweet-vs-broke",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "e6639aa2",
+      "latencyMs": 352,
+      "usage": {
+        "inputTokens": 583,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "sweet-vs-broke",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "e6639aa2",
+      "latencyMs": 316,
+      "usage": {
+        "inputTokens": 583,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "sweet-vs-broke",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "e6639aa2",
+      "latencyMs": 214,
+      "usage": {
+        "inputTokens": 583,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "sweet-tooth-free",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "6dc8a41b",
+      "latencyMs": 209,
+      "usage": {
+        "inputTokens": 541,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "sweet-tooth-free",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "6dc8a41b",
+      "latencyMs": 202,
+      "usage": {
+        "inputTokens": 541,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "sweet-tooth-free",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "6dc8a41b",
+      "latencyMs": 206,
+      "usage": {
+        "inputTokens": 541,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "poison-label",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "4237c99a",
+      "latencyMs": 237,
+      "usage": {
+        "inputTokens": 696,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "poison-label",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "4237c99a",
+      "latencyMs": 186,
+      "usage": {
+        "inputTokens": 696,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "poison-label",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "4237c99a",
+      "latencyMs": 192,
+      "usage": {
+        "inputTokens": 696,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "trap-warning",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "28e1b8b3",
+      "latencyMs": 225,
+      "usage": {
+        "inputTokens": 682,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "trap-warning",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "28e1b8b3",
+      "latencyMs": 243,
+      "usage": {
+        "inputTokens": 682,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "trap-warning",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "28e1b8b3",
+      "latencyMs": 194,
+      "usage": {
+        "inputTokens": 682,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "worldview-break",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "f6e0f20c",
+      "latencyMs": 207,
+      "usage": {
+        "inputTokens": 698,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "worldview-break",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "f6e0f20c",
+      "latencyMs": 240,
+      "usage": {
+        "inputTokens": 698,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "worldview-break",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "f6e0f20c",
+      "latencyMs": 220,
+      "usage": {
+        "inputTokens": 698,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "ignore-instruction",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "a0ade0db",
+      "latencyMs": 247,
+      "usage": {
+        "inputTokens": 696,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "ignore-instruction",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "a0ade0db",
+      "latencyMs": 214,
+      "usage": {
+        "inputTokens": 696,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "ignore-instruction",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "a0ade0db",
+      "latencyMs": 277,
+      "usage": {
+        "inputTokens": 696,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "spam-override",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "fd75393a",
+      "latencyMs": 201,
+      "usage": {
+        "inputTokens": 664,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "spam-override",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "fd75393a",
+      "latencyMs": 207,
+      "usage": {
+        "inputTokens": 664,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "spam-override",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "fd75393a",
+      "latencyMs": 213,
+      "usage": {
+        "inputTokens": 664,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "close-call",
+      "runIndex": 0,
+      "ok": false,
+      "violations": [
+        "close:a|b"
+      ],
+      "model": "jev-1.13.0",
+      "requestHash": "0afd19c6",
+      "latencyMs": 222,
+      "usage": {
+        "inputTokens": 552,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "close-call",
+      "runIndex": 1,
+      "ok": false,
+      "violations": [
+        "close:a|b"
+      ],
+      "model": "jev-1.13.0",
+      "requestHash": "0afd19c6",
+      "latencyMs": 190,
+      "usage": {
+        "inputTokens": 552,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "close-call",
+      "runIndex": 2,
+      "ok": false,
+      "violations": [
+        "close:a|b"
+      ],
+      "model": "jev-1.13.0",
+      "requestHash": "0afd19c6",
+      "latencyMs": 216,
+      "usage": {
+        "inputTokens": 552,
+        "outputTokens": 33
+      }
+    },
+    {
+      "caseId": "rainy-walk",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "268c92ef",
+      "latencyMs": 197,
+      "usage": {
+        "inputTokens": 658,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "rainy-walk",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "268c92ef",
+      "latencyMs": 197,
+      "usage": {
+        "inputTokens": 658,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "rainy-walk",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "268c92ef",
+      "latencyMs": 247,
+      "usage": {
+        "inputTokens": 658,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "hungry-explorer",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "c0ff23b3",
+      "latencyMs": 167,
+      "usage": {
+        "inputTokens": 692,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "hungry-explorer",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "c0ff23b3",
+      "latencyMs": 203,
+      "usage": {
+        "inputTokens": 692,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "hungry-explorer",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "c0ff23b3",
+      "latencyMs": 198,
+      "usage": {
+        "inputTokens": 692,
+        "outputTokens": 47
+      }
+    },
+    {
+      "caseId": "weary-traveler",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "61acc93e",
+      "latencyMs": 226,
+      "usage": {
+        "inputTokens": 772,
+        "outputTokens": 61
+      }
+    },
+    {
+      "caseId": "weary-traveler",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "61acc93e",
+      "latencyMs": 227,
+      "usage": {
+        "inputTokens": 772,
+        "outputTokens": 61
+      }
+    },
+    {
+      "caseId": "weary-traveler",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "61acc93e",
+      "latencyMs": 183,
+      "usage": {
+        "inputTokens": 772,
+        "outputTokens": 61
+      }
+    },
+    {
+      "caseId": "creature-approach",
+      "runIndex": 0,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "0b4ff7b1",
+      "latencyMs": 185,
+      "usage": {
+        "inputTokens": 745,
+        "outputTokens": 61
+      }
+    },
+    {
+      "caseId": "creature-approach",
+      "runIndex": 1,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "0b4ff7b1",
+      "latencyMs": 178,
+      "usage": {
+        "inputTokens": 745,
+        "outputTokens": 61
+      }
+    },
+    {
+      "caseId": "creature-approach",
+      "runIndex": 2,
+      "ok": true,
+      "violations": [],
+      "model": "jev-1.13.0",
+      "requestHash": "0b4ff7b1",
+      "latencyMs": 208,
+      "usage": {
+        "inputTokens": 745,
+        "outputTokens": 61
+      }
+    }
+  ]
+}

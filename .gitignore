@@ -8,11 +8,23 @@ dist/
 test-results/
 playwright-report/
 blob-report/
-artifacts/
 tmp/
 .codegraph/
 
 # .omo: keep docs/plans, drop heavy per-run evidence and session artifacts
-.omo/evidence/
 .omo/shots/
 .omo/run-continuation/
+
+# release audit trail: keep the gate evidence + eval receipts, still drop
+# the heavy per-run dirs/screenshots under .omo/evidence
+.omo/evidence/*
+!.omo/evidence/task-39-release-manifest.json
+!.omo/evidence/task-39-e2e-release.log
+!.omo/evidence/task-39-e2e-full-20261004T1428Z-pass.log
+!.omo/evidence/yuragoo-development/
+.omo/evidence/yuragoo-development/*
+!.omo/evidence/yuragoo-development/20261004T131840Z-release/
+
+# eval receipts are small audit artifacts; other run outputs stay ignored
+artifacts/*
+!artifacts/eval-*.json
