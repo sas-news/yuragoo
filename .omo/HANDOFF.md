@@ -5,10 +5,11 @@
 ## 🚀 リリース済み（2026-10-04）
 
 **production デプロイ完了**: `https://yuragoo-server.sasshinbun0655.workers.dev`
-- prod version `e3fe53b6-668a-4e84-bd7e-6652fa5a7027` / commit `8a3d262`
+- prod version `000305a4-c13c-4c72-954b-a5c3407af1dd` / commit `9753501`
 - vars: APP_ENV=production / ALLOWED_ORIGINS=自身URL / DISCORD_CLIENT_ID=1553394215029968926 / DISCORD_ORIGINS=.discordsays.com / JEV_DAILY_ATTEMPT_CAP=120 / GENERATION_DAILY_ATTEMPTS=60
 - secrets: DISCORD_CLIENT_SECRET / JEV_API_KEY（.dev.vars から `wrangler secret put --env production` 済み）
 - 検証済み: /api/health 200 / /api/stats pending / /privacy・/terms 200 / SPA fallback / room 作成 200 / evil origin 403 / discord token 実疎通
+- **e2e フルスイート 113/113 PASS**（commit `9753501` — 旧契約テストを空席化・モード限定ready reset・PIP仕様へ追従 + PipLobby data-player-id 追加）
 - **F1–F4 全 APPROVE** — `.omo/evidence/yuragoo-development/20261004T131840Z-release/`
 - 公開ページ: `/privacy` `/terms`（`apps/web/public/*/index.html`、Workers Assets が `/x`→`/x/` に307して配信）
 - ゲート結果は `docs/release-checklist.md` に記入済み
