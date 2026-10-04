@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ゆらぐー！のプライバシーポリシー" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9F%A2%3C/text%3E%3C/svg%3E"
+    />
+    <title>プライバシーポリシー — ゆらぐー！</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 2rem 1rem 4rem;
+        font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+        background: #f5f2ea;
+        color: #3c382f;
+        line-height: 1.8;
+      }
+      main {
+        max-width: 42rem;
+        margin: 0 auto;
+        background: #fffdf7;
+        border: 3px solid #3c382f;
+        border-radius: 18px;
+        padding: 1.8rem 1.6rem;
+        box-shadow: 0 6px 0 #d8d2c0;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin: 0 0 1.2rem;
+      }
+      h2 {
+        font-size: 1.05rem;
+        margin: 1.8rem 0 0.4rem;
+        border-left: 5px solid #a8c686;
+        padding-left: 0.6rem;
+      }
+      ul {
+        padding-left: 1.4rem;
+      }
+      .meta {
+        color: #8a8472;
+        font-size: 0.85rem;
+        margin-top: 2.4rem;
+      }
+      a {
+        color: #4f7a3a;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>プライバシーポリシー</h1>
+      <p>
+        このページは「ゆらぐー！」（以下「本アプリ」）がどんな情報をどれだけの期間扱うかを、
+        ありのまま説明するものです。
+      </p>
+
+      <h2>基本方針</h2>
+      <p>
+        本アプリにはアカウント登録・ログイン・課金はありません。
+        部屋（ルーム）が生きている間だけ必要な情報を持ち、
+        部屋が閉じたらゲームのデータはまるごと消します。
+      </p>
+
+      <h2>部屋の中で一時的に持つもの</h2>
+      <ul>
+        <li>あなたが入力したお題・選択肢などの投稿本文</li>
+        <li>部屋にいる人の表示名とホストの割当</li>
+        <li>再接続や招待の確認に使うトークンの<strong>ハッシュ値</strong>（元の文字列は保存しません）</li>
+        <li>進行中のAI評価ジョブと、その結果として生成された物語</li>
+      </ul>
+      <p>これらは部屋が閉じると自動的にすべて削除されます。</p>
+
+      <h2>部屋が閉じるタイミング</h2>
+      <ul>
+        <li>ホストが明示的に閉じたとき</li>
+        <li>全員が退出して猶予時間が過ぎたとき</li>
+        <li>作成から12時間の寿命上限に達したとき</li>
+      </ul>
+      <p>
+        削除後は「墓標（tombstone）」行だけが残りますが、そこには個人データを含みません。
+      </p>
+
+      <h2>外部へ送られるもの</h2>
+      <ul>
+        <li>
+          <strong>AI評価</strong>：投稿本文は内容を採点するため、外部のAIプロバイダへ送信されます。
+          送信後の取り扱いは各プロバイダの規約に従い、本アプリはその先の削除を保証しません。
+        </li>
+        <li>
+          <strong>Cloudflareのバックアップ</strong>：基盤のDurable Objectストレージは
+          Cloudflareの障害復旧用バックアップの対象で、最大30日間は復元可能性が残ります。
+          アプリ側の削除は即時に行われますが、バックアップからの物理消去タイミングは
+          Cloudflareの運用に従います。
+        </li>
+      </ul>
+
+      <h2>公開される集計</h2>
+      <p>
+        「とうけい」画面と公開API（<code>/api/stats</code>）で見えるのは、
+        全ルーム合算の数値だけです（完了した対戦数、投稿総数、平均時間など）。
+        1日あたりの完了数が20未満の間は「集計中」として非公開にします。
+        表示名・投稿本文・誰が何を選んだか・部屋ごとの内訳は一切公開しません。
+      </p>
+
+      <h2>運営ログについて</h2>
+      <p>
+        サーバーの運用ログは「イベントコード・処理時間の区分・エラー種別・トークン消費量」
+        だけの構造化データです。投稿本文、部屋ID、プレイヤーID、表示名、URL、
+        トークンはログに書き出しません。
+      </p>
+
+      <h2>ブラウザ内の保存</h2>
+      <ul>
+        <li><code>localStorage</code>：前回使った表示名だけ（再入力を省くため）</li>
+        <li><code>sessionStorage</code>：同じタブ内の再接続用セッション情報</li>
+      </ul>
+      <p>Cookieは使いません。これらはブラウザの設定からいつでも消去できます。</p>
+
+      <h2>Discord環境での利用</h2>
+      <p>
+        Discord Activityとして遊ぶ場合、Discordが提供するアクティビティ基盤を通じて
+        認証と招待が行われます。Discordアカウント自体の情報（メールアドレスなど）は
+        本アプリには渡されず、表示名の参照範囲に留まります。
+      </p>
+
+      <h2>このポリシーの変更</h2>
+      <p>
+        内容を変更した場合はこのページで告知します。部屋のデータ保持の考え方
+        （閉じたら消す・匿名集計のみ）は方針として維持します。
+      </p>
+
+      <p class="meta">最終更新：2026年1月 — <a href="/">ゆらぐー！</a></p>
+    </main>
+  </body>
+</html>

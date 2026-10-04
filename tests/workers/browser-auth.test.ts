@@ -1,6 +1,5 @@
 // Browser room-auth tests through the real Worker (SELF.fetch) and the
-// GAME_ROOM binding. Storage-level assertions read the DO's SQLite via
-// runInDurableObject.
+// GAME_ROOM binding. Storage assertions read the DO's SQLite directly.
 import { env, runInDurableObject, SELF } from "cloudflare:test";
 import { expect, test } from "vitest";
 import { createAuthApp } from "../../apps/server/src/auth/browser";

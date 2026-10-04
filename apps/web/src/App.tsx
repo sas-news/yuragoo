@@ -55,6 +55,12 @@ export function App() {
       </section>
       <footer className={styles.statsFoot}>
         <StatsLink />
+        <a className={styles.footLink} href="/privacy">
+          プライバシー
+        </a>
+        <a className={styles.footLink} href="/terms">
+          利用規約
+        </a>
       </footer>
     </main>
   );
