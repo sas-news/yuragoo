@@ -244,3 +244,11 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - **修正**: InviteButton が `bootPlatform` を再実行（prompt:none で再同意は無音）→ ready+authenticate 済みブリッジを保証。`shareInvite` が `sdk.ready()` を明示 await（15s 上限）し、shareLink/openInviteDialog に30s deadline — ハングではなく `timeout:sdk-ready / timeout:share-link / timeout:invite-dialog` がステータス行に出る。
 - platform pkg は DOM lib 無し → `globalThis.setTimeout` structural 参照（warn と同型）。
 - 次回報告で `timeout:*` が出ればどの段階で Discord が応答を返していないか確定できる。
+
+### Task 47e — boot チェーンのステージ計装（commit 8b41711、staging 0bd907ec）
+
+「Discord に接続中…」のまま = bootPlatform 自体がハング。内部の全 await（sdk-load/ready/authorize/exchange/authenticate）が無制限だった。
+
+- `establishDiscordSession` に `stage`/`deadlineMs`（任意、各ステップ30s deadline + stage 通知）
+- `bootPlatform(clientId, onStage?)` で InviteButton がライブステージ表示: 「接続中…（authorize）」等。タイムアウトは `timeout:<stage>` → classified `timeout` → status 行に `timeout:<stage>` 表記
+- 次回報告でどのステージで止まるか確定: `sdk-load`=import失敗、`ready`=handshake不成立、`authorize`=同意フロー、`exchange`=token API、`authenticate`=認証
