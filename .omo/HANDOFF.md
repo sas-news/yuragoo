@@ -264,3 +264,8 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 **修正**: DiscordGate は `history.pushState` で `/r/<id>` に遷移し RoomPage をその場で lazy mount。referrer は `discord.com` のまま、注入クエリも残り、**gate で認証済みの SDK インスタンスがモジュール memo 経由でそのまま部屋画面に引き継がれる**。InviteButton の bootPlatform 再実行は ready() 即解決 + prompt:none で無音。
 
 **教訓**: Discord Activity 内では `location.assign`/`location.href` によるフル遷移は RPC ブリッジを破壊する（referrer が変わる）。SPA 遷移のみ使うこと。同じ制約が他の画面遷移にもかかる — 新規の navigation は pushState 経由で。
+
+### Task 47g — authorize 二重呼び出し INVALID_COMMAND 解消（commit 14c1aaf、staging 13b2c189）
+
+- SPA 化で gate の認証済み SDK が部屋画面に生きている → InviteButton が bootPlatform を再実行すると `authorize` が2度目の呼び出しで INVALID_COMMAND(4002) を投げる
+- 招待には authenticate 不要（shareLink/openInviteDialog は client command）→ `getDiscordSdk` + `sdk.ready()`(shareInvite 内、15s deadline) のみに簡素化。`getDiscordSdk` にも15s deadline
