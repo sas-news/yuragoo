@@ -5,7 +5,7 @@
 // browser link stays host-only so invite secrecy stays with the owner.
 import { useState } from "react";
 import { shareInvite, type ShareInviteResult } from "@yuragoo/platform";
-import { bootPlatform, discordClientId, platformKind } from "../platform/bootstrap";
+import { discordClientId, getDiscordSdk, platformKind } from "../platform/bootstrap";
 import styles from "./Lobby.module.css";
 
 export interface InviteButtonProps {
@@ -48,27 +48,23 @@ export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) 
           type="button"
           data-testid="discord-share"
           onClick={() => {
-            setStatus({ kind: "info", text: "Discord に接続中…" });
+            setStatus({ kind: "info", text: "Discord に接続中…（sdk-load）" });
             void (async () => {
-              // The room page's SDK never ran the auth chain (the gate
-              // did, on a different page). Re-run bootPlatform — prompt:
-              // none makes re-consent silent — so shareInvite posts on a
-              // ready+authenticated bridge, not a bare one. Each stage is
-              // deadline-bounded and reported, so a hang names its step.
-              let stage = "sdk-load";
-              const { boot, error } = await bootPlatform(discordClientId(), (s) => {
-                stage = s;
-                setStatus({ kind: "info", text: `Discord に接続中…（${s}）` });
-              });
-              if (boot.sdk === null || error !== null) {
-                fail(`Discord と接続できませんでした（${error?.kind ?? "no-sdk"}:${stage}）`);
-                return;
-              }
+              // The gate's SPA hand-off keeps the module-memoized,
+              // already-authenticated SDK — authorize may only run ONCE
+              // per bridge (a second call throws INVALID_COMMAND), so
+              // shareInvite just needs the ready handshake, no re-auth.
+              const sdk = await Promise.race([
+                getDiscordSdk(discordClientId()),
+                new Promise<never>((_r, reject) =>
+                  setTimeout(() => reject(new Error("timeout:sdk-load")), 15_000),
+                ),
+              ]);
               setStatus({ kind: "info", text: "招待画面をひらいています…" });
               const result = await shareInvite(
-                boot.sdk,
+                sdk,
                 "ゆらぐー！ このボイスチャンネルであそぼう",
-                boot.sdk.instanceId,
+                sdk.instanceId,
               );
               if (result === "shared") setStatus({ kind: "ok", text: "招待を送りました" });
               else if (result === "cancelled")
