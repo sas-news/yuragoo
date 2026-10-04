@@ -53,10 +53,15 @@ export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) 
               // The room page's SDK never ran the auth chain (the gate
               // did, on a different page). Re-run bootPlatform — prompt:
               // none makes re-consent silent — so shareInvite posts on a
-              // ready+authenticated bridge, not a bare one.
-              const { boot, error } = await bootPlatform(discordClientId());
+              // ready+authenticated bridge, not a bare one. Each stage is
+              // deadline-bounded and reported, so a hang names its step.
+              let stage = "sdk-load";
+              const { boot, error } = await bootPlatform(discordClientId(), (s) => {
+                stage = s;
+                setStatus({ kind: "info", text: `Discord に接続中…（${s}）` });
+              });
               if (boot.sdk === null || error !== null) {
-                fail(`Discord と接続できませんでした（${error?.kind ?? "no-sdk"}）`);
+                fail(`Discord と接続できませんでした（${error?.kind ?? "no-sdk"}:${stage}）`);
                 return;
               }
               setStatus({ kind: "info", text: "招待画面をひらいています…" });

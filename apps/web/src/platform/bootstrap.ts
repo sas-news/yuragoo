@@ -105,7 +105,10 @@ const exchangeToken =
 // The SDK comes from getDiscordSdk, not a fresh factory call: a second
 // DiscordSDK instance would post commands on a bridge that never ran
 // ready()/authenticate() (the share button's every-click failure).
-export const bootPlatform = async (clientId: string): Promise<BootResult> => {
+export const bootPlatform = async (
+  clientId: string,
+  onStage?: (stage: string) => void,
+): Promise<BootResult> => {
   const kind = platformKind();
   const adapter = platformAdapter();
   if (kind === "browser") {
@@ -119,11 +122,20 @@ export const bootPlatform = async (clientId: string): Promise<BootResult> => {
     };
   }
   try {
-    const sdk = await getDiscordSdk(clientId);
+    onStage?.("sdk-load");
+    const sdk = await Promise.race([
+      getDiscordSdk(clientId),
+      new Promise<never>((_r, reject) =>
+        setTimeout(() => reject(new Error("timeout:sdk-load")), 15_000),
+      ),
+    ]);
     const session = await establishDiscordSession({
       sdk,
       clientId,
       exchangeToken: exchangeToken(apiOrigin()),
+      // exactOptionalPropertyTypes: spread so an absent hook stays absent.
+      ...(onStage === undefined ? {} : { stage: onStage }),
+      deadlineMs: 30_000,
     });
     return { boot: { kind, adapter, sdk, session }, error: null };
   } catch (error) {

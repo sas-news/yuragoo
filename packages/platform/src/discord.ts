@@ -59,6 +59,12 @@ export interface DiscordAdapterDeps {
   readonly sdk: DiscordSdkLike;
   readonly clientId: string;
   readonly exchangeToken: TokenExchange;
+  // Optional diagnostics: each step reports its label before awaiting
+  // and every await is deadline-bounded — the RPC bridge and the token
+  // fetch have no timeouts of their own, so a silent drop would hang
+  // the boot chain forever (Task 47d).
+  readonly stage?: (name: string) => void;
+  readonly deadlineMs?: number;
 }
 
 // The login sequence as ONE ordered driver: ready -> authorize(identify
@@ -68,19 +74,26 @@ export interface DiscordAdapterDeps {
 export const establishDiscordSession = async (
   deps: DiscordAdapterDeps,
 ): Promise<DiscordSession> => {
-  await deps.sdk.ready();
-  const auth = await deps.sdk.commands.authorize({
-    client_id: deps.clientId,
-    response_type: "code",
-    scope: ["identify"],
-    prompt: "none",
-  });
+  const step = <T>(label: string, work: Promise<T>): Promise<T> => {
+    deps.stage?.(label);
+    return withTimeout(work, deps.deadlineMs ?? 30_000, label);
+  };
+  await step("ready", deps.sdk.ready());
+  const auth = await step(
+    "authorize",
+    deps.sdk.commands.authorize({
+      client_id: deps.clientId,
+      response_type: "code",
+      scope: ["identify"],
+      prompt: "none",
+    }),
+  );
   const code = auth?.code;
   if (typeof code !== "string" || code === "") {
     throw new Error("discord-auth-denied");
   }
-  const accessToken = await deps.exchangeToken(code);
-  await deps.sdk.commands.authenticate({ access_token: accessToken });
+  const accessToken = await step("exchange", deps.exchangeToken(code));
+  await step("authenticate", deps.sdk.commands.authenticate({ access_token: accessToken }));
   return {
     accessToken,
     instanceId: deps.sdk.instanceId,
