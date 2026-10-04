@@ -34,6 +34,9 @@ import { useOutcomeReveal } from "./useOutcomeReveal";
 import { memberName } from "./view-members";
 
 interface RoomGameProps {
+  // Task 48: Discord PIP flips seats to the icon-only clamp tier (the CSS
+  // hides the chip, the geometry re-clamps for the bare icon).
+  readonly pip?: boolean;
   readonly view: RoomView;
   readonly selfId: string;
   readonly submitText: (text: string) => Promise<unknown> | undefined;
@@ -46,6 +49,7 @@ interface RoomGameProps {
 }
 
 export function RoomGame({
+  pip = false,
   view,
   selfId,
   submitText,
@@ -80,7 +84,7 @@ export function RoomGame({
   }, [view.feed]);
 
   const nameOf = (id: string): string => memberName(view.players, id);
-  const seats = useSeatAnchors(view.roster, runtime, arenaRef);
+  const seats = useSeatAnchors(view.roster, runtime, arenaRef, pip);
   const presentation = useMemo(() => {
     const dist = latestRoomDist(view);
     const newest = view.posts[view.posts.length - 1];

@@ -120,7 +120,7 @@ test("gates: non-host and empty scenario reject for free", async () => {
   for (const s of socks) s.close();
 });
 
-test("failure: invalid response consumes the slot; second click refused", async () => {
+test("failure: invalid response frees the slot; a retry is allowed", async () => {
   const stub = stubProvider();
   stub.mode = "garbage";
   inject(stub);
@@ -129,14 +129,18 @@ test("failure: invalid response consumes the slot; second click refused", async 
   const f = await host.next(isType("generationFailed"));
   if (f.type !== "generationFailed") throw new Error("bad frame");
   expect(f.payload.code).toBe("generation-invalid");
-  expect(f.payload.slotSpent).toBe(true);
+  expect(f.payload.slotSpent).toBe(false);
+  // The slot row was deleted — a second attempt reaches the provider.
+  stub.mode = "ok";
   host.sendCmd(room.roomId, "gen2", "generateChoices", {});
-  expect((await host.next(isError("generation-spent"))).type).toBe("error");
-  expect(stub.calls).toBe(1);
+  const g = await host.next(isType("choicesGenerated"));
+  if (g.type !== "choicesGenerated") throw new Error("bad frame");
+  expect(g.payload.labels).toHaveLength(2);
+  expect(stub.calls).toBe(2);
   for (const s of socks) s.close();
 });
 
-test("failure: provider timeout consumes the slot", async () => {
+test("failure: provider timeout frees the slot", async () => {
   const stub = stubProvider();
   stub.mode = "hold"; // never released — the deadline fires instead
   inject(stub, 50);
@@ -145,7 +149,8 @@ test("failure: provider timeout consumes the slot", async () => {
   const f = await host.next(isType("generationFailed"));
   if (f.type !== "generationFailed") throw new Error("bad frame");
   expect(f.payload.code).toBe("generation-timeout");
-  expect(f.payload.slotSpent).toBe(true);
+  expect(f.payload.slotSpent).toBe(false);
+  expect(await roomStubOf(room.roomId).tryGenerationSlot("pre")).toBe(true);
   for (const s of socks) s.close();
 });
 

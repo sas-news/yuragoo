@@ -292,3 +292,18 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - `ChoiceEditor.module.css` — 行高 42→30px、diamond 26→20px、assignee 120→52px
 - `arena.module.css` — 既存 px メディアと同じ 3 ルールを `html[data-pip]` にも適用（イベントが先行してサイズ追従が遅れるケース用）
 - **イベント駆動の意義**: iframe 実寸が閾値ギリギリ/未追従でも Discord の ACTIVITY_LAYOUT_MODE_UPDATE が発火すれば確実に compact 化。focused/grid 復帰で属性除去
+
+### Task 48b — PIP 根本修正: layout_mode は数値 enum だった + 完全引き算デザイン
+
+ユーザー報告「変わってない」→ 調査で**2つのバグ**を特定:
+
+1. **`discord-layout.ts` のパースバグ（本命）**: Discord の `ACTIVITY_LAYOUT_MODE_UPDATE` は `layout_mode` を**数値**で送る（FOCUSED=0/PIP=1/GRID=2/UNHANDLED=-1 — SDK schema の LayoutModeTypeObject）のに、`pickMode` が `String(v).includes("pip")` で文字列判定 → `String(1)==="1"` で**常に unknown**。orientation(PORTRAIT=0/LANDSCAPE=1) と thermal(NOMINAL=0…) も同じバグ。イベントは届いていたのに pip と誰も判定できなかった → `data-pip` は matchMedia 頼みのみ。PIP 窓が閾値より大きい/Discord が視覚スケールする場合に何も起きなかった。
+2. **「小さくする」設計の限界**: ユーザー指摘どおり PIP は編集場所ではない → React レベルで専用サーフェスに差替。
+
+**実装**:
+- `pickMode`/`pickOrientation`/`pickThermal` に数値 enum マップ + 文字列フォールバック
+- `usePipMode()` が boolean を返す → RoomPage が lobby 時に **PipLobby**（お題1行＋メンバードット＋席/準備カウント＋招待/準備OK/はじめる/出る）を描画。編集・設定・生成は focused に戻すまで非表示
+- ゲーム側 `data-pip`: 座席は**アイコンのみ**36px をアトラクター直上に中央配置（translate(-50%,-50%)、who 非表示、wedge 縮小）→ seats.ts に pip クランプ（PIP_ICON_HALF=18/TOP=58/BOTTOM=28）、RoomGame へ `pip` prop → useSeatAnchors 経由
+- InputDock `data-pip`: whoBox 非表示（アリーナのアイコンが手番を示すので不要）
+- **生成リトライ修正**: `generate-choices.ts` が provider 失敗でも `spent:true` で fail → 失敗で「生成済み」+再試行不可だった。`releaseSlot`（generation_slots 行削除）を追加し失敗時 `slotSpent:false` — 日次クォータは control.consume で消費済みのまま（honest accounting 維持）、部屋ゲートのみ解放。エラー表示に `（code）` 付与、メッセージを「もう一度試すか手入力で」に更新
+- workers テスト2件書換（slotSpent:false + リトライ成功）、e2e generation.spec.ts 失敗テストを enabled 期待に更新

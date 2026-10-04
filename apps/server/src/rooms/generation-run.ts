@@ -123,3 +123,16 @@ export const claimSlot = (
     return "late";
   }
 };
+
+// A failed attempt hands the slot back: the row deletes so the host may
+// retry. Honest accounting still holds — the daily quota was already
+// consumed via control.consume; only the per-room one-shot gate resets.
+export const releaseSlot = (host: GenerationHost, slot: GenerationSlot): void => {
+  try {
+    host.txn(() => {
+      host.sql.exec("DELETE FROM generation_slots WHERE slot = ?", slot);
+    });
+  } catch {
+    // Storage torn down mid-flight — the slot dies with the room anyway.
+  }
+};

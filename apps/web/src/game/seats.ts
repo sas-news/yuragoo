@@ -43,6 +43,13 @@ const TINY_TOP_PX = 64;
 const HALF_ICON_X_TINY = 20;
 const HALF_CHIP_Y_TINY = 56;
 
+// Dedicated PIP tier (html[data-pip]): the seat renders as a bare 36px
+// icon centered ON the post — no name pill — so the clamp only needs the
+// icon and its turn wedge inside the arena, clear of the HUD.
+const PIP_ICON_HALF = 18;
+const PIP_TOP_PX = 58; // HUD (~32px at top:2) + wedge (~16px) + margin
+const PIP_BOTTOM_PX = 28;
+
 // The horizontal clamp keeps only the ICON onscreen (64px wide / 48px on
 // narrow arenas) — never the whole chip. A wider clamp drags edge seats
 // visibly off their attractor posts toward the center (円とずれる); the
@@ -58,6 +65,7 @@ export const seatAnchor = (
   attractor: SeatPoint,
   center: SeatPoint,
   arena: ArenaSize,
+  pip = false,
 ): SeatPoint => {
   const dx = attractor.x - center.x;
   const dy = attractor.y - center.y;
@@ -65,6 +73,14 @@ export const seatAnchor = (
   // Degenerate case (marker at the exact center): push the chip upward.
   const ux = len > 0.001 ? dx / len : 0;
   const uy = len > 0.001 ? dy / len : -1;
+  // Icon-only PIP: the anchor IS the icon center — no chip extents to
+  // reserve, just the icon + wedge clear of the HUD and the bottom edge.
+  if (pip) {
+    return {
+      x: clamp(attractor.x + ux * OUTWARD_PX, PIP_ICON_HALF, arena.w - PIP_ICON_HALF),
+      y: clamp(attractor.y + uy * OUTWARD_PX, PIP_TOP_PX, arena.h - PIP_BOTTOM_PX),
+    };
+  }
   const tiny = arena.w < TINY_W || arena.h < TINY_H;
   const topEdge = tiny ? TINY_TOP_PX : arena.w < NARROW_W ? NARROW_TOP_PX : EDGE_PX;
   const halfX = tiny ? HALF_ICON_X_TINY : arena.w < NARROW_W ? HALF_ICON_X_NARROW : HALF_ICON_X;
@@ -82,12 +98,13 @@ export const seatAnchors = (
   roster: readonly { readonly id: string; readonly slot: number }[],
   attractors: readonly SeatPoint[],
   arena: ArenaSize,
+  pip = false,
 ): SeatMap => {
   const center = { x: arena.w / 2, y: arena.h / 2 };
   const map: Record<string, SeatPoint> = {};
   for (const player of roster) {
     const attractor = attractors[player.slot];
-    if (attractor !== undefined) map[player.id] = seatAnchor(attractor, center, arena);
+    if (attractor !== undefined) map[player.id] = seatAnchor(attractor, center, arena, pip);
   }
   return map;
 };
@@ -100,6 +117,7 @@ export const useSeatAnchors = (
   roster: readonly { readonly id: string; readonly slot: number }[],
   runtime: CreatureRuntime | null,
   arenaRef: { readonly current: HTMLElement | null },
+  pip = false,
 ): SeatMap => {
   const [anchors, setAnchors] = useState<SeatMap>({});
 
@@ -108,12 +126,17 @@ export const useSeatAnchors = (
     if (arena === null || runtime === null) return;
     const rect = arena.getBoundingClientRect();
     setAnchors(
-      seatAnchors(roster, runtime.readLayoutSummary().attractorCenters, {
-        w: rect.width,
-        h: rect.height,
-      }),
+      seatAnchors(
+        roster,
+        runtime.readLayoutSummary().attractorCenters,
+        {
+          w: rect.width,
+          h: rect.height,
+        },
+        pip,
+      ),
     );
-  }, [arenaRef, runtime, roster]);
+  }, [arenaRef, runtime, roster, pip]);
 
   useEffect(() => {
     recompute();

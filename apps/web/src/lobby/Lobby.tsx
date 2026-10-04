@@ -130,7 +130,9 @@ export function Lobby({
 
   // generationFailed is a room event everyone receives, but the error
   // surface is host-only — members never see the proposal flow at all.
-  const error = sendError ?? lastError ?? (isHost ? generationError?.message : null) ?? null;
+  const genErrorText =
+    generationError === null ? null : `${generationError.message}（${generationError.code}）`;
+  const error = sendError ?? lastError ?? (isHost ? genErrorText : null) ?? null;
 
   return (
     <section className={styles.lobby} data-lobby-revision={lobby.revision}>

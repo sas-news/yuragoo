@@ -26,25 +26,45 @@ export interface LayoutState {
 const record = (v: unknown): Record<string, unknown> | null =>
   typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
 
+// Discord sends these payloads as small-int enums (LayoutModeTypeObject /
+// OrientationTypeObject / ThermalStateTypeObject in the SDK schema):
+//   layout_mode   FOCUSED=0 PIP=1 GRID=2 UNHANDLED=-1
+//   orientation   PORTRAIT=0 LANDSCAPE=1 UNHANDLED=-1
+//   thermal_state NOMINAL=0 FAIR=1 SERIOUS=2 CRITICAL=3 UNHANDLED=-1
+// String forms are kept as a defensive fallback only — a bare String()
+// parse silently turned every real event into "unknown".
+const LAYOUT_MODES: Record<number, LayoutMode> = { 0: "focused", 1: "pip", 2: "grid" };
 const pickMode = (data: unknown): LayoutMode => {
-  const s = String(record(data)?.layout_mode ?? "").toLowerCase();
+  const v = record(data)?.layout_mode;
+  if (typeof v === "number") return LAYOUT_MODES[v] ?? "unknown";
+  const s = String(v ?? "").toLowerCase();
   if (s.includes("pip")) return "pip";
   if (s.includes("grid")) return "grid";
-  if (s.includes("focus")) return "focused";
-  return "unknown";
+  return s.includes("focus") ? "focused" : "unknown";
 };
 
+const ORIENTATIONS: Record<number, Orientation> = { 0: "portrait", 1: "landscape" };
 const pickOrientation = (data: unknown): Orientation => {
-  const s = String(record(data)?.orientation ?? data ?? "").toLowerCase();
+  const v = record(data)?.orientation ?? data;
+  if (typeof v === "number") return ORIENTATIONS[v] ?? "unknown";
+  const s = String(v ?? "").toLowerCase();
   return s.includes("portrait") ? "portrait" : s.includes("landscape") ? "landscape" : "unknown";
 };
 
+const THERMALS: Record<number, ThermalState> = {
+  0: "normal",
+  1: "fair",
+  2: "serious",
+  3: "critical",
+};
 const pickThermal = (data: unknown): ThermalState => {
-  const s = String(record(data)?.thermal_state ?? "").toLowerCase();
+  const v = record(data)?.thermal_state;
+  if (typeof v === "number") return THERMALS[v] ?? "unknown";
+  const s = String(v ?? "").toLowerCase();
   if (s.includes("critical")) return "critical";
   if (s.includes("serious")) return "serious";
   if (s.includes("fair")) return "fair";
-  return s.includes("normal") ? "normal" : "unknown";
+  return s.includes("normal") || s.includes("nominal") ? "normal" : "unknown";
 };
 
 export interface LayoutWatcher {

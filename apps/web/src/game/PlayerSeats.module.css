@@ -236,6 +236,34 @@
   }
 }
 
+/* Dedicated PIP tier (html[data-pip], Task 48): the seat is a bare 36px
+   icon centered ON its attractor post — name pill and goal line are gone
+   (pop-out is for glancing). The matching clamp lives in seats.ts. */
+:global(html[data-pip]) .seat {
+  gap: 0;
+  transform: translate(-50%, -50%);
+}
+
+:global(html[data-pip]) .who {
+  display: none;
+}
+
+:global(html[data-pip]) .turnMark {
+  inset-block-start: -18px;
+  font-size: 15px;
+}
+
+:global(html[data-pip]) .avatar {
+  inline-size: 36px;
+  block-size: 36px;
+  font-size: 15px;
+}
+
+:global(html[data-pip]) .avatarImg {
+  inline-size: 30px;
+  block-size: 30px;
+}
+
 /* PIP tier (Discord pop-out): matches seats.ts's TINY_W/TINY_H tier —
    40px icon, name pill drops its padding, goal line collapses to the
    symbol so the whole chip stays inside the clamped rail. */

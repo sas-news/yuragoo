@@ -4,20 +4,23 @@
 // windows and the e2e bundle exercise the same layout. CSS under
 // `html[data-pip]` then collapses each screen to its reduced-info
 // variant — the pop-out is for glancing, not full editing.
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { watchLayout } from "@yuragoo/platform";
 import { discordClientId, getDiscordSdk, platformKind } from "./bootstrap";
 
 // Keep in sync with seats.ts TINY_W/TINY_H and the PlayerSeats media tier.
 const PIP_QUERY = "(max-width: 460px), (max-height: 480px)";
 
-export const usePipMode = (): void => {
+export const usePipMode = (): boolean => {
+  const [pip, setPip] = useState(false);
   useEffect(() => {
     const root = document.documentElement;
     let discordPip = false;
     let mediaPip = false;
     const apply = (): void => {
-      if (discordPip || mediaPip) root.dataset.pip = "true";
+      const next = discordPip || mediaPip;
+      setPip(next);
+      if (next) root.dataset.pip = "true";
       else delete root.dataset.pip;
     };
 
@@ -47,4 +50,5 @@ export const usePipMode = (): void => {
       delete root.dataset.pip;
     };
   }, []);
+  return pip;
 };

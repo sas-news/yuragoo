@@ -20,6 +20,7 @@ import {
   failOutcome,
   GENERATION_RESERVE_KIND,
   type GenerationHost,
+  releaseSlot,
 } from "./generation-run";
 import { slotSpent } from "./generation-slots";
 import { readPresence } from "./leases";
@@ -75,7 +76,7 @@ const fail = (host: GenerationHost, code: string, spent: boolean, elapsedMs?: nu
   failOutcome(host, {
     code,
     spent,
-    message: "選択肢の生成に失敗しました — 手入力で続けられます",
+    message: "選択肢の生成に失敗しました — もう一度試すか手入力で続けられます",
     elapsedMs,
   });
 
@@ -132,7 +133,9 @@ export const runChoiceGeneration = async (
         ? "generation-timeout"
         : "generation-upstream";
   }
-  // The attempt was sent — consume the grant whatever landed back.
+  // The attempt was sent — consume the grant whatever landed back. A
+  // failure also releases the per-room slot: the quota spend is real,
+  // but a flaky provider must not brick generation for this room.
   await control.consume({ token: req.token }).catch(() => {});
   if (labels !== null) {
     logEvent({ eventCode: "choice-gen", latencyBucket: latencyBucket(deps.nowMs() - sentAt) });
@@ -142,6 +145,7 @@ export const runChoiceGeneration = async (
       labels,
     });
   } else {
-    fail(host, code, true, deps.nowMs() - sentAt);
+    releaseSlot(host, "pre");
+    fail(host, code, false, deps.nowMs() - sentAt);
   }
 };

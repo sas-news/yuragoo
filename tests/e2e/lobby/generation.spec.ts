@@ -107,7 +107,7 @@ test("happy: host generates, applies the proposal, edits stay manual", async ({ 
   }
 });
 
-test("failure: garbage upstream shows an error, spends the slot", async ({ browser }) => {
+test("failure: garbage upstream shows an error, frees the slot", async ({ browser }) => {
   test.setTimeout(120_000);
   fixture.mode = "garbage";
   const room = await createRoom();
@@ -123,11 +123,9 @@ test("failure: garbage upstream shows an error, spends the slot", async ({ brows
   });
   // Member pages never see the failure surface either — host-only UI.
   expect(await member.locator('[role="alert"]').count()).toBe(0);
-  // Slot spent: the button is permanently disabled.
-  await expect(genButton(host)).toBeDisabled();
-  await expect(genButton(host)).toContainText("生成済み");
-  // A second click is impossible client-side AND refused server-side.
-  expect(await sendRawError(host, "generateChoices", {})).toContain("generation-spent");
+  // The slot is released on failure — the button comes back for a retry.
+  await expect(genButton(host)).toBeEnabled();
+  expect(await sendRawError(host, "generateChoices", {})).not.toContain("generation-spent");
   // Manual editing remains fully functional after the failure.
   await host.locator('[data-choice-id="c0"] input').fill("手入力の選択肢");
   await waitChoiceLabelOn(member, "c0", "手入力の選択肢");
@@ -141,8 +139,8 @@ test("failure: garbage upstream shows an error, spends the slot", async ({ brows
       `lobbyRevision=${rev}`,
       `fixtureRequests=${fixture.requests.length}`,
       ...fixture.requests,
-      "hostError=選択肢の生成に失敗しました — 手入力で続けられます",
-      "slotSpent=true secondAttempt=generation-spent manualEdit=ok",
+      "hostError=選択肢の生成に失敗しました — もう一度試すか手入力で続けられます",
+      "slotSpent=false secondAttempt=accepted manualEdit=ok",
       "",
     ].join("\n"),
   );
