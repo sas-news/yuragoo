@@ -47,15 +47,38 @@ export const choiceLabelsJsonSchema = (count: number): Record<string, unknown> =
 const invalid = (message: string): GenerationProviderError =>
   new GenerationProviderError("invalid-response", message);
 
+// Slice the first JSON region out of a chatty response: ```json fences,
+// leading prose, or a trailing explanation all drop away.
+const jsonSlice = (raw: string): string => {
+  const text = raw.replace(/```(?:json)?/gi, "").trim();
+  const start = text.search(/[[{]/);
+  if (start < 0) return text;
+  const close = text[start] === "{" ? "}" : "]";
+  const end = text.lastIndexOf(close);
+  return end > start ? text.slice(start, end + 1) : text.slice(start);
+};
+
+// Qwen sometimes returns {label: "..."} objects despite the schema asking
+// for bare strings — unwrap them rather than failing the whole batch.
+const labelField = (item: unknown): unknown =>
+  item !== null && typeof item === "object" && !Array.isArray(item)
+    ? (item as { label?: unknown }).label
+    : item;
+
 // raw is the provider's response payload: an object with `choices` (the
 // schema shape), a bare array, or a JSON string of either.
 export const parseChoiceLabels = (raw: unknown, count: number): string[] => {
   let value: unknown = raw;
   if (typeof value === "string") {
+    const text = value;
     try {
-      value = JSON.parse(value);
+      value = JSON.parse(text);
     } catch {
-      throw invalid("response was not JSON");
+      try {
+        value = JSON.parse(jsonSlice(text));
+      } catch {
+        throw invalid("response was not JSON");
+      }
     }
   }
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
@@ -66,7 +89,7 @@ export const parseChoiceLabels = (raw: unknown, count: number): string[] => {
   }
   const labels: string[] = [];
   const seen = new Set<string>();
-  for (const item of value) {
+  for (const item of value.map(labelField)) {
     if (typeof item !== "string") throw invalid("a choice was not a string");
     const label = item.trim();
     if (label === "") throw invalid("a choice was empty");

@@ -118,6 +118,12 @@ export const planFor = ({
         },
       };
     }
+    case "reportParticipants": {
+      // Unreachable: runClientCommand handles Task 48 reports through the
+      // presence commit path before planning. This arm keeps the switch
+      // exhaustive — a report that ever lands here just acks.
+      return { kind: "ack-only", write: () => {} };
+    }
     case "updateLobby": {
       // Task 26: host-only, pre-game only. The settings merge + ready
       // reset + lobbyChanged broadcast land atomically in the commit.

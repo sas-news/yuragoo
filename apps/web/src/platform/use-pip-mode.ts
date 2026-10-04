@@ -4,15 +4,25 @@
 // windows and the e2e bundle exercise the same layout. CSS under
 // `html[data-pip]` then collapses each screen to its reduced-info
 // variant — the pop-out is for glancing, not full editing.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { watchLayout } from "@yuragoo/platform";
 import { discordClientId, getDiscordSdk, platformKind } from "./bootstrap";
 
 // Keep in sync with seats.ts TINY_W/TINY_H and the PlayerSeats media tier.
 const PIP_QUERY = "(max-width: 460px), (max-height: 480px)";
 
-export const usePipMode = (): boolean => {
+export const usePipMode = (
+  // Discord rooms pass a reporter so participant events double as the
+  // activity-leave detector (the server drops anyone missing whose
+  // discord_user_id is verified — Task 48). One-shot boot fetch covers
+  // departures that happened before the subscription landed.
+  onParticipants?: (userIds: readonly string[]) => void,
+): boolean => {
   const [pip, setPip] = useState(false);
+  // Always call the latest reporter — the effect mounts once, the conn ref
+  // inside it resolves lazily per event.
+  const reportRef = useRef(onParticipants);
+  reportRef.current = onParticipants;
   useEffect(() => {
     const root = document.documentElement;
     let discordPip = false;
@@ -36,10 +46,23 @@ export const usePipMode = (): boolean => {
     if (platformKind() === "discord") {
       void getDiscordSdk(discordClientId())
         .then((sdk) => {
-          watcher = watchLayout(sdk, (state) => {
-            discordPip = state.mode === "pip";
-            apply();
-          });
+          watcher = watchLayout(
+            sdk,
+            (state) => {
+              discordPip = state.mode === "pip";
+              apply();
+            },
+            (ids) => reportRef.current?.(ids),
+          );
+          void sdk.commands
+            .getActivityInstanceConnectedParticipants?.()
+            .then((res) => {
+              const ids = (res?.participants ?? [])
+                .map((p) => p.id)
+                .filter((id): id is string => typeof id === "string" && id !== "");
+              reportRef.current?.(ids);
+            })
+            .catch(() => {});
         })
         .catch(() => {});
     }

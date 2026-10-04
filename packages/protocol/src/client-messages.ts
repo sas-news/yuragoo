@@ -85,6 +85,14 @@ export const clientEnvelopeSchema = z.discriminatedUnion("type", [
   envelope("closeRoom", emptyPayload),
   // Presence touch; minimal side effects until the presence task lands.
   envelope("heartbeat", emptyPayload),
+  // Discord-only presence report (Task 48): the reporter forwards the
+  // instance's ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE user-id list so the
+  // room can mark verified Discord members who left the Activity as
+  // disconnected — their zombie iframe keeps the socket/lease alive.
+  envelope(
+    "reportParticipants",
+    z.strictObject({ userIds: z.array(z.string().min(1).max(64)).max(64) }),
+  ),
   // Gap resync: the server replies with a full `snapshot` frame.
   envelope("syncRequest", z.strictObject({ lastEventSeq: safeInt.optional() })),
 ]);

@@ -48,14 +48,14 @@ export interface PresenceOutcome {
   readonly lastEventSeq: number | null;
 }
 
-const NONE: PresenceOutcome = {
+export const NONE: PresenceOutcome = {
   expiredIds: [],
   books: null,
   hostPlayerId: null,
   lastEventSeq: null,
 };
 
-class Acc {
+export class Acc {
   expiredIds: string[] = [];
   books: Books | null = null;
   host: string | null = null;
@@ -76,7 +76,12 @@ class Acc {
 // Shared tail of every disconnect: presence event, host election when the
 // room still has connections, and the empty-room bookkeeping when it does
 // not (emptySince + optional playing-phase pause + expiry arming).
-const markDisconnected = (host: PresenceHost, playerId: string, nowMs: number, acc: Acc): void => {
+export const markDisconnected = (
+  host: PresenceHost,
+  playerId: string,
+  nowMs: number,
+  acc: Acc,
+): void => {
   writeLease(host.sql, playerId, null);
   acc.saw(recordRoomEvent(host.sql, "presenceChanged", { playerId, connected: false }));
   const connected = connectedPlayerIds(host.sql, nowMs).size;

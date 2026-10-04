@@ -13,7 +13,9 @@ import type { Books } from "./due";
 import { displayHostId } from "./host-election";
 import type { RoomLimits } from "./limits";
 import { readLobby } from "./lobby";
-import type { DedupeKey } from "./storage";
+import { dropMissingParticipants } from "./participant-drop";
+import { commitPresence } from "./presence";
+import type { ApplyResult, DedupeKey } from "./storage";
 import { ackFrame, fingerprintOf, snapshotFrame, type WireHost } from "./wire";
 
 // Re-exported so transport/auth-rpc keep importing one module.
@@ -27,6 +29,10 @@ export interface CommandHost extends WireHost {
   setBooks(books: Books | null): void;
   rearm(): Promise<void>;
   leaseMs(): number;
+  // Task 48 participant reports ride commitPresence — needs the live
+  // socket list + the async rearm lane the presence epilogue uses.
+  sockets(): readonly WebSocket[];
+  waitUntil(p: Promise<void>): void;
   // Task 24: the leave plan arms the empty-grace clock when the last
   // member walks out — same value SocketHost already exposes.
   emptyGraceMs(): number;
@@ -71,6 +77,34 @@ export const runClientCommand = (
       reply: snap,
       committed: false,
       closeRoom: false,
+      dropPlayerIds: [],
+    };
+  }
+  // Task 48: Discord participant reports bypass the command ledger — the
+  // drop runs the presence commit path (event rows + broadcast + socket
+  // closes) and is idempotent by the lease check, so no dedupe row.
+  if (env.type === "reportParticipants") {
+    const out = commitPresence(host, (h) =>
+      dropMissingParticipants(h, playerId, env.payload.userIds, Date.now()),
+    );
+    const rev = host.booksView()?.meta.stateRevision ?? 0;
+    const result: ApplyResult = {
+      ack: {
+        accepted: true,
+        inputSeq: host.booksView()?.meta.inputSeq ?? 0,
+        stateRevision: rev,
+      },
+      events: [],
+      stateRevision: rev,
+    };
+    return {
+      ack: ackFrame(host, env.commandId, result),
+      events: [],
+      reply: null,
+      committed: out.lastEventSeq !== null,
+      closeRoom: false,
+      // commitPresence already closed the dropped sockets after the
+      // broadcast — a false positive self-heals via client reconnect.
       dropPlayerIds: [],
     };
   }

@@ -75,10 +75,12 @@ export interface LayoutWatcher {
 
 // Subscribe to all three environment events with one listener bundle.
 // onChange fires after every event so callers re-render once per update.
+// onParticipants receives the instance's Discord user-id list (Task 48) —
+// the room uses it to spot members who left the Activity entirely.
 export const watchLayout = (
   sdk: DiscordSdkLike,
   onChange: (state: LayoutState) => void,
-  onParticipants?: (count: number) => void,
+  onParticipants?: (userIds: readonly string[]) => void,
 ): LayoutWatcher => {
   const current = {
     mode: "unknown" as LayoutMode,
@@ -114,8 +116,15 @@ export const watchLayout = (
   if (onParticipants !== undefined) {
     add(DISCORD_EVENTS.participants, (data) => {
       const list = record(data)?.participants;
-      participantCount = Array.isArray(list) ? list.length : participantCount;
-      if (participantCount !== null) onParticipants(participantCount);
+      if (!Array.isArray(list)) return;
+      participantCount = list.length;
+      // Each entry carries the verified Discord user id (snowflake) —
+      // non-string members are dropped defensively, never invented.
+      onParticipants(
+        list
+          .map((p) => record(p)?.id)
+          .filter((id): id is string => typeof id === "string" && id !== ""),
+      );
     });
   }
 

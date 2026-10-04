@@ -1,5 +1,5 @@
-// Task 25: one-shot AI choice generation — slot + daily budget accounting,
-// proposal-not-write semantics. Real WS clients + DOs; provider injected.
+// Task 25: one-shot AI choice generation — slot + budget accounting,
+// proposal-not-write. Real WS clients + DOs; provider injected.
 import { afterEach, expect, test } from "vitest";
 import { env } from "cloudflare:test";
 import type { GenerationRequest, GenerativeProvider } from "@yuragoo/ai";
@@ -128,7 +128,7 @@ test("failure: invalid response frees the slot; a retry is allowed", async () =>
   host.sendCmd(room.roomId, "gen", "generateChoices", {});
   const f = await host.next(isType("generationFailed"));
   if (f.type !== "generationFailed") throw new Error("bad frame");
-  expect(f.payload.code).toBe("generation-invalid");
+  expect(f.payload.code).toBe("generation-invalid:json");
   expect(f.payload.slotSpent).toBe(false);
   // The slot row was deleted — a second attempt reaches the provider.
   stub.mode = "ok";

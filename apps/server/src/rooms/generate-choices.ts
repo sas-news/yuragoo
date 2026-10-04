@@ -124,8 +124,10 @@ export const runChoiceGeneration = async (
     });
     try {
       labels = parseChoiceLabels(raw, req.labelCount);
-    } catch {
-      code = "generation-invalid";
+    } catch (error) {
+      // Tag the parse-failure reason so the surfaced code doubles as the
+      // diagnosis (ops log picks it up via errorKind too).
+      code = `generation-invalid:${invalidTag(error)}`;
     }
   } catch (error) {
     code =
@@ -148,4 +150,17 @@ export const runChoiceGeneration = async (
     releaseSlot(host, "pre");
     fail(host, code, false, deps.nowMs() - sentAt);
   }
+};
+
+// Map the parser's stable rejection messages to a short code suffix so a
+// failed generation tells us WHICH contract check the provider broke.
+const invalidTag = (error: unknown): string => {
+  const msg = error instanceof Error ? error.message : "";
+  if (msg.includes("not JSON")) return "json";
+  if (msg.includes("not an array") || msg.includes("expected exactly")) return "shape";
+  if (msg.includes("not a string")) return "type";
+  if (msg.includes("empty")) return "empty";
+  if (msg.includes("graphemes")) return "long";
+  if (msg.includes("distinct")) return "dupe";
+  return "unknown";
 };

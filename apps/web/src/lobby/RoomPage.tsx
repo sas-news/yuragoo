@@ -41,13 +41,19 @@ const roomIdOf = (): string => window.location.pathname.split("/")[2] ?? "";
 export default function RoomPage() {
   const roomId = roomIdOf();
   // PIP (Task 48): html[data-pip] flips from Discord's layout event or
-  // the pixel tier — lobby swaps to the glance surface, arena compacts.
-  const pip = usePipMode();
-  // One-shot page inputs: the fragment secret and an optional ?name=.
+  // the pixel tier. The same watch forwards participant ids so the server
+  // drops members who left the Activity; the boot-fetch list is kept and
+  // flushed once connect() finishes.
+  const lastParticipantIds = useRef<readonly string[] | null>(null);
+  const sendReport = useCallback((ids: readonly string[]): void => {
+    lastParticipantIds.current = ids;
+    void connRef.current?.send("reportParticipants", { userIds: [...ids] }).catch(() => undefined);
+  }, []);
+  const pip = usePipMode(sendReport);
+  // One-shot page inputs: fragment secret + optional ?name=.
   const [inviteSecret] = useState(() => readInviteFragment());
   const [nameParam] = useState(() => new URLSearchParams(window.location.search).get("name"));
-  // `?hb=<ms>` compresses the presence heartbeat for e2e/dev workers whose
-  // lease is shortened; production leaves it undefined (15s contract).
+  // `?hb=<ms>` compresses the heartbeat for e2e/dev (prod: 15s contract).
   const [heartbeatMs] = useState(() => {
     const raw = new URLSearchParams(window.location.search).get("hb");
     const n = raw === null ? Number.NaN : Number(raw);
@@ -73,8 +79,7 @@ export default function RoomPage() {
           onEvent: (env) => setView((v) => applyEvent(v, env)),
           onError: (p) => setLastError(p.message),
           onClose: () => {
-            // Only a live room flips to the closed screen — an intentional
-            // leave already showed "left" and must not be overwritten.
+            // A live room flips to "closed"; an intentional leave wins.
             setStage((s) =>
               connRef.current?.finished === true && (s.kind === "room" || s.kind === "busy")
                 ? { kind: "closed" }
@@ -84,8 +89,7 @@ export default function RoomPage() {
           onReconnect: () => saveRotated(roomId, conn.credentials),
         });
         connRef.current = conn;
-        // e2e seam (same shape as room-bridge): raw command access on the
-        // page's own connection for rejection-path probes. e2e build only.
+        // e2e seam: raw command access on the page's own connection.
         if (import.meta.env.MODE === "e2e") {
           (window as unknown as { __roomConn?: RoomConnection }).__roomConn = conn;
         }
@@ -94,8 +98,7 @@ export default function RoomPage() {
       try {
         await open(session);
       } catch {
-        // The stored pair may have died server-side — rotate once before
-        // giving up (recoverSession burns the reconnect token).
+        // Stored pair may be dead server-side — rotate once, then give up.
         const recovered = await recoverSession(origin, roomId, session).catch(() => null);
         if (recovered === null) {
           clearSession(roomId);
@@ -106,13 +109,14 @@ export default function RoomPage() {
           return;
         }
         saveSession(roomId, recovered);
-        await open(recovered).catch(() => {
-          setStage({ kind: "error", message: "へやにつながりませんでした。" });
-        });
+        await open(recovered).catch(() =>
+          setStage({ kind: "error", message: "へやにつながりませんでした。" }),
+        );
       }
       setStage({ kind: "room" });
+      if (lastParticipantIds.current !== null) sendReport(lastParticipantIds.current); // flush boot fetch
     },
-    [heartbeatMs, roomId],
+    [heartbeatMs, roomId, sendReport],
   );
 
   const doJoin = useCallback(
@@ -138,9 +142,8 @@ export default function RoomPage() {
     [connect, roomId],
   );
 
-  // Boot once (StrictMode double-effects included): stored session wins,
-  // then the invite fragment (auto-join when ?name= is supplied), then the
-  // name panel, else the invite-required error.
+  // Boot once: stored session wins, then the invite fragment (auto-join
+  // when ?name= is supplied), then the name panel, else invite-required.
   useEffect(() => {
     if (booted.current) return;
     booted.current = true;
@@ -153,8 +156,7 @@ export default function RoomPage() {
     } else {
       setStage({ kind: "error", message: "招待リンクから開いてください。" });
     }
-    // The socket outlives the component only through page navigation —
-    // there is no client-side route change on this page.
+    // The socket outlives the component only through page navigation.
   }, [connect, doJoin, inviteSecret, nameParam, roomId]);
 
   const selfId = connRef.current?.credentials.playerId ?? "";
@@ -164,8 +166,7 @@ export default function RoomPage() {
     void conn
       ?.leaveRoom()
       .then(() => {
-        // Flip the stage first — stop() closes the socket, and its onClose
-        // must not overwrite "left" with the generic closed screen.
+        // Flip the stage first — stop()'s onClose must not overwrite it.
         clearSession(roomId);
         setStage({ kind: "left" });
         conn.stop();
@@ -173,9 +174,7 @@ export default function RoomPage() {
       .catch((e: Error) => setLastError(e.message));
   }, [roomId]);
 
-  // The shared invite carries the environment params (api/hb) but never
-  // per-user data: a host who joined through ?name= must not hand out a
-  // link that auto-names every invitee.
+  // The shared invite carries env params (api/hb) but never per-user data.
   const inviteUrl = inviteSecret === null ? null : buildInviteUrl(roomId, inviteSecret);
 
   // IME fallback (Task 27): where 100dvh does not track the software

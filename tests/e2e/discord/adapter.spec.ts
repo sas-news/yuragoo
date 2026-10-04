@@ -162,7 +162,7 @@ test("layout: watchLayout delivers events and stop() unsubscribes all", async ({
         watchLayout: (
           sdk: unknown,
           onChange: (s: { mode: string }) => void,
-          onParticipants: (n: number) => void,
+          onParticipants: (ids: readonly string[]) => void,
         ) => { stop(): void };
         DISCORD_EVENTS: {
           layoutMode: string;
@@ -180,20 +180,20 @@ test("layout: watchLayout delivers events and stop() unsubscribes all", async ({
     const watcher = w.__yuragooPlatform.watchLayout(
       sdk,
       (s) => out.push(`mode:${s.mode}`),
-      (n) => out.push(`count:${n}`),
+      (ids) => out.push(`ids:${ids.join(",")}`),
     );
     await new Promise((r) => setTimeout(r, 50)); // subscribe() resolves async
     for (const l of w.__listeners[w.__yuragooPlatform.DISCORD_EVENTS.layoutMode] ?? []) {
-      l({ layout_mode: "GRID" });
+      l({ layout_mode: 2 }); // GRID — the enum id, not a string
     }
     for (const l of w.__listeners[w.__yuragooPlatform.DISCORD_EVENTS.participants] ?? []) {
-      l({ participants: [{}, {}, {}] });
+      l({ participants: [{ id: "u1" }, { id: "u2" }, {}] });
     }
     watcher.stop();
     return { out, log: [...w.__fakeLog] };
   });
   expect(seen.out).toContain("mode:grid");
-  expect(seen.out).toContain("count:3");
+  expect(seen.out).toContain("ids:u1,u2");
   expect(seen.log.filter((l) => l.startsWith("subscribe:")).length).toBe(4);
   expect(seen.log.filter((l) => l.startsWith("unsubscribe:")).length).toBe(4);
 });

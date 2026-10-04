@@ -42,6 +42,12 @@ export interface DiscordSdkLike {
       custom_id?: string | undefined;
     }): Promise<{ success?: boolean } | null>;
     openInviteDialog(): Promise<unknown>;
+    // Optional on older clients (same optional-call idiom as the
+    // permissions probe): the instance's current participant list, used
+    // once at boot to catch members who left before we subscribed.
+    getActivityInstanceConnectedParticipants?(): Promise<{
+      participants?: ReadonlyArray<{ id?: string | undefined }>;
+    }>;
     // CREATE_INSTANT_INVITE check before openInviteDialog; absent on older
     // clients so the property stays optional and a missing call skips the
     // permission gate rather than breaking the fallback.
