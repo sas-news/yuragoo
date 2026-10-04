@@ -269,3 +269,15 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 
 - SPA 化で gate の認証済み SDK が部屋画面に生きている → InviteButton が bootPlatform を再実行すると `authorize` が2度目の呼び出しで INVALID_COMMAND(4002) を投げる
 - 招待には authenticate 不要（shareLink/openInviteDialog は client command）→ `getDiscordSdk` + `sdk.ready()`(shareInvite 内、15s deadline) のみに簡素化。`getDiscordSdk` にも15s deadline
+
+### Task 47h — 招待機能 動作確認完了（staging 13b2c189）
+
+ユーザー実機で「メンバーをよぶ」→「招待を送りました」確認。**5段の根本原因連鎖**を全部解いた:
+
+1. `location.assign` が Discord 注入クエリ（frame_id等）を破棄 → SDK constructor throw（c83a757）
+2. フルページ遷移で `document.referrer` が自プロキシURLに書き換わり RPC bridge 崩壊 → ready ハング（0a39609: SPA pushState + 同所 mount）
+3. 部屋ページで `authorize` 二重呼び出し → INVALID_COMMAND（14c1aaf: 認証済み SDK 再利用に変更）
+4. 全コマンド timeout 無し → sendCommand 無応答時に永久ハング（a8e2146/8b41711: 全経路 deadline 付与）
+5. エラー可視化 — toast 非依存の常設 status 行（fc4ff54）が全診断を可能にした
+
+**残りの Discord 実機 QA**（ブロッカー待ち）: 招待経由の joiner 着席確認、PIP、DM コンテキストの失敗メッセージ確認。
