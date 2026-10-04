@@ -12,6 +12,7 @@ import { commitCreate } from "./create";
 import type { Books } from "./due";
 import { assertGameStartAllowed, type RoomLimits } from "./limits";
 import * as presence from "./presence";
+import { sweepExpiredLeases } from "./presence-vacate";
 import { registerActiveRoom } from "./room-registry";
 import { type ApplyResult, commitAction } from "./storage";
 
@@ -33,7 +34,7 @@ export interface LedgerHost extends CloseHost {
 // leases drop exactly like disconnects, with election + empty-room
 // bookkeeping riding the same commit.
 export const sweepLeases = (host: LedgerHost): void => {
-  presence.commitPresence(host, (h) => presence.sweepExpiredLeases(h, Date.now()));
+  presence.commitPresence(host, (h) => sweepExpiredLeases(h, Date.now()));
 };
 
 export const createRoomAt = async (

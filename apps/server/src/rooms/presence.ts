@@ -12,20 +12,16 @@ import type { Books } from "./due";
 import { applyHostElection } from "./host-election";
 import {
   connectedPlayerIds,
-  expiredLeasePlayerIds,
   LEASE_SWEEP_TAG,
   pausePlayingDeadlines,
   readPresence,
   rearmLeaseSweep,
   resumePlayingDeadlines,
   ROOM_EXPIRY_TAG,
-  VACATE_GRACE_MS,
-  VACATE_TAG,
-  vacateDeadlineId,
   writePresence,
 } from "./leases";
 import { maxEventSeq, recordRoomEvent } from "./storage";
-import { attachmentOf, broadcastNewEvents, type SocketAttachment, type WireHost } from "./wire";
+import { attachmentOf, broadcastNewEvents, type WireHost } from "./wire";
 
 // The DO surface presence needs; GameRoom satisfies it via SocketHost.
 export interface PresenceHost extends WireHost {
@@ -105,10 +101,9 @@ export const departed = (host: PresenceHost, nowMs: number, acc: Acc): void => {
   acc.host = el.hostPlayerId;
 };
 
-// Disconnect bookkeeping: presence event + a vacate deadline armed at
-// now + grace. If the player never re-admits, the deadline removes the
-// member row entirely (lobby phase only) — a departed player becomes an
-// empty seat instead of blocking the start gate forever.
+// Disconnect bookkeeping: presence event + the shared departure tail.
+// Whether the member row survives is the caller's choice — presence-vacate's
+// dropMember vacates outright in the lobby and only marks mid-game.
 export const markDisconnected = (
   host: PresenceHost,
   playerId: string,
@@ -116,39 +111,8 @@ export const markDisconnected = (
   acc: Acc,
 ): void => {
   writeLease(host.sql, playerId, null);
-  replaceDeadline(host.sql, vacateDeadlineId(playerId), nowMs + VACATE_GRACE_MS, VACATE_TAG);
   acc.saw(recordRoomEvent(host.sql, "presenceChanged", { playerId, connected: false }));
   departed(host, nowMs, acc);
-};
-
-// Socket-close path. The generation guard is authoritative: a replaced
-// socket's late close event must never clear the newer socket's presence.
-export const disconnect = (
-  host: PresenceHost,
-  attachment: SocketAttachment,
-  nowMs: number,
-): PresenceOutcome => {
-  const player = findRoomPlayer(host.sql, attachment.playerId);
-  if (player === null || player.socketGeneration !== attachment.socketGeneration) return NONE;
-  if (player.leaseUntilMs === null) return NONE; // already swept — idempotent
-  const acc = new Acc();
-  markDisconnected(host, attachment.playerId, nowMs, acc);
-  return acc.done();
-};
-
-// Lease-sweep path: every player whose lease lapsed is dropped exactly
-// like a disconnect, then their (dead) sockets get closed by the caller.
-export const sweepExpiredLeases = (host: PresenceHost, nowMs: number): PresenceOutcome => {
-  const acc = new Acc();
-  for (const playerId of expiredLeasePlayerIds(host.sql, nowMs)) {
-    acc.expiredIds.push(playerId);
-    markDisconnected(host, playerId, nowMs, acc);
-  }
-  // Nothing may have lapsed (a heartbeat refreshed after the row armed):
-  // always re-point the sweep row at the earliest live lease so the alarm
-  // keeps covering silent drops.
-  rearmLeaseSweep(host.sql);
-  return acc.done();
 };
 
 // Admission path: resume the empty-room bookkeeping (parked clocks shift
@@ -168,7 +132,6 @@ export const admit = (host: PresenceHost, playerId: string, nowMs: number): Pres
     deleteDeadlineIds(host.sql, [ROOM_EXPIRY_TAG]);
   }
   writeLease(host.sql, playerId, nowMs + host.leaseMs());
-  deleteDeadlineIds(host.sql, [vacateDeadlineId(playerId)]);
   rearmLeaseSweep(host.sql);
   let lastSeq: number | null = null;
   if (!wasConnected) {

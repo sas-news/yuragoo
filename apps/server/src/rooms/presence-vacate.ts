@@ -1,47 +1,76 @@
-// Departed-member seat release: a disconnect arms a vacate:<playerId>
-// deadline (see markDisconnected) at now + VACATE_GRACE_MS. Fired while
-// the lobby is open it deletes the member row outright — memberLeft
-// broadcasts, the ready flag drops, the seat draft orphans — so a real
-// departure stops blocking the start gate once the grace has passed.
-// Re-admission deletes the row; a game in flight re-arms it because
-// roster integrity beats seat release until the lobby comes back.
+// Member-drop policy layer over presence.ts. A lost connection releases
+// the seat OUTRIGHT while the lobby is open (the row dies exactly like
+// `leave` — memberLeft + ready strip + the choice draft moves to the
+// orphan tail — so a departed player can never block the start gate).
+// Mid-game the roster is sacred: the member only marks disconnected and
+// may reconnect, then the reopen commit (lifecycle-commit) vacates any
+// ghosts the moment the room becomes a lobby again.
 import { deleteRoomPlayer, findRoomPlayer } from "./auth-storage";
-import { type Deadline, replaceDeadline } from "./deadlines";
-import { VACATE_GRACE_MS, VACATE_TAG, vacateDeadlineId } from "./leases";
+import { expiredLeasePlayerIds, rearmLeaseSweep } from "./leases";
 import { onMemberLeft } from "./lobby";
-import { type Acc, departed, type PresenceHost } from "./presence";
+import {
+  Acc,
+  departed,
+  markDisconnected,
+  NONE,
+  type PresenceHost,
+  type PresenceOutcome,
+} from "./presence";
+import type { SocketAttachment } from "./wire";
 
 // The member row dies with its tokens exactly like `leave` — the seat
-// becomes an orphan draft and a fresh invite join is the only way back.
+// draft moves to the orphan tail and a fresh invite join is the only way
+// back. onMemberLeft runs BEFORE the delete: the seat index comes from
+// the leaver's join_order rank among active members.
 export const vacateMember = (
   host: PresenceHost,
   playerId: string,
   nowMs: number,
   acc: Acc,
 ): void => {
-  deleteRoomPlayer(host.sql, playerId);
   onMemberLeft(host.sql, playerId, host.booksView() !== null);
+  deleteRoomPlayer(host.sql, playerId);
   departed(host, nowMs, acc);
 };
 
-// Alarm dispatch: a due vacate:<pid> row removes the member when the
-// lobby is still open and the player stayed disconnected.
-export const fireVacateDeadlines = (
-  host: PresenceHost,
-  rows: readonly Deadline[],
-  nowMs: number,
-  acc: Acc,
-): void => {
-  for (const row of rows) {
-    const playerId = row.id.slice(vacateDeadlineId("").length);
-    const player = findRoomPlayer(host.sql, playerId);
-    if (player === null) continue; // already gone — row consumed
-    if (player.leaseUntilMs !== null && player.leaseUntilMs > nowMs) continue; // re-admitted
-    if (host.booksView() === null) {
-      acc.expiredIds.push(playerId);
-      vacateMember(host, playerId, nowMs, acc);
-    } else {
-      replaceDeadline(host.sql, row.id, nowMs + VACATE_GRACE_MS, VACATE_TAG);
-    }
+// A member's connection is gone. Lobby: vacate immediately. In flight:
+// plain disconnect — a reconnect keeps their seat until the lobby
+// returns.
+export const dropMember = (host: PresenceHost, playerId: string, nowMs: number, acc: Acc): void => {
+  if (host.booksView() === null) {
+    acc.expiredIds.push(playerId);
+    vacateMember(host, playerId, nowMs, acc);
+  } else {
+    markDisconnected(host, playerId, nowMs, acc);
   }
+};
+
+// Socket-close path. The generation guard is authoritative: a replaced
+// socket's late close event must never clear the newer socket's presence.
+export const disconnect = (
+  host: PresenceHost,
+  attachment: SocketAttachment,
+  nowMs: number,
+): PresenceOutcome => {
+  const player = findRoomPlayer(host.sql, attachment.playerId);
+  if (player === null || player.socketGeneration !== attachment.socketGeneration) return NONE;
+  if (player.leaseUntilMs === null) return NONE; // already swept — idempotent
+  const acc = new Acc();
+  dropMember(host, attachment.playerId, nowMs, acc);
+  return acc.done();
+};
+
+// Lease-sweep path: every player whose lease lapsed is dropped exactly
+// like a socket close, then their (dead) sockets get closed by the caller.
+export const sweepExpiredLeases = (host: PresenceHost, nowMs: number): PresenceOutcome => {
+  const acc = new Acc();
+  for (const playerId of expiredLeasePlayerIds(host.sql, nowMs)) {
+    acc.expiredIds.push(playerId);
+    dropMember(host, playerId, nowMs, acc);
+  }
+  // Nothing may have lapsed (a heartbeat refreshed after the row armed):
+  // always re-point the sweep row at the earliest live lease so the alarm
+  // keeps covering silent drops.
+  rearmLeaseSweep(host.sql);
+  return acc.done();
 };

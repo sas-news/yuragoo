@@ -318,3 +318,14 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - staging 最新: 42aa09f3（生成改善一式）
 
 **残課題（全部ブロッカー/ユーザー側）**: Task 37 実Discord QA（PIP 専用画面・退出検知・招待経由 joiner 着席 — 新規3点は今回デプロイ分）、production デプロイ（GENERATION_DAILY_ATTEMPTS=60 + JEV_DAILY_ATTEMPT_CAP=120 の vars 設定必須）、F1〜F4最終検証。
+
+### Task 48d — ロビー切断=即空席化 + 選択肢ドラフトの孤立化（orphan tail）
+
+ユーザーFB: 退出者がメンバーに残り続け開始をブロック + 抜けた人の選択肢が次メンバーに継承される。
+
+- **ロビー中の切断 = 即メンバー行削除**（`leave` と同じ効果、120s猶予の vacate デッドライン機構は撤廃）: presence-vacate.ts の `dropMember` が `booksView()===null` なら `vacateMember`（memberLeft + ready剥奪 + 選択肢行を末尾=空きへ + ホスト再選 + 空部屋簿記）、mid-game なら `markDisconnected`（roster保全、再接続可）。disconnect/sweep/participant-drop の3入口がすべて dropMember に統一
+- **ゲーム中の切断者 → ロビー復帰時に一括空席化**: `commitBackToLobby` 内で `socketGeneration>0 かつ lease切れ` のゴーストを onMemberLeft→deleteRoomPlayer（同一txn、memberLeft/lobbyChanged/lobbyReopened が seq 順に配信 — events を seq差分ビルドに変更）。never-connected joiner（gen=0）は掃除対象外
+- **抜けた人の選択肢行を末尾（空き）へ移動**: `onMemberLeft` が leaver の active index（join_order順）の行を splice→末尾push — 後続メンバーが他人ラベルを継承しない。leave/vacate 両経路に適用、onMemberLeft は行削除**前**に呼ぶ規約に（commitLeave/vacateMember で順序入替）
+- 孤立ドラフトの消費順は FIFO（最古の空席から新メンバーへ割当）
+- テスト: presence-vacate.test.ts 全面書換（ロビー即vacate/mid-game生存+再接続/backToLobbyゴースト掃除/サイレントドロップ）、room-presence（host再選をmid-game切断へ書換）、room-reopen transferHost（オフライン対象→not-a-member）、browser-auth（rotation検証をclose前へ）、room-lobby orphans（FIFO期待）
+- check/types/boundary 0 violations、workers 134 / unit 194 全パス

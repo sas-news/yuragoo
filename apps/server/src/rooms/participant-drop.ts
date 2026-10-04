@@ -7,8 +7,8 @@
 // plain disconnect so the roster survives a reconnect. The stale socket
 // still closes — a false report self-heals via a fresh invite join.
 import { findRoomPlayer, listRoomPlayers } from "./auth-storage";
-import { Acc, markDisconnected, NONE, type PresenceHost, type PresenceOutcome } from "./presence";
-import { vacateMember } from "./presence-vacate";
+import { Acc, NONE, type PresenceHost, type PresenceOutcome } from "./presence";
+import { dropMember } from "./presence-vacate";
 
 export const dropMissingParticipants = (
   host: PresenceHost,
@@ -21,15 +21,13 @@ export const dropMissingParticipants = (
   // instance — a report missing the reporter's own id is meaningless.
   if (reporterDiscord === null || !userIds.includes(reporterDiscord)) return NONE;
   const present = new Set(userIds);
-  const lobby = host.booksView() === null;
   const acc = new Acc();
   for (const p of listRoomPlayers(host.sql)) {
     // Browser members carry no discord id — never dropped by this path.
     if (p.discordUserId === null || present.has(p.discordUserId)) continue;
     if (p.leaseUntilMs === null || p.leaseUntilMs <= nowMs) continue; // already out
     acc.expiredIds.push(p.playerId);
-    if (lobby) vacateMember(host, p.playerId, nowMs, acc);
-    else markDisconnected(host, p.playerId, nowMs, acc);
+    dropMember(host, p.playerId, nowMs, acc);
   }
   return acc.done();
 };

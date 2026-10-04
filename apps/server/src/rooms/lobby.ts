@@ -17,7 +17,7 @@ import {
   SCENARIO_MAX_GRAPHEMES,
   type UpdateLobbyContentPayload,
 } from "@yuragoo/protocol";
-import type { RoomPlayer } from "./auth-storage";
+import { listRoomPlayers, type RoomPlayer } from "./auth-storage";
 import { slotSpent } from "./generation-slots";
 import { lobbySettingsView, readLobbyPatch } from "./settings";
 import { recordRoomEvent } from "./storage";
@@ -127,12 +127,14 @@ export const onMemberLeft = (sql: SqlStorage, playerId: string, gameExists: bool
   recordRoomEvent(sql, "memberLeft", { playerId });
   if (gameExists) return;
   const lobby = readLobby(sql);
-  if (!lobby.ready.includes(playerId)) return; // orphan boundary is derived client-side
-  commitLobby(sql, {
-    ...lobby,
-    revision: lobby.revision + 1,
-    ready: lobby.ready.filter((id) => id !== playerId),
-  });
+  const ready = lobby.ready.filter((id) => id !== playerId);
+  // Positional seats (member i owns choices[i]): the leaver's row moves
+  // into the orphan tail BEFORE the row dies or the label is inherited.
+  const index = activeMembers(listRoomPlayers(sql)).findIndex((p) => p.playerId === playerId);
+  const choices = [...lobby.choices];
+  if (index >= 0 && index < choices.length) choices.push(...choices.splice(index, 1));
+  if (ready.length === lobby.ready.length && index < 0) return;
+  commitLobby(sql, { ...lobby, revision: lobby.revision + 1, ready, choices });
 };
 
 // Host edit path: expectedLobbyRevision is the optimistic lock — a stale

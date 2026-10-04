@@ -78,8 +78,10 @@ const commitLeave = (
     const books = host.booksView();
     const nowMs = Date.now();
     writeLease(host.sql, playerId, null);
-    deleteRoomPlayer(host.sql, playerId);
+    // onMemberLeft needs the row alive: the seat index is the leaver's
+    // join_order rank, so their choice draft can move to the orphan tail.
     onMemberLeft(host.sql, playerId, books !== null);
+    deleteRoomPlayer(host.sql, playerId);
     if (connectedPlayerIds(host.sql, nowMs).size === 0) {
       const presence = readPresence(host.sql);
       const pause = books?.state.phase === "playing";

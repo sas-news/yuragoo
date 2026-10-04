@@ -194,7 +194,8 @@ test("transferHost: host-only, another connected member, persists + retargets", 
   });
   await sa.next(ackFor("e-new"));
   // An offline target refuses — every command lazily sweeps lapsed
-  // leases, so this probe runs LAST (the sweep kicks b's socket).
+  // leases, so this probe runs LAST: the lobby sweep vacates b outright
+  // (not just offline), so the target reads as a non-member.
   await execSql(
     stub,
     "UPDATE room_players SET lease_until_ms = ? WHERE player_id = ?",
@@ -202,6 +203,6 @@ test("transferHost: host-only, another connected member, persists + retargets", 
     b.playerId,
   );
   sa.sendCmd(room.roomId, "t-off", "transferHost", { playerId: b.playerId });
-  expect((await sa.next(isError("bad-state"))).type).toBe("error");
+  expect((await sa.next(isError("not-a-member"))).type).toBe("error");
   for (const s of [sh, sa, sb]) s.close();
 });

@@ -85,13 +85,16 @@ test("orphans: leave shrinks the roster but keeps drafts; rejoin reactivates the
   expect(kept?.choices).toHaveLength(4);
   expect(kept?.choices[3]?.label).toBe("ドラフト3");
   // Two fresh members join: the orphan tail reactivates without a rewrite.
-  for (let i = 0; i < 2; i += 1) {
+  // Each close vacates outright (lobby rule), so the NEXT joiner takes the
+  // next-oldest orphan draft — ドラフト2 then ドラフト3.
+  for (const label of ["ドラフト2", "ドラフト3"]) {
     const j = await joinRoom(room);
     const s = await Sock.connect(room.roomId, j.sessionToken);
     const snapLobby = latestLobby(s);
     expect(snapLobby?.choices).toHaveLength(4);
-    expect(snapLobby?.choices[2]?.label).toBe("ドラフト2");
+    expect(snapLobby?.choices[2]?.label).toBe(label);
     s.close();
+    await host.next((e) => e.type === "memberLeft" && e.payload.playerId === j.playerId);
   }
   for (const s of socks) s.close();
 });

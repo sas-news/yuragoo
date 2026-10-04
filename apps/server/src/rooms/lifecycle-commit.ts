@@ -2,17 +2,24 @@
 // (backToLobby / transferHost), split out of lobby-commit.ts for the
 // size cap. Same atomic pattern: ledger writes + event rows + the dedupe
 // row inside one transactionSync, then frames built from committed state.
-import type { LobbyState } from "@yuragoo/protocol";
+import type { LobbyState, ServerEnvelope } from "@yuragoo/protocol";
 import { clearGameArtifacts } from "./ai-jobs";
 import { rearmOutboxDeadline } from "./aggregate-outbox";
+import { deleteRoomPlayer, listRoomPlayers } from "./auth-storage";
 import type { CommandHost } from "./commands";
 import type { Plan } from "./dispatch";
 import { applyHostTransfer } from "./host-election";
 import { rearmLeaseSweep } from "./leases";
-import { activeMemberCount, readLobby } from "./lobby";
+import { activeMemberCount, onMemberLeft, readLobby } from "./lobby";
 import { type LobbyPlanOutcome, ackResult } from "./lobby-outcome";
-import { type DedupeKey, insertCommand, maxEventSeq, recordRoomEvent } from "./storage";
-import { frame } from "./wire";
+import {
+  type DedupeKey,
+  type EventRow,
+  insertCommand,
+  maxEventSeq,
+  recordRoomEvent,
+} from "./storage";
+import { eventRowEnvelope, frame } from "./wire";
 
 // `backToLobby`: a finished game returns to the shared lobby instead of
 // auto-restarting — the game ledger (roster/deadlines/jobs/results/spent
@@ -23,7 +30,7 @@ import { frame } from "./wire";
 // lobbyReopened row flips every client's view back. Recovery reads the
 // meta-less room via room_auth — a "null" snapshot would be corruption.
 const commitBackToLobby = (host: CommandHost, dedupe: DedupeKey | null): LobbyPlanOutcome => {
-  let payload: LobbyState | null = null;
+  const since = maxEventSeq(host.sql);
   const result = host.txn(() => {
     host.sql.exec("DELETE FROM players");
     host.sql.exec("DELETE FROM deadlines");
@@ -31,6 +38,18 @@ const commitBackToLobby = (host: CommandHost, dedupe: DedupeKey | null): LobbyPl
     rearmLeaseSweep(host.sql); // the wipe took the sweep row — re-arm it
     rearmOutboxDeadline(host.sql); // pending aggregate submissions survive
     host.sql.exec("UPDATE room_players SET lobby_waiting = 0");
+    // Ghost sweep: members who dropped mid-game were kept for reconnect,
+    // but the room is a lobby again — their seats release like any lobby
+    // exit (memberLeft + ready strip + draft to the orphan tail).
+    const nowMs = Date.now();
+    for (const p of listRoomPlayers(host.sql)) {
+      // Never-connected invite holders (generation 0) are members, not
+      // ghosts — only a socket that connected and then dropped vacates.
+      const ghost = p.socketGeneration > 0 && (p.leaseUntilMs === null || p.leaseUntilMs <= nowMs);
+      if (!ghost) continue;
+      onMemberLeft(host.sql, p.playerId, false);
+      deleteRoomPlayer(host.sql, p.playerId);
+    }
     const lobby = readLobby(host.sql);
     // Mid-game joiners never grew a choice row — fill seats for everyone.
     const count = activeMemberCount(host.sql);
@@ -51,7 +70,6 @@ const commitBackToLobby = (host: CommandHost, dedupe: DedupeKey | null): LobbyPl
       JSON.stringify(choices),
     );
     const seq = recordRoomEvent(host.sql, "lobbyReopened", reopened);
-    payload = reopened;
     host.sql.exec("DELETE FROM room_meta"); // meta is born at game create
     const result = ackResult(host, seq);
     if (dedupe !== null) {
@@ -66,9 +84,14 @@ const commitBackToLobby = (host: CommandHost, dedupe: DedupeKey | null): LobbyPl
     return result;
   });
   host.setBooks(null); // the game ledger is gone — the room is a lobby again
-  const revision = result.stateRevision;
-  const events =
-    payload === null ? [] : [frame(host, revision, revision, "lobbyReopened", payload)];
+  const revision = maxEventSeq(host.sql);
+  // Deliver every persisted row — ghost-sweep memberLeft/lobbyChanged
+  // events precede the lobbyReopened frame in the same seq stream.
+  const events = host.sql
+    .exec<EventRow>("SELECT seq, type, payload FROM events WHERE seq > ? ORDER BY seq", since)
+    .toArray()
+    .map((row) => eventRowEnvelope(host, row, null, revision))
+    .filter((e): e is ServerEnvelope => e !== null);
   // committed: the deadline wipe + re-arms must reach the alarm scheduler.
   return { result, events, committed: true, closeRoom: false, dropPlayerIds: [] };
 };

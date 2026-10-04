@@ -77,8 +77,9 @@ test("happy: invite->join->ticket->upgrade 101->reconnect rotates both tokens", 
   expect(up.status).toBe(101);
   expect(up.webSocket).not.toBeNull();
   up.webSocket?.accept();
-  up.webSocket?.close();
 
+  // Rotate while connected — a lobby close vacates the member outright,
+  // so post-close re-entry is a fresh join, not token rotation.
   const re = await post(`/api/rooms/${room.roomId}/reconnect`, {
     reconnectToken: p.reconnectToken,
   });
@@ -95,6 +96,7 @@ test("happy: invite->join->ticket->upgrade 101->reconnect rotates both tokens", 
   expect(
     (await post(`/api/rooms/${room.roomId}/ticket`, { sessionToken: p.sessionToken })).status,
   ).toBe(403);
+  up.webSocket?.close();
 });
 
 test("happy: six players join and the seventh is refused", async () => {

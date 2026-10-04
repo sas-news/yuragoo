@@ -2,8 +2,7 @@
 // pause/resume — end-to-end through real WebSocketPair clients plus SQL
 // probes into room_presence / deadlines / paused_deadlines. Test timings
 // are compressed by vitest.workers.config bindings (10s lease / 3s empty
-// grace); expiry is then forced deterministically by backdating rows, so
-// no test sleeps on a clock.
+// grace); expiry is forced by backdating rows, so no test sleeps on a clock.
 import { env, SELF } from "cloudflare:test";
 import { expect, test } from "vitest";
 import type { ServerEnvelope } from "@yuragoo/protocol";
@@ -17,6 +16,8 @@ const presence = (playerId: string, connected: boolean) => (e: ServerEnvelope) =
   e.payload.connected === connected;
 const hostIs = (playerId: string) => (e: ServerEnvelope) =>
   e.type === "hostChanged" && e.payload.playerId === playerId;
+const memberLeft = (playerId: string) => (e: ServerEnvelope) =>
+  e.type === "memberLeft" && e.payload.playerId === playerId;
 const ackFor = (id: string) => (e: ServerEnvelope) =>
   e.type === "ack" && e.payload.commandId === id;
 
@@ -29,7 +30,6 @@ type PresenceRow = {
 const presenceRow = async (stub: RoomStub): Promise<PresenceRow> =>
   (await execSql(stub, "SELECT * FROM room_presence WHERE id = 1"))[0] as unknown as PresenceRow;
 
-// Pin live leases an hour out so tests never race expiry.
 const pinLeases = (stub: RoomStub) =>
   execSql(stub, "UPDATE room_players SET lease_until_ms = ?", Date.now() + 3_600_000);
 
@@ -38,19 +38,13 @@ const roomStubOf = (roomId: string): RoomStub =>
 
 // Sequential: the sticky election seats the first-admitted socket as
 // host, so these tests admit in join order — concurrent connects race.
-const connectAll = async (roomId: string, joins: Joined[]): Promise<Sock[]> => {
-  const out: Sock[] = [];
-  for (const j of joins) out.push(await Sock.connect(roomId, j.sessionToken));
-  return out;
-};
-
 const connectTwo = async (roomId: string, h: Joined, a: Joined): Promise<[Sock, Sock]> => {
-  const [sh, sa] = await connectAll(roomId, [h, a]);
-  if (sh === undefined || sa === undefined) throw new Error("sockets missing");
+  const sh = await Sock.connect(roomId, h.sessionToken);
+  const sa = await Sock.connect(roomId, a.sessionToken);
   return [sh, sa];
 };
 
-// Close events reach the DO asynchronously — poll, never a fixed sleep.
+// Poll, never a fixed sleep — close events reach the DO asynchronously.
 const until = async <T>(probe: () => Promise<T | null>, ms = 4_000): Promise<T> => {
   const deadline = Date.now() + ms;
   for (;;) {
@@ -61,29 +55,37 @@ const until = async <T>(probe: () => Promise<T | null>, ms = 4_000): Promise<T> 
   }
 };
 
-// Wait until the last disconnect's effects are committed: emptySince is
-// persisted only when the final socket's close lands.
 const emptied = (stub: RoomStub): Promise<PresenceRow> =>
   until(async () => {
     const p = await presenceRow(stub);
     return p.empty_since_ms === null ? null : p;
   });
 
-test("host disconnect elects the oldest connected player; a returning host stays non-host", async () => {
-  const { room, joins } = await setupRoom(3);
-  const [h, a, b] = [joins[0], joins[1], joins[2]];
-  if (!h || !a || !b) throw new Error("joins missing");
-  // b holds an invite seat but never connects — it must never be elected.
+test("host disconnect elects the oldest connected member; a returning host stays non-host", async () => {
+  const { room, joins } = await setupRoom(2);
+  const [h, a] = [joins[0], joins[1]];
+  if (!h || !a) throw new Error("joins missing");
   const [sh, sa] = await connectTwo(room.roomId, h, a);
   const stub = roomStubOf(room.roomId);
   await pinLeases(stub);
+  await armedStart(room, [sh, sa], "t20-host", {
+    mode: "turn",
+    seed: 7,
+    turnSeconds: 30,
+    rounds: 2,
+  });
+  await sh.next(ackFor("t20-host"));
+  // b is a never-connected lobbyWaiting invite holder — unelectable.
+  const b = await joinRoom(room);
+  expect(b.lobbyWaiting).toBe(true);
+  await sa.next(isType("memberJoined"));
   sh.close();
   await sa.next(presence(h.playerId, false));
   const elected = await sa.next(isType("hostChanged"));
   if (elected.type !== "hostChanged") throw new Error("expected hostChanged");
   expect(elected.payload.playerId).toBe(a.playerId); // oldest connected, not invite-holder b
-  // The returning old host re-admits as a plain member: presence flips,
-  // host stays with a, and no hostChanged is emitted for it.
+  expect(sa.count(memberLeft(h.playerId))).toBe(0); // mid-game: roster survives
+  // The returning old host re-admits as a plain member — host stays with a.
   const sh2 = await Sock.connect(room.roomId, h.sessionToken);
   const snap = sh2.log.find(isType("snapshot"));
   if (snap?.type !== "snapshot") throw new Error("snapshot missing");
@@ -121,7 +123,7 @@ test("empty room persists emptySince and parks only playing deadlines; rejoin sh
   const parked = await execSql(stub, "SELECT id, remaining_ms, tag FROM paused_deadlines");
   expect(parked.map((r) => r.tag)).toEqual(["turn"]);
   const tags = (await deadlineRows(stub)).map((d) => d.tag).sort();
-  expect(tags).toEqual(["room-expiry", "vacate", "vacate"]); // + vacate:<pid> grace rows
+  expect(tags).toEqual(["room-expiry"]); // mid-game ghosts keep their seat
   // Rejoin inside the grace window: the turn clock resumes shifted by the
   // paused duration; the expiry row is gone and presence flips back.
   const sa2 = await Sock.connect(room.roomId, a.sessionToken);
@@ -147,7 +149,7 @@ test("rejoin after the empty grace window is refused at every entrypoint", {
   const { room, joins } = await setupRoom(2);
   const [h, a] = [joins[0], joins[1]];
   if (!h || !a) throw new Error("joins missing");
-  const socks = await connectAll(room.roomId, [h, a]);
+  const socks = await connectTwo(room.roomId, h, a);
   const stub = roomStubOf(room.roomId);
   for (const s of socks) s.close();
   await emptied(stub); // close events must land before the backdate sticks
@@ -171,8 +173,8 @@ test("a silent drop is swept by the lease-sweep alarm and the host transfers", a
   const [sh, sa] = await connectTwo(room.roomId, h, a);
   const stub = roomStubOf(room.roomId);
   await pinLeases(stub);
-  // Simulate the silent drop: h's lease lapses without a close event, and
-  // the sweep row is already due (the alarm path detects it).
+  // Silent drop: h's lease lapses with no close event (sweep detects it;
+  // memberLeft/row-delete detail lives in presence-vacate).
   await execSql(
     stub,
     "UPDATE room_players SET lease_until_ms = ? WHERE player_id = ?",
@@ -181,10 +183,9 @@ test("a silent drop is swept by the lease-sweep alarm and the host transfers", a
   );
   await execSql(stub, "UPDATE deadlines SET run_at = ? WHERE id = 'lease-sweep'", Date.now() - 1);
   await deliverAlarm(stub);
-  await sa.next(presence(h.playerId, false));
+  await sa.next(memberLeft(h.playerId));
   await sa.next(hostIs(a.playerId));
-  // The dead socket is actively closed with the lease-expired reason.
-  const closed = await sh.waitClose();
+  const closed = await sh.waitClose(); // dead socket closes lease-expired
   expect(closed.reason).toBe("lease-expired");
   sa.close();
 });
@@ -236,9 +237,8 @@ test("settling is never paused: the settle deadline survives an empty room and s
   expect(p.paused_at_ms).toBeNull(); // complete phase -> nothing parks
   const still = (await deadlineRows(stub)).find((d) => d.tag === "settle");
   expect(still?.runAt).toBe(settle.runAt); // identical, unshifted
-  // Settle completes once while unattended: wait out the real 2s window
-  // (game-core validates the state's own deadline, so the row can only be
-  // fired on schedule) — the game finishes with nobody connected.
+  // Settle completes once unattended: wait out the real 2s window (the
+  // row fires only on schedule) — the game finishes with nobody connected.
   await until(async () => {
     await deliverAlarm(stub);
     const row = await execSql(stub, "SELECT phase FROM room_meta WHERE id = 1");

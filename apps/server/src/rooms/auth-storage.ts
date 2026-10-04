@@ -103,11 +103,10 @@ export const roomPlayerCount = (sql: SqlStorage): number =>
   sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM room_players").one().n;
 
 // Task 24 `leave`: removes the membership row outright — session/reconnect
-// hashes and the armed vacate:<pid> deadline die with it.
+// hashes die with it, and a fresh invite join is the only way back.
 export const deleteRoomPlayer = (sql: SqlStorage, playerId: string): void => {
   sql.exec("DELETE FROM room_players WHERE player_id = ?", playerId);
   sql.exec("DELETE FROM ws_tickets WHERE player_id = ?", playerId);
-  sql.exec("DELETE FROM deadlines WHERE id = ?", `vacate:${playerId}`);
 };
 
 export const insertRoomPlayer = (sql: SqlStorage, p: RoomPlayer): void => {

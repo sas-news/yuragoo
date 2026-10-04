@@ -1,15 +1,15 @@
 // DO-side WebSocket plumbing (Task 19) + presence delegation (Task 20):
 // hibernation handlers, frame guards, envelope parsing, delivery, broadcast.
-// Upgrade admission lives in ./admit; room effects go through commands.ts
-// and presence.ts — this module moves bytes and enforces transport rules
-// (oversized -> 1009; malformed/stale -> error frame; rate bounds), the
-// expired guard, and a lazy lease sweep on every entrypoint.
+// Upgrade admission lives in ./admit; room effects go through commands.ts —
+// this module moves bytes and enforces transport rules (oversized -> 1009;
+// malformed/stale -> error frame; rate bounds), the expired guard, and a lazy lease sweep on entrypoints.
 import { GameRuleError } from "@yuragoo/game-core";
 import { clientEnvelopeSchema, type ClientEnvelope, protocolVersion } from "@yuragoo/protocol";
 import { RoomError } from "./api";
 import type { RoomPlayer } from "./auth-storage";
 import { type CommandHost, type CommandOutcome, runClientCommand } from "./commands";
-import { commitPresence, disconnect, sweepExpiredLeases } from "./presence";
+import { commitPresence } from "./presence";
+import { disconnect, sweepExpiredLeases } from "./presence-vacate";
 import {
   attachmentOf,
   broadcastEnvelope,
