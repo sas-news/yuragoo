@@ -2,8 +2,11 @@
 // the SDK auth chain runs here before any game UI — ready -> authorize
 // -> server exchange -> authenticate -> instance join. Failures render
 // the classified copy with a retry button; success stashes the room
-// session and navigates into /r/<roomId>.
-import { useEffect, useState } from "react";
+// session and hands off to RoomPage IN PLACE — a real navigation would
+// rewrite document.referrer to our own proxy URL, and the SDK's RPC
+// bridge uses it as postMessage's targetOrigin: every later command
+// (ready, shareLink) would be silently dropped (Task 47e).
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { ClassifiedError, DiscordSession } from "@yuragoo/platform";
 import { apiOrigin, saveSession } from "../lobby/room-session";
 import { Button } from "../ui/Button";
@@ -41,9 +44,12 @@ const joinDiscordRoom = async (session: DiscordSession): Promise<JoinedDiscord> 
   return (await res.json()) as JoinedDiscord;
 };
 
+const RoomPageLazy = lazy(() => import("../lobby/RoomPage"));
+
 export function DiscordGate({ clientId }: DiscordGateProps) {
   const [error, setError] = useState<ClassifiedError | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [joinedRoomId, setJoinedRoomId] = useState<string | null>(null);
 
   // attempt re-arms the auth chain on retry.
   // biome-ignore lint/correctness/useExhaustiveDependencies: retry counter
@@ -72,17 +78,26 @@ export function DiscordGate({ clientId }: DiscordGateProps) {
         displayName: joined.displayName,
         lobbyWaiting: joined.lobbyWaiting,
       });
-      // Carry the whole query — Discord's injected params (frame_id,
-      // instance_id, platform, guild_id) must survive the navigation:
-      // the room page re-runs platformKind() and new DiscordSDK(), both
-      // of which read them straight off location.search.
-      window.location.assign(`/r/${joined.roomId}${window.location.search}`);
+      // SPA hand-off: pushState keeps document.referrer pointed at the
+      // Discord client — the SDK bridge lives on it — and keeps the whole
+      // injected query (frame_id/instance_id/platform) on the URL so
+      // platformKind()/new SDK constructions still resolve. The gate's
+      // authenticated SDK instance also survives on this page.
+      window.history.pushState(null, "", `/r/${joined.roomId}${window.location.search}`);
+      setJoinedRoomId(joined.roomId);
     })();
     return () => {
       cancelled = true;
     };
   }, [clientId, attempt]);
 
+  if (joinedRoomId !== null) {
+    return (
+      <Suspense fallback={<main>読み込み中…</main>}>
+        <RoomPageLazy />
+      </Suspense>
+    );
+  }
   return (
     <main className="app-shell" data-testid="discord-gate">
       <header className="status-strip">
