@@ -123,6 +123,23 @@ const detailOf = (error: unknown): string => {
   return parts.join(": ");
 };
 
+// sendCommand has no timeout — a command Discord ignores (never acked,
+// modal invisible, bridge not ready) leaves the promise pending forever.
+// Every call here gets a deadline so the status line always resolves.
+const withTimeout = <T>(work: Promise<T>, ms: number, label: string): Promise<T> =>
+  Promise.race([
+    work,
+    new Promise<never>((_resolve, reject) =>
+      (globalThis as { setTimeout?: (fn: () => void, ms: number) => unknown }).setTimeout?.(
+        () => reject(new Error(`timeout:${label}`)),
+        ms,
+      ),
+    ),
+  ]);
+
+const READY_TIMEOUT_MS = 15_000;
+const COMMAND_TIMEOUT_MS = 30_000;
+
 type DialogGate = "ok" | "dm" | "no-invite-permission";
 
 const canOpenInviteDialog = async (sdk: DiscordSdkLike): Promise<DialogGate> => {
@@ -141,9 +158,20 @@ export const shareInvite = async (
   message: string,
   customId?: string,
 ): Promise<ShareInviteResult> => {
+  // The room page's SDK ran the constructor's handshake but nobody ever
+  // awaited READY — commands sent before it can hang silently.
+  try {
+    await withTimeout(sdk.ready(), READY_TIMEOUT_MS, "sdk-ready");
+  } catch (err) {
+    return { reason: "error", detail: detailOf(err) };
+  }
   let shareError = "";
   try {
-    const res = await sdk.commands.shareLink({ message, custom_id: customId });
+    const res = await withTimeout(
+      sdk.commands.shareLink({ message, custom_id: customId }),
+      COMMAND_TIMEOUT_MS,
+      "share-link",
+    );
     if (res !== null && res !== undefined) {
       // success:false = the modal was dismissed; do not double-prompt.
       return res.success === false ? "cancelled" : "shared";
@@ -160,7 +188,7 @@ export const shareInvite = async (
     return { reason: gate, detail: shareError };
   }
   try {
-    await sdk.commands.openInviteDialog();
+    await withTimeout(sdk.commands.openInviteDialog(), COMMAND_TIMEOUT_MS, "invite-dialog");
     return "shared";
   } catch (err) {
     warn("[yuragoo] openInviteDialog failed", err);

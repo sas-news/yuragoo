@@ -5,7 +5,7 @@
 // browser link stays host-only so invite secrecy stays with the owner.
 import { useState } from "react";
 import { shareInvite, type ShareInviteResult } from "@yuragoo/platform";
-import { discordClientId, getDiscordSdk, platformKind } from "../platform/bootstrap";
+import { bootPlatform, discordClientId, platformKind } from "../platform/bootstrap";
 import styles from "./Lobby.module.css";
 
 export interface InviteButtonProps {
@@ -49,20 +49,27 @@ export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) 
           data-testid="discord-share"
           onClick={() => {
             setStatus({ kind: "info", text: "Discord に接続中…" });
-            void getDiscordSdk(discordClientId())
-              .then(async (sdk) => {
-                setStatus({ kind: "info", text: "招待画面をひらいています…" });
-                const result = await shareInvite(
-                  sdk,
-                  "ゆらぐー！ このボイスチャンネルであそぼう",
-                  sdk.instanceId,
-                );
-                if (result === "shared") setStatus({ kind: "ok", text: "招待を送りました" });
-                else if (result === "cancelled")
-                  setStatus({ kind: "info", text: "（キャンセルしました）" });
-                else fail(inviteErrorText(result));
-              })
-              .catch((e: Error) => fail(`招待できませんでした（${e.message.slice(0, 60)}）`));
+            void (async () => {
+              // The room page's SDK never ran the auth chain (the gate
+              // did, on a different page). Re-run bootPlatform — prompt:
+              // none makes re-consent silent — so shareInvite posts on a
+              // ready+authenticated bridge, not a bare one.
+              const { boot, error } = await bootPlatform(discordClientId());
+              if (boot.sdk === null || error !== null) {
+                fail(`Discord と接続できませんでした（${error?.kind ?? "no-sdk"}）`);
+                return;
+              }
+              setStatus({ kind: "info", text: "招待画面をひらいています…" });
+              const result = await shareInvite(
+                boot.sdk,
+                "ゆらぐー！ このボイスチャンネルであそぼう",
+                boot.sdk.instanceId,
+              );
+              if (result === "shared") setStatus({ kind: "ok", text: "招待を送りました" });
+              else if (result === "cancelled")
+                setStatus({ kind: "info", text: "（キャンセルしました）" });
+              else fail(inviteErrorText(result));
+            })().catch((e: Error) => fail(`招待できませんでした（${e.message.slice(0, 60)}）`));
           }}
         >
           メンバーをよぶ
