@@ -5,6 +5,7 @@
 // (new view; ready flags cleared only when the mode moved) is the only
 // truth this panel renders — nothing is applied optimistically.
 import type { LobbySettings, LobbySettingsView } from "@yuragoo/protocol";
+import { commandErrorText } from "./lobby-errors";
 import styles from "./Lobby.module.css";
 
 interface GameSettingsProps {
@@ -70,7 +71,7 @@ const LIVE_SECONDS = (
 
 export function GameSettings({ settings, editable, onChange, onError }: GameSettingsProps) {
   const send = (patch: LobbySettings): void => {
-    void onChange(patch)?.catch((e: Error) => onError(e.message));
+    void onChange(patch)?.catch((e: Error) => onError(commandErrorText(e)));
   };
   return (
     <section className={styles.plate} data-settings="panel">

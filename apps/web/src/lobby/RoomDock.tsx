@@ -8,6 +8,7 @@
 // stays the single authority on turns, text bounds and rejection.
 import { useState } from "react";
 import { InputDock } from "../game/InputDock";
+import { commandErrorText } from "./lobby-errors";
 import { slotColor } from "../game/slots";
 import { roomHud } from "./room-arena";
 import type { RoomView } from "./room-view";
@@ -66,7 +67,7 @@ export function RoomDock({ view, selfId, now, submitText, pass }: RoomDockProps)
       })
       .catch((e: Error) => {
         setStatus("idle");
-        setError(e.message);
+        setError(commandErrorText(e));
       });
   };
 

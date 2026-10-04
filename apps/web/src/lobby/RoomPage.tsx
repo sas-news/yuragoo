@@ -10,6 +10,7 @@ import { inviteUrl as buildInviteUrl } from "../net/urls";
 import { usePipMode } from "../platform/use-pip-mode";
 import { useVisualViewportHeight } from "../ui/useVisualViewport";
 import { Lobby } from "./Lobby";
+import { serverErrorText } from "./lobby-errors";
 import { NamePanel } from "./NamePanel";
 import { PipLobby } from "./PipLobby";
 import { RoomGame } from "./RoomGame";
@@ -77,7 +78,7 @@ export default function RoomPage() {
           onSnapshot: (p: SnapshotPayload, env) =>
             setView((v) => applySnapshot(v, p, env.serverTime, env.gameEpoch)),
           onEvent: (env) => setView((v) => applyEvent(v, env)),
-          onError: (p) => setLastError(p.message),
+          onError: (p) => setLastError(serverErrorText(p)),
           onClose: () => {
             // A live room flips to "closed"; an intentional leave wins.
             setStage((s) =>

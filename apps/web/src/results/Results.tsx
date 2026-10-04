@@ -9,6 +9,7 @@ import { SLOT_SYMBOLS } from "../game/slots";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import uiStyles from "../ui/ui.module.css";
+import { commandErrorText } from "../lobby/lobby-errors";
 import type { RoomView } from "../lobby/room-view";
 import { memberName } from "../lobby/view-members";
 import { Kamishibai } from "./Kamishibai";
@@ -76,7 +77,7 @@ export function Results({ view, isHost, backToLobby, closeRoom }: ResultsProps) 
       ?.then(() => setBusy(false))
       .catch((e: Error) => {
         setBusy(false);
-        setError(e.message);
+        setError(commandErrorText(e));
       });
   };
 

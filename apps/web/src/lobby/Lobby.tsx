@@ -218,7 +218,7 @@ export function Lobby({
           <button
             type="button"
             aria-pressed={ready}
-            onClick={() => void setReady(!ready)?.catch((e: Error) => setSendError(e.message))}
+            onClick={() => void setReady(!ready)?.catch(reportError)}
           >
             {ready ? "準備OK！" : "準備OKにする"}
           </button>
@@ -229,7 +229,7 @@ export function Lobby({
               type="button"
               className={styles.primary}
               disabled={gateReason !== null}
-              onClick={() => void startGame()?.catch((e: Error) => setSendError(e.message))}
+              onClick={() => void startGame()?.catch(reportError)}
             >
               はじめる
             </button>
