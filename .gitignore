@@ -28,3 +28,4 @@ tmp/
 # eval receipts are small audit artifacts; other run outputs stay ignored
 artifacts/*
 !artifacts/eval-*.json
+docs/brand/raw-video/
