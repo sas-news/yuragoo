@@ -356,3 +356,14 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - 孤立ドラフトの消費順は FIFO（最古の空席から新メンバーへ割当）
 - テスト: presence-vacate.test.ts 全面書換（ロビー即vacate/mid-game生存+再接続/backToLobbyゴースト掃除/サイレントドロップ）、room-presence（host再選をmid-game切断へ書換）、room-reopen transferHost（オフライン対象→not-a-member）、browser-auth（rotation検証をclose前へ）、room-lobby orphans（FIFO期待）
 - check/types/boundary 0 violations、workers 134 / unit 194 全パス
+
+### i18n 拡張ポイント（将来タスク — 2026-10 時点の棚卸し）
+
+ユーザー判断: 現時点は日本語特化のままリリース。ポータル説明文は日本語のみ（英語併記は「日本人に来てもらえない」リスクを優先して却下）。将来やる場合の分解:
+
+- **UI 言語**: 普通の i18n。文字ソースは `apps/web` のハードコード文字列。Discord 経路は SDK の `userLocale`、ブラウザ経路は `navigator.language`。個人単位で可
+- **AI 生成言語（部屋単位・個人では不可）**: 選択肢/結末/シナリオは全員共有テキスト → 「部屋の言語」概念を RoomSettings に追加してホストが選ぶ想定。プロンプトの日本語依存は3箇所のみ（`packages/ai/src/choice-generation.ts`・`ending-generation.ts`・シナリオ生成系）。いずれも「日本語で出力しろ」「ひらがな中心のやわらかい」等の指示文なので、言語コードを引数にする雛形化で吸収できる
+- **言語別の文字数制限**: `CHOICE_LABEL_MAX_GRAPHEMES`・`STORY_TITLE_MAX_GRAPHEMES`・`STORY_CAPTION_MAX_GRAPHEMES` は日本語の文字数前提。英語だと同じ意味で3-5倍の文字数になるので言語マップ化が必要
+- **調子の等価物**: 「ひらがな中心のやわらかい」→ 英語なら "gentle, simple bedtime-story tone" 系の対応を決める（1回の判断）
+- **eval の言語別複製**: `eval-ja-v1` と同等スイートを `eval-en-v1` 等で用意して品質ゲートを言語ごとに回す。eval-runner は言語非依存なのでスイート定義の追加で済む
+- **混在ルーム**: プレイヤー入力は既に自由テキスト — 英語話者同士なら生成言語=en で完結。日英混在ルームの扱い（訳す？片方に寄せる？）は要プロダクト判断
