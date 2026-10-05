@@ -1,47 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="ゆらぐー！ — なまえのない生命体を、みんなのひとことで引っ張るパーティーゲーム">
-  <defs>
-    <radialGradient id="body" cx="42%" cy="32%" r="80%">
-      <stop offset="0%" stop-color="#b2f4e3"/>
-      <stop offset="55%" stop-color="#78dfc5"/>
-      <stop offset="100%" stop-color="#54c7a8"/>
-    </radialGradient>
-    <clipPath id="bodyClip">
-      <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z"/>
-    </clipPath>
-  </defs>
-  <rect width="1200" height="630" fill="#fff7e8"/>
-  <g transform="translate(820 300)">
-    <circle r="248" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.18"/>
-    <circle r="196" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.26"/>
-    <circle r="152" fill="none" stroke="#27a98b" stroke-width="4" opacity="0.34"/>
-  </g>
-  <g transform="translate(700 122) scale(0.95)">
-    <ellipse cx="258" cy="452" rx="152" ry="20" fill="#72546a" opacity="0.18"/>
-    <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" fill="url(#body)"/>
-    <g clip-path="url(#bodyClip)">
-      <ellipse cx="256" cy="410" rx="220" ry="90" fill="#27a98b" opacity="0.22"/>
+    <title>ゆらぐー！</title>
+    <rect width="1200" height="630" fill="#fff7e8"/>
+    <circle cx="852" cy="320" r="167" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.34"/><circle cx="852" cy="320" r="211" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.26"/><circle cx="852" cy="320" r="259" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.18000000000000002"/>
+    <g transform="translate(668 126) scale(0.95)">
+    <defs>
+      <radialGradient id="bodyog" cx="42%" cy="32%" r="80%">
+        <stop offset="0%" stop-color="#b2f4e3"/>
+        <stop offset="55%" stop-color="#78dfc5"/>
+        <stop offset="100%" stop-color="#4cba9c"/>
+      </radialGradient>
+      <clipPath id="clipog"><path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" transform="translate(256 264) scale(1.42 0.8) translate(-256 -264)"/></clipPath>
+    </defs>
+    <ellipse cx="258" cy="452" rx="215.83999999999997" ry="20" fill="#72546a" opacity="0.2"/>
+    <g transform="translate(256 264) scale(1.42 0.8) translate(-256 -264)">
+      <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" fill="url(#bodyog)"/>
     </g>
-    <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" fill="none" stroke="#27a98b" stroke-width="5" opacity="0.55"/>
+    <g clip-path="url(#clipog)">
+      <ellipse cx="256" cy="410" rx="220" ry="90" fill="#27a98b" opacity="0.3"/>
+    </g>
+    <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" transform="translate(256 264) scale(1.42 0.8) translate(-256 -264)" fill="none" stroke="#1f8f74" stroke-width="7" opacity="0.75"/>
     <ellipse cx="150" cy="168" rx="42" ry="20" fill="#ffffff" opacity="0.35" transform="rotate(-32 150 168)"/>
-    <ellipse cx="190" cy="226" rx="31" ry="38" fill="#f4fff9"/>
-    <ellipse cx="324" cy="226" rx="31" ry="38" fill="#f4fff9"/>
-    <circle cx="194" cy="230" r="14" fill="#402f3b"/>
-    <circle cx="328" cy="230" r="14" fill="#402f3b"/>
-    <circle cx="200" cy="222" r="5" fill="#ffffff"/>
-    <circle cx="334" cy="222" r="5" fill="#ffffff"/>
-    <path d="M232 314 Q256 334 280 314" stroke="#402f3b" stroke-width="11" stroke-linecap="round" fill="none"/>
+    <ellipse cx="164.8" cy="226" rx="31" ry="38" fill="#f4fff9"/>
+    <ellipse cx="349.2" cy="226" rx="31" ry="38" fill="#f4fff9"/>
+    <circle cx="156.8" cy="230" r="14" fill="#402f3b"/>
+    <circle cx="341.2" cy="230" r="14" fill="#402f3b"/>
+    <circle cx="162.8" cy="222" r="5" fill="#ffffff"/>
+    <circle cx="347.2" cy="222" r="5" fill="#ffffff"/>
+    <ellipse cx="256" cy="328" rx="14" ry="18" fill="none" stroke="#402f3b" stroke-width="10"/>
   </g>
-  <g transform="translate(560 118)" fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M0 20 C60 30 100 44 140 66 M140 66 l-30 -12 M140 66 l-12 30" stroke="#e0709a"/>
-    <path d="M0 190 C58 194 98 196 134 192 M134 192 l-28 -18 M134 192 l-26 20" stroke="#f0a03c"/>
-    <path d="M0 356 C60 340 102 322 138 298 M138 298 l-32 4 M138 298 l-4 -32" stroke="#5f7fdb"/>
-  </g>
-  <g font-family="'M PLUS Rounded 1c','BIZ UDPGothic','Hiragino Maru Gothic ProN','Yu Gothic',sans-serif">
-    <text x="96" y="252" font-size="120" font-weight="800" fill="#402f3b">ゆらぐー！</text>
-    <text x="100" y="332" font-size="34" font-weight="700" fill="#715e6b">なまえのない生命体を、</text>
-    <text x="100" y="384" font-size="34" font-weight="700" fill="#715e6b">みんなのひとことで引っ張るパーティーゲーム。</text>
-    <text x="100" y="472" font-size="26" font-weight="700" fill="#27a98b">2〜6人であそべるよ</text>
-  </g>
-  <circle cx="86" cy="466" r="10" fill="#e0709a"/>
-  <circle cx="86" cy="466" r="10" fill="none" stroke="#402f3b" stroke-width="2"/>
-</svg>
+    <path d="M596 132 Q640 150 668 206 M668 206 l-30 -10 M668 206 l-6 30" fill="none" stroke="#e0709a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M596 320 Q630 322 664 318 M664 318 l-30 -10 M664 318 l-6 30" fill="none" stroke="#f0a03c" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M596 500 Q636 470 670 416 M670 416 l-30 -10 M670 416 l-6 30" fill="none" stroke="#5f7fdb" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <g font-family="'M PLUS Rounded 1c','BIZ UDPGothic','Hiragino Maru Gothic ProN','Yu Gothic',sans-serif">
+      <text x="92" y="240" font-size="124" font-weight="800" fill="#402f3b">ゆらぐー！</text>
+      <text x="96" y="322" font-size="33" font-weight="700" fill="#715e6b">なまえのない生命体を、</text>
+      <text x="96" y="374" font-size="33" font-weight="700" fill="#715e6b">みんなのひとことで引っ張るパーティーゲーム。</text>
+      <text x="96" y="468" font-size="25" font-weight="700" fill="#1f8f74">2〜6人であそべるよ</text>
+    </g>
+    <circle cx="82" cy="462" r="9" fill="#e0709a" stroke="#402f3b" stroke-width="2"/>
+  </svg>

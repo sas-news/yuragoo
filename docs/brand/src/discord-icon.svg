@@ -2,32 +2,30 @@
     <title>ゆらぐー！ アプリアイコン</title>
     <rect width="512" height="512" fill="#fff7e8"/>
     <circle cx="256" cy="262" r="149" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.34"/><circle cx="256" cy="262" r="187" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.26"/><circle cx="256" cy="262" r="230" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.18000000000000002"/>
-    
-  <g transform="translate(20 52) scale(0.92)">
-    
+    <g transform="translate(30 58) scale(0.88)">
     <defs>
-      <radialGradient id="body2052" cx="42%" cy="32%" r="80%">
+      <radialGradient id="bodydi" cx="42%" cy="32%" r="80%">
         <stop offset="0%" stop-color="#b2f4e3"/>
         <stop offset="55%" stop-color="#78dfc5"/>
-        <stop offset="100%" stop-color="#54c7a8"/>
+        <stop offset="100%" stop-color="#4cba9c"/>
       </radialGradient>
-      <clipPath id="clip2052">
-        <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z"/>
-      </clipPath>
+      <clipPath id="clipdi"><path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" transform="translate(256 264) scale(1.2 0.88) translate(-256 -264)"/></clipPath>
     </defs>
-    <ellipse cx="258" cy="452" rx="152" ry="20" fill="#72546a" opacity="0.18"/>
-    <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" fill="url(#body2052)"/>
-    <g clip-path="url(#clip2052)">
-      <ellipse cx="256" cy="410" rx="220" ry="90" fill="#27a98b" opacity="0.22"/>
+    <ellipse cx="258" cy="452" rx="182.4" ry="20" fill="#72546a" opacity="0.2"/>
+    <g transform="translate(256 264) scale(1.2 0.88) translate(-256 -264)">
+      <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" fill="url(#bodydi)"/>
     </g>
-    <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" fill="none" stroke="#27a98b" stroke-width="5" opacity="0.55"/>
+    <g clip-path="url(#clipdi)">
+      <ellipse cx="256" cy="410" rx="220" ry="90" fill="#27a98b" opacity="0.3"/>
+    </g>
+    <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" transform="translate(256 264) scale(1.2 0.88) translate(-256 -264)" fill="none" stroke="#1f8f74" stroke-width="7" opacity="0.75"/>
     <ellipse cx="150" cy="168" rx="42" ry="20" fill="#ffffff" opacity="0.35" transform="rotate(-32 150 168)"/>
-    <ellipse cx="190" cy="226" rx="31" ry="38" fill="#f4fff9"/>
-    <ellipse cx="324" cy="226" rx="31" ry="38" fill="#f4fff9"/>
-    <circle cx="194" cy="230" r="14" fill="#402f3b"/>
+    <ellipse cx="178" cy="226" rx="31" ry="38" fill="#f4fff9"/>
+    <ellipse cx="336" cy="226" rx="31" ry="38" fill="#f4fff9"/>
+    <circle cx="170" cy="230" r="14" fill="#402f3b"/>
     <circle cx="328" cy="230" r="14" fill="#402f3b"/>
-    <circle cx="200" cy="222" r="5" fill="#ffffff"/>
+    <circle cx="176" cy="222" r="5" fill="#ffffff"/>
     <circle cx="334" cy="222" r="5" fill="#ffffff"/>
-    <path d="M232 314 Q256 334 280 314" stroke="#402f3b" stroke-width="11" stroke-linecap="round" fill="none"/>
+    <ellipse cx="256" cy="325.6" rx="14" ry="18" fill="none" stroke="#402f3b" stroke-width="10"/>
   </g>
   </svg>

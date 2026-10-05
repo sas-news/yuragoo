@@ -7,7 +7,7 @@
 ## キャラクター仕様（ゲーム内レンダリングと同一にすること）
 
 - 名前のない生命体。**名前・台詞・擬人化した服や手足は付けない**
-- 形：丸い柔らかいブロブ（不定形に近いが、基本はほぼ球体〜少し潰れた餅状）
+- 形：柔らかいブロブ。静止時はほぼ球形だが、**このゲームの代名詞は「言葉に引っ張られて横にビヨーンと伸びる」姿** — バナー/OGP/カバーでは伸びた状態を描くのが正解（アイコンのみやや丸め）
 - 体色：ミントグリーン `#78dfc5`、下部に深みのあるティール `#27a98b` の陰影
 - 目：縦長の楕円が2つ（白目 `#f4fff9`＋濃いインク色の丸い瞳 `#402f3b`）、顔の中央よりやや上に離れて配置
 - 口：小さく穏やかな弧（微笑み程度）。歯・舌なし
@@ -26,13 +26,15 @@
 ## 画像生成プロンプト（英語・そのまま使える）
 
 ```
-A soft round mint-green blob creature with no limbs, no name, and no clothing,
-resting on a plain warm cream background (#fff7e8). The creature's body is a
-squishy jelly-like sphere colored mint (#78dfc5) with a deeper teal (#27a98b)
-shading along its lower curve. It has two vertical oval eyes with white sclera
-(#f4fff9) and round dark-plum pupils (#402f3b), set slightly above center and
-spaced apart, giving a gentle curious look. A tiny, calm curved-line smile sits
-below the eyes. Style: warm storybook / kamishibai illustration, soft matte
+A soft mint-green blob creature with no limbs, no name, and no clothing,
+resting on a plain warm cream background (#fff7e8). Its signature pose is
+being STRETCHED horizontally — pulled taut by invisible forces — so draw
+the squishy jelly body elongated left-right (#78dfc5) with deeper teal
+(#27a98b) shading along its lower curve. It has two vertical oval eyes with
+white sclera (#f4fff9) and round dark-plum pupils (#402f3b), set slightly
+above center and spaced apart. When stretched, its mouth becomes a small
+surprised open "o"; at rest it is a tiny calm curved smile. Style: warm
+storybook / kamishibai illustration, soft matte
 texture, subtle paper grain, tender and friendly, minimal detail, no outlines
 heavier than a faint teal rim. No text, no props, no scenery.
 Square composition, creature centered, single subject.
