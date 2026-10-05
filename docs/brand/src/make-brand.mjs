@@ -1,7 +1,7 @@
-// Brand asset generator: single source for the creature mark, emitting SVG
-// sources + rasterized PNGs for BOTH the web bundle (apps/web/public) and
-// the Discord Developer Portal (docs/brand). The creature is drawn STRETCHED
-// — pulled taut by the players' words — which is the game's signature pose.
+// Brand asset generator: composites captures of the REAL creature renderer
+// (docs/brand/src/captures/*.png — run capture-creature.mjs first, needs the
+// e2e build served on :4180) into SVG sources + rasterized PNGs for BOTH the
+// web bundle (apps/web/public) and the Discord Developer Portal (docs/brand).
 //
 // Fonts: the rasterizer loads M PLUS Rounded 1c (the app's display face)
 // from Google Fonts and waits on document.fonts.ready, so titles render in
@@ -10,29 +10,29 @@ import { chromium } from "playwright";
 import { writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { creature, FONT, FONT_LINK, pull, rings } from "./creature.mjs";
+import { cap, FONT, FONT_LINK, pull, rings } from "./creature.mjs";
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const brandDir = resolve(dir, "..");
 const publicDir = resolve(dir, "../../../apps/web/public");
 
 const svgs = {
-  // favicon + PNG derivations — a gentle squash, round face still legible
-  // at 16px.
+  // favicon + PNG derivations — the resting creature, guide lines included.
   icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ゆらぐー！">
     <title>ゆらぐー！</title>
-    ${creature("i", 36, 72, 0.86, { sx: 1.16, sy: 0.9 })}
+    <rect width="512" height="512" fill="#fff7e8"/>
+    <image href="${cap("rest")}" x="0" y="0" width="512" height="512"/>
   </svg>`,
 
-  // OGP / social card — creature pulled hard toward the incoming arrows.
+  // OGP / social card — the real creature pulled hard right by the words.
   og: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="ゆらぐー！ — なまえのない生命体を、みんなのひとことで引っ張るパーティーゲーム">
     <title>ゆらぐー！</title>
     <rect width="1200" height="630" fill="#fff7e8"/>
-    ${rings(852, 320, 108)}
-    ${creature("og", 668, 126, 0.95, { sx: 1.42, sy: 0.8 })}
-    ${pull(596, 132, 668, 206, 640, 150, "#e0709a")}
-    ${pull(596, 320, 664, 318, 630, 322, "#f0a03c")}
-    ${pull(596, 500, 670, 416, 636, 470, "#5f7fdb")}
+    ${rings(920, 300, 108)}
+    <image href="${cap("stretch")}" x="640" y="40" width="520" height="462"/>
+    ${pull(580, 150, 712, 220, 640, 168, "#e0709a")}
+    ${pull(580, 310, 700, 300, 640, 306, "#f0a03c")}
+    ${pull(580, 470, 716, 380, 644, 442, "#5f7fdb")}
     <g font-family="${FONT}">
       <text x="92" y="240" font-size="124" font-weight="800" fill="#402f3b">ゆらぐー！</text>
       <text x="96" y="322" font-size="33" font-weight="700" fill="#715e6b">なまえのない生命体を、</text>
@@ -47,31 +47,29 @@ const svgs = {
     <title>ゆらぐー！ アプリアイコン</title>
     <rect width="512" height="512" fill="#fff7e8"/>
     ${rings(256, 262, 96)}
-    ${creature("di", 30, 58, 0.88, { sx: 1.2, sy: 0.88 })}
+    <image href="${cap("rest")}" x="0" y="0" width="512" height="512"/>
   </svg>`,
 
   // Activity → 背景 (grid overlay): art at the edges, center kept clear.
   background: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 576" role="img" aria-label="ゆらぐー！ 背景">
     <title>ゆらぐー！ グリッド背景</title>
     <rect width="1024" height="576" fill="#fff7e8"/>
-    ${rings(60, 300, 90)} ${rings(964, 300, 90)} ${rings(512, 600, 66)}
-    ${creature("bl", -230, 130, 0.8, { sx: 1.3, sy: 0.84 })}
-    ${creature("br", 950, 130, 0.8, { sx: 1.3, sy: 0.84 })}
-    ${creature("bb", 382, 466, 0.4, { sx: 1.15, sy: 0.9 })}
-    ${pull(250, 90, 330, 190, 300, 120, "#e0709a")}
-    ${pull(774, 90, 694, 190, 724, 120, "#5f7fdb")}
-    ${pull(512, 556, 512, 470, 512, 520, "#f0a03c")}
+    ${rings(60, 300, 90)} ${rings(964, 300, 90)}
+    <image href="${cap("pull")}" x="-210" y="80" width="420" height="420"/>
+    <image href="${cap("stretch")}" x="830" y="110" width="360" height="320"/>
+    ${pull(240, 80, 320, 180, 292, 108, "#e0709a")}
+    ${pull(784, 80, 706, 180, 736, 108, "#5f7fdb")}
   </svg>`,
 
-  // Activity → カバーアート (shelf main): big title + stretched creature.
+  // Activity → カバーアート (shelf main): big title + real stretched creature.
   cover: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 576" role="img" aria-label="ゆらぐー！ カバーアート">
     <title>ゆらぐー！ カバーアート</title>
     <rect width="1024" height="576" fill="#fff7e8"/>
-    ${rings(768, 270, 112)}
-    ${creature("cv", 596, 76, 0.78, { sx: 1.38, sy: 0.8 })}
-    ${pull(452, 118, 560, 190, 500, 140, "#e0709a")}
-    ${pull(452, 268, 556, 268, 510, 268, "#f0a03c")}
-    ${pull(452, 424, 562, 350, 502, 400, "#5f7fdb")}
+    ${rings(760, 260, 112)}
+    <image href="${cap("stretch")}" x="560" y="70" width="440" height="391"/>
+    ${pull(430, 110, 585, 190, 505, 128, "#e0709a")}
+    ${pull(430, 268, 578, 268, 505, 268, "#f0a03c")}
+    ${pull(430, 424, 590, 346, 505, 398, "#5f7fdb")}
     <g font-family="${FONT}">
       <text x="68" y="252" font-size="110" font-weight="800" fill="#402f3b">ゆらぐー！</text>
       <text x="72" y="326" font-size="27" font-weight="700" fill="#715e6b">なまえのない生命体を、みんなのひとことで</text>

@@ -26,6 +26,6 @@ live gate が要る行は `.github/workflows/live-gates.yml` を手動 dispatch
 - 実施者 / 日時: Devin（ユーザーの実機 QA 報告含む）/ 2026-10-04
 - 気付き・既知の残件:
   - `test:discord:live` runner 未実装（将来の自動化候補）
-  - Discord ポータル残作業（ユーザー側）: URL Mappings `/` → `yuragoo.sasnews.dev`、General Information に ToS=`https://yuragoo.sasnews.dev/terms`、Privacy=`https://yuragoo.sasnews.dev/privacy` を登録（2026-10-04 custom domain 化で宛先を workers.dev から差替）。アイコン/背景/カバー/動画プレビューは `docs/brand/` に生成済み（`preview-640x360.mp4` = 8.6s/76KB/mp4 規格内）
+  - Discord ポータル残作業（ユーザー側）: URL Mappings `/` → `yuragoo.sasnews.dev`、General Information に ToS=`https://yuragoo.sasnews.dev/terms`、Privacy=`https://yuragoo.sasnews.dev/privacy` を登録（2026-10-04 custom domain 化で宛先を workers.dev から差替）。アイコン/背景/カバー/動画プレビューは `docs/brand/` に生成済み（`preview-640x360.mp4` = 9.5s/82KB/mp4 規格内。生きものは `/dev/creature` 実レンダラーのキャプチャを使用）
   - 同一 Discord アプリを prod に張り替えたため **staging の Activity は今後使えない**（コードは残る）
   - 独自ドメイン `yuragoo.sasnews.dev` を production worker に custom domain バインド済み（workers.dev 側も `workers_dev: true` で維持）。ALLOWED_ORIGINS は両 origin を許可

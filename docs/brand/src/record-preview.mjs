@@ -1,19 +1,20 @@
 // Discord shelf video preview (640x360 mp4, <=10s, <=0.5MB): three clips —
-// animated title card, live /play footage (three seats pull the creature
-// with words), end card with the URL. Each clip is a separate Playwright
-// video; ffmpeg concatenates and encodes the final mp4.
-// Requires `vite preview` on :4180 (built dist) for the gameplay clip.
+// REAL creature footage from /dev/creature (weights driven live through
+// __YURAGOO_LAB_E2E__), live /play footage, end card with the URL. Each
+// clip is a separate Playwright video; ffmpeg concatenates and encodes.
+// Requires the e2e `vite preview` on :4180 for /dev/creature and /play.
 import { chromium } from "playwright";
 import { execSync } from "node:child_process";
 import { mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { creature, FONT, FONT_LINK } from "./creature.mjs";
+import { cap, FONT, FONT_LINK } from "./creature.mjs";
 
 const brandDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const videoDir = resolve(brandDir, "raw-video");
 mkdirSync(videoDir, { recursive: true });
-for (const f of readdirSync(videoDir)) unlinkSync(join(videoDir, f));
+for (const f of readdirSync(videoDir, { withFileTypes: true }))
+  if (f.isFile()) unlinkSync(join(videoDir, f.name));
 
 const W = 640;
 const H = 360;
@@ -46,14 +47,35 @@ const card = (inner, anim = "") => `${FONT_LINK}<style>
   ${anim}
 </style><body>${inner}</body>`;
 
-// Clip A — title card: creature gently stretches on a loop.
+// Clip A — real creature on /dev/creature: hide the lab controls, fill the
+// viewport with the stage, drive a rest→pull→rest beat, and overlay the
+// title. The stretch is the genuine renderer deformation.
 await clip("a-title", async (page) => {
-  await page.setContent(
-    card(`<svg width="230" height="230" viewBox="0 40 512 440" class="wob" style="transform-origin:50% 60%">${creature("v", 0, 0, 1, { sx: 1.25, sy: 0.88 })}</svg>
-      <div class="in" style="font-size:64px;font-weight:800;color:#402f3b">ゆらぐー！</div>`),
-  );
-  await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(1400);
+  await page.goto("http://localhost:4180/dev/creature", { waitUntil: "networkidle" });
+  await page.waitForFunction(() => window.__YURAGOO_LAB_E2E__ !== undefined);
+  await page.addStyleTag({
+    content: `main[class] > *:not([class*=stageWrap]){display:none!important}
+      [class*=stageWrap]{position:fixed!important;inset:0!important;width:100%!important;height:100%!important}`,
+  });
+  await page.evaluate(() => {
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800&display=swap">
+      <div id="cap-title" style="position:fixed;left:0;right:0;bottom:18px;text-align:center;
+        font-family:'M PLUS Rounded 1c',sans-serif;font-size:56px;font-weight:800;color:#402f3b;
+        text-shadow:0 2px 0 #fff7e8;opacity:0;transition:opacity .4s">ゆらぐー！</div>`,
+    );
+  });
+  const set = (w, e) => page.evaluate(([a, b]) => window.__YURAGOO_LAB_E2E__.set(a, b), [w, e]);
+  await set([25, 25, 25, 25], "rest");
+  await page.waitForTimeout(950);
+  await page.evaluate(() => {
+    document.getElementById("cap-title").style.opacity = "1";
+  });
+  await set([8, 72, 12, 8], "engaged");
+  await page.waitForTimeout(750);
+  await set([25, 25, 25, 25], "rest");
+  await page.waitForTimeout(400);
 });
 
 // Clip B — real /play: three seats throw words, creature gets pulled.
@@ -81,14 +103,14 @@ await clip(
     }
     await page.waitForTimeout(400);
   },
-  { speed: 0.62, skip: 1.0 },
+  { speed: 0.55, skip: 1.0 },
 );
 
-// Clip C — end card: creature + CTA + URL.
+// Clip C — end card: real resting creature + CTA + URL.
 await clip("c-end", async (page) => {
   await page.setContent(
     card(`<div style="display:flex;align-items:center;gap:22px">
-        <svg width="180" height="180" viewBox="0 40 512 440" class="wob" style="transform-origin:50% 60%">${creature("e", 0, 0, 1, { sx: 1.18, sy: 0.9 })}</svg>
+        <img src="${cap("rest")}" width="170" height="170" class="wob" style="transform-origin:50% 60%;display:block"/>
         <div class="in">
           <div style="font-size:34px;font-weight:800;color:#402f3b">2〜6人であそべるよ</div>
           <div style="font-size:22px;font-weight:700;color:#1f8f74;margin-top:8px">yuragoo.sasnews.dev</div>
@@ -96,7 +118,7 @@ await clip("c-end", async (page) => {
       </div>`),
   );
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(1100);
+  await page.waitForTimeout(850);
 });
 
 await browser.close();

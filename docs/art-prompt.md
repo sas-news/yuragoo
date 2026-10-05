@@ -1,7 +1,9 @@
 # アート生成プロンプト（本番用アイコン/OGP の依頼文）
 
-現在配信中の `apps/web/public/icon.svg`・`og.png` はプレースホルダー。
-本番品質の画像を外部の画像生成やイラストレーターに依頼するための指示書。
+現在配信中の `apps/web/public/icon.svg`・`og.png`・`docs/brand/*` は
+`/dev/creature` の実レンダラーを `docs/brand/src/capture-creature.mjs` で
+キャプチャしたものを合成している（顔・伸び方はゲーム本編と同一）。
+さらに本番品質の画像を外部の画像生成やイラストレーターに依頼する場合の指示書。
 制作後は `icon-512.png` / `apple-touch-icon.png` / `og.png` を差し替えるだけでよい。
 
 ## キャラクター仕様（ゲーム内レンダリングと同一にすること）

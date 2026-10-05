@@ -20,7 +20,7 @@
 
 1. URL Mappings `/` → `yuragoo.sasnews.dev` に張替（`/` だけで `/api` も拾う）
 2. General Information: Terms of Service URL=`https://yuragoo.sasnews.dev/terms`、Privacy Policy URL=`https://yuragoo.sasnews.dev/privacy`
-3. App Icon に `docs/brand/discord-icon-512.png`（背景あり版）、背景には `background-1024x576.png`、カバーアートに `cover-1024x576.png`、動画プレビューに `preview-640x360.mp4`（8.6s/76KB — タイトル→実プレイ→URL の3クリップ構成）。生成元は `docs/brand/src/{make-brand,record-preview}.mjs`（record-preview は `vite preview :4180` が必要）
+3. App Icon に `docs/brand/discord-icon-512.png`（背景あり版）、背景には `background-1024x576.png`、カバーアートに `cover-1024x576.png`、動画プレビューに `preview-640x360.mp4`（9.5s/82KB — 実レンダラー→実プレイ→URL の3クリップ構成）。生きもの画像は手描きSVGではなく `/dev/creature` の実レンダラーから `capture-creature.mjs` が切り出す（e2e `vite preview :4180` 必須）→ `src/captures/*.png` を `make-brand.mjs`/`record-preview.mjs` が合成
 4. **staging の Activity は張替時点で使えなくなる**（同一アプリ選択のため）
 
 ### 運用
