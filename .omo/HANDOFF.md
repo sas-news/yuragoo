@@ -4,21 +4,24 @@
 
 ## 🚀 リリース済み（2026-10-04）
 
-**production デプロイ完了**: `https://yuragoo-server.sasshinbun0655.workers.dev`
-- prod version `000305a4-c13c-4c72-954b-a5c3407af1dd` / commit `9753501`
-- vars: APP_ENV=production / ALLOWED_ORIGINS=自身URL / DISCORD_CLIENT_ID=1553394215029968926 / DISCORD_ORIGINS=.discordsays.com / JEV_DAILY_ATTEMPT_CAP=120 / GENERATION_DAILY_ATTEMPTS=60
+**production デプロイ完了**: **`https://yuragoo.sasnews.dev`**（custom domain、2026-10-04 移行）
+- prod version `698c04cc-7372-42a7-bcde-8205794ce196` / custom domain + workers.dev 両バインド（`workers_dev: true` 明示 — routes 追加だけだと workers.dev が外れる）
+- vars: APP_ENV=production / ALLOWED_ORIGINS=`yuragoo.sasnews.dev + workers.dev` / DISCORD_CLIENT_ID=1553394215029968926 / DISCORD_ORIGINS=.discordsays.com / JEV_DAILY_ATTEMPT_CAP=120 / GENERATION_DAILY_ATTEMPTS=60
 - secrets: DISCORD_CLIENT_SECRET / JEV_API_KEY（.dev.vars から `wrangler secret put --env production` 済み）
-- 検証済み: /api/health 200 / /api/stats pending / /privacy・/terms 200 / SPA fallback / room 作成 200 / evil origin 403 / discord token 実疎通
+- 検証済み（custom domain）: `/`・`/api/health`・`/api/stats` 200 / `/privacy`・`/terms` 307→200 / `/icon.svg`・`/og.png`・`/apple-touch-icon.png` 200 / SPA fallback / room 作成 200 / evil origin 403
 - **e2e フルスイート 113/113 PASS**（commit `9753501` — 旧契約テストを空席化・モード限定ready reset・PIP仕様へ追従 + PipLobby data-player-id 追加）
 - **F1–F4 全 APPROVE** — `.omo/evidence/yuragoo-development/20261004T131840Z-release/`
 - 公開ページ: `/privacy` `/terms`（`apps/web/public/*/index.html`、Workers Assets が `/x`→`/x/` に307して配信）
+- アセット: `icon.svg`+`icon-512.png`+`apple-touch-icon.png`+`og.png`（プレースホルダー、本番依頼プロンプトは `docs/art-prompt.md`）
+- 法務リンク: `LegalFoot`（ui/LegalLinks）が全非ゲーム画面＋結果ダイアログの末尾に出る
 - ゲート結果は `docs/release-checklist.md` に記入済み
 
 ### ユーザー側の残作業（Discord Developer Portal）
 
-1. URL Mappings `/` → `yuragoo-server.sasshinbun0655.workers.dev` に張替（`/api` は longest-match で `/` が拾う）
-2. General Information: Terms of Service URL=`https://yuragoo-server.sasshinbun0655.workers.dev/terms`、Privacy Policy URL=同`/privacy`
-3. **staging の Activity は張替時点で使えなくなる**（同一アプリ選択のため）
+1. URL Mappings `/`・`/api` → `yuragoo.sasnews.dev` に張替（`/` が `/api` も拾うが両方書いてOK）
+2. General Information: Terms of Service URL=`https://yuragoo.sasnews.dev/terms`、Privacy Policy URL=`https://yuragoo.sasnews.dev/privacy`
+3. App Icon に `apps/web/public/icon-512.png` をアップ（任意）
+4. **staging の Activity は張替時点で使えなくなる**（同一アプリ選択のため）
 
 ### 運用
 

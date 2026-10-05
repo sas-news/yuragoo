@@ -24,18 +24,3 @@
   border: 2px solid var(--danger);
   background: var(--paper-raised);
 }
-
-/* Home footer (Task 38): the とうけい link sits quiet under the entry. */
-.statsFoot {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  padding: 0 16px 16px;
-}
-
-.footLink {
-  padding: 2px 4px;
-  color: var(--ink-muted);
-  font-size: 13px;
-  text-decoration: underline;
-}

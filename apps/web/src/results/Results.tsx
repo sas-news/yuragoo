@@ -8,6 +8,7 @@ import { useRef, useState } from "react";
 import { SLOT_SYMBOLS } from "../game/slots";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
+import { LegalFoot } from "../ui/LegalLinks";
 import uiStyles from "../ui/ui.module.css";
 import { commandErrorText } from "../lobby/lobby-errors";
 import type { RoomView } from "../lobby/room-view";
@@ -143,6 +144,7 @@ export function Results({ view, isHost, backToLobby, closeRoom }: ResultsProps) 
           </Button>
         </div>
       )}
+      <LegalFoot />
     </Dialog>
   );
 }

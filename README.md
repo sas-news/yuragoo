@@ -1,8 +1,11 @@
 # ゆらぐー！
 
+**https://yuragoo.sasnews.dev** で公開中 — Discord なしでもブラウザだけで遊べる
+（Discord Activity は同じルームへの別入口）。
+
 なまえのない生命体を、みんなのひとことで引っ張るパーティーゲーム。
 Bun workspaces の monorepo。ブラウザ版が主戦場で、Discord Activity は
-adapter 経由で同じルームに乗る(構想)。
+adapter 経由で同じルームに乗る。
 
 ```text
 apps/web       React/Vite クライアント(ロビー・アリーナ・結果)

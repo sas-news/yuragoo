@@ -27,9 +27,14 @@
     "production": {
       "name": "yuragoo-server",
       "ai": { "binding": "AI" },
+      // yuragoo.sasnews.dev is the public face; keep workers.dev bound too —
+      // adding routes would otherwise disable the workers.dev hostname,
+      // and the Discord URL Mapping still points there during transition.
+      "workers_dev": true,
+      "routes": [{ "pattern": "yuragoo.sasnews.dev", "custom_domain": true }],
       "vars": {
         "APP_ENV": "production",
-        "ALLOWED_ORIGINS": "https://yuragoo-server.sasshinbun0655.workers.dev",
+        "ALLOWED_ORIGINS": "https://yuragoo.sasnews.dev,https://yuragoo-server.sasshinbun0655.workers.dev",
         "DISCORD_CLIENT_ID": "1553394215029968926",
         "DISCORD_ORIGINS": ".discordsays.com",
         "JEV_DAILY_ATTEMPT_CAP": "120",

@@ -1,13 +1,13 @@
-// /r/<roomId> product page (Task 24). Boot sequence mirrors room-bridge.ts:
-// read the invite fragment once -> join (or recover the stored session) ->
-// ticket -> WebSocket through RoomConnection (rotation + reconnect inside).
-// The page owns the RoomView reducer; Lobby and RoomGame are render-only.
+// /r/<roomId> product page (Task 24). Boot: read the invite fragment once ->
+// join (or recover the stored session) -> ticket -> WebSocket through
+// RoomConnection. The page owns the RoomView reducer; children render-only.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SnapshotPayload } from "@yuragoo/protocol";
 import { StatsLink } from "../info/Stats";
 import { RoomConnection } from "../net/reconnect";
 import { inviteUrl as buildInviteUrl } from "../net/urls";
 import { usePipMode } from "../platform/use-pip-mode";
+import { LegalFoot } from "../ui/LegalLinks";
 import { useVisualViewportHeight } from "../ui/useVisualViewport";
 import { Lobby } from "./Lobby";
 import { serverErrorText } from "./lobby-errors";
@@ -241,9 +241,9 @@ export default function RoomPage() {
           onLeave={onLeave}
         />
       ) : null}
-      <p className={styles.note}>
+      <LegalFoot>
         <StatsLink />
-      </p>
+      </LegalFoot>
     </main>
   );
 }

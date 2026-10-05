@@ -14,7 +14,7 @@
 
 | マッピング | 宛先 |
 | --- | --- |
-| `/api` | Worker のオリジン（例 `yuragoo-server.<sub>.workers.dev`） |
+| `/api` | 本番は `yuragoo.sasnews.dev`（custom domain）。staging 検証時は `yuragoo-staging.sasshinbun0655.workers.dev` |
 | `/` | 同上（longest-match で `/api` が先に効く） |
 
 **宛先はスキームを書かない** — Discord の URL マッピングは `https://` を付けず

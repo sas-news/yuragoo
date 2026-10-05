@@ -8,6 +8,7 @@ import { CreatureStage } from "./game/CreatureStage";
 import { StatsLink } from "./info/Stats";
 import { apiOrigin, createRoom } from "./lobby/room-session";
 import { Button } from "./ui/Button";
+import { LegalFoot } from "./ui/LegalLinks";
 import styles from "./App.module.css";
 
 export function App() {
@@ -53,15 +54,9 @@ export function App() {
           </p>
         )}
       </section>
-      <footer className={styles.statsFoot}>
+      <LegalFoot>
         <StatsLink />
-        <a className={styles.footLink} href="/privacy">
-          プライバシー
-        </a>
-        <a className={styles.footLink} href="/terms">
-          利用規約
-        </a>
-      </footer>
+      </LegalFoot>
     </main>
   );
 }

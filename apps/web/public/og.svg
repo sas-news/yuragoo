@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="ゆらぐー！ — なまえのない生命体を、みんなのひとことで引っ張るパーティーゲーム">
+  <defs>
+    <radialGradient id="body" cx="42%" cy="32%" r="80%">
+      <stop offset="0%" stop-color="#b2f4e3"/>
+      <stop offset="55%" stop-color="#78dfc5"/>
+      <stop offset="100%" stop-color="#54c7a8"/>
+    </radialGradient>
+    <clipPath id="bodyClip">
+      <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z"/>
+    </clipPath>
+  </defs>
+  <rect width="1200" height="630" fill="#fff7e8"/>
+  <g transform="translate(820 300)">
+    <circle r="248" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.18"/>
+    <circle r="196" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.26"/>
+    <circle r="152" fill="none" stroke="#27a98b" stroke-width="4" opacity="0.34"/>
+  </g>
+  <g transform="translate(700 122) scale(0.95)">
+    <ellipse cx="258" cy="452" rx="152" ry="20" fill="#72546a" opacity="0.18"/>
+    <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" fill="url(#body)"/>
+    <g clip-path="url(#bodyClip)">
+      <ellipse cx="256" cy="410" rx="220" ry="90" fill="#27a98b" opacity="0.22"/>
+    </g>
+    <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" fill="none" stroke="#27a98b" stroke-width="5" opacity="0.55"/>
+    <ellipse cx="150" cy="168" rx="42" ry="20" fill="#ffffff" opacity="0.35" transform="rotate(-32 150 168)"/>
+    <ellipse cx="190" cy="226" rx="31" ry="38" fill="#f4fff9"/>
+    <ellipse cx="324" cy="226" rx="31" ry="38" fill="#f4fff9"/>
+    <circle cx="194" cy="230" r="14" fill="#402f3b"/>
+    <circle cx="328" cy="230" r="14" fill="#402f3b"/>
+    <circle cx="200" cy="222" r="5" fill="#ffffff"/>
+    <circle cx="334" cy="222" r="5" fill="#ffffff"/>
+    <path d="M232 314 Q256 334 280 314" stroke="#402f3b" stroke-width="11" stroke-linecap="round" fill="none"/>
+  </g>
+  <g transform="translate(560 118)" fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 20 C60 30 100 44 140 66 M140 66 l-30 -12 M140 66 l-12 30" stroke="#e0709a"/>
+    <path d="M0 190 C58 194 98 196 134 192 M134 192 l-28 -18 M134 192 l-26 20" stroke="#f0a03c"/>
+    <path d="M0 356 C60 340 102 322 138 298 M138 298 l-32 4 M138 298 l-4 -32" stroke="#5f7fdb"/>
+  </g>
+  <g font-family="'M PLUS Rounded 1c','BIZ UDPGothic','Hiragino Maru Gothic ProN','Yu Gothic',sans-serif">
+    <text x="96" y="252" font-size="120" font-weight="800" fill="#402f3b">ゆらぐー！</text>
+    <text x="100" y="332" font-size="34" font-weight="700" fill="#715e6b">なまえのない生命体を、</text>
+    <text x="100" y="384" font-size="34" font-weight="700" fill="#715e6b">みんなのひとことで引っ張るパーティーゲーム。</text>
+    <text x="100" y="472" font-size="26" font-weight="700" fill="#27a98b">2〜6人であそべるよ</text>
+  </g>
+  <circle cx="86" cy="466" r="10" fill="#e0709a"/>
+  <circle cx="86" cy="466" r="10" fill="none" stroke="#402f3b" stroke-width="2"/>
+</svg>
