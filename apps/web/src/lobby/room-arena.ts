@@ -8,6 +8,7 @@ import { orderForRound } from "@yuragoo/game-core";
 import type { DecisionDistribution, MoodId, ServerEnvelope } from "@yuragoo/protocol";
 import type { HudSnapshot } from "../game/hud-types";
 import { SLOT_SYMBOLS } from "../game/slots";
+import { type Locale, tx } from "../i18n";
 import type { RoomView } from "./room-view";
 import { latestVerdictPostId, moodOf } from "./view-decisions";
 import { memberName } from "./view-members";
@@ -152,59 +153,69 @@ export const pulledSlot = (
 
 // The corner log renders the room's event stream (joins, turns, posts,
 // result) — posts carry their text so the log doubles as the feed.
-export const roomEventLine = (env: ServerEnvelope, view: RoomView): string => {
-  const name = (id: string): string => memberName(view.players, id);
+// Feed chrome is per-viewer UI text (the viewer's own language); post
+// bodies and names stay verbatim.
+export const roomEventLine = (env: ServerEnvelope, view: RoomView, lang: Locale): string => {
+  const t = (ja: string, vars?: Record<string, string | number>): string => tx(lang, ja, vars);
+  const name = (id: string): string => memberName(view.players, id, (ja, vars) => t(ja, vars));
   switch (env.type) {
     case "phaseChanged":
     case "inputAccepted": {
       const e = env.payload.event;
       switch (e.type) {
         case "started":
-          return "ゲーム開始";
+          return t("ゲーム開始");
         case "turn":
-          return `${name(e.playerId)} のターン（${e.round + 1}巡目）`;
+          return t("{name} のターン（{round}巡目）", {
+            name: name(e.playerId),
+            round: e.round + 1,
+          });
         case "passed":
-          return `${name(e.playerId)} がパス`;
+          return t("{name} がパス", { name: name(e.playerId) });
         case "posted": {
           const post = env.type === "inputAccepted" ? env.payload.post : undefined;
           return post === undefined
-            ? `${name(e.playerId)} が投稿`
+            ? t("{name} が投稿", { name: name(e.playerId) })
             : `${name(e.playerId)}：${post.text}`;
         }
         case "complete":
-          return "締め切り — 集計中";
+          return t("締め切り — 集計中");
         case "end-requested":
-          return `${name(e.playerId)} が終了リクエスト`;
+          return t("{name} が終了リクエスト", { name: name(e.playerId) });
         case "finished":
-          return "終了";
+          return t("終了");
         default:
           return env.type; // exhaustive game-event union — unreachable
       }
     }
     case "memberJoined":
-      return `${env.payload.displayName ?? name(env.payload.playerId)} が入室`;
+      return t("{name} が入室", {
+        name: env.payload.displayName ?? name(env.payload.playerId),
+      });
     case "lobbyChanged":
       // Never pushed to the feed (applyEvent filters it) — kept so a
       // replayed ledger line still renders something sane.
-      return "ロビー情報が更新されました";
+      return t("ロビー情報が更新されました");
     case "lobbyReopened":
-      return "ロビーに戻りました";
+      return t("ロビーに戻りました");
     case "memberLeft":
-      return `${name(env.payload.playerId)} が退出`;
+      return t("{name} が退出", { name: name(env.payload.playerId) });
     case "presenceChanged":
-      return `${name(env.payload.playerId)} が${env.payload.connected ? "接続" : "切断"}`;
+      return env.payload.connected
+        ? t("{name} が接続", { name: name(env.payload.playerId) })
+        : t("{name} が切断", { name: name(env.payload.playerId) });
     case "hostChanged":
-      return `ホストが ${name(env.payload.playerId)} に`;
+      return t("ホストが {name} に", { name: name(env.payload.playerId) });
     case "decisionUpdated":
-      return "生きものがかたよりました";
+      return t("生きものがかたよりました");
     case "decisionFailed":
-      return "生きもののこたえがもらえなかった…";
+      return t("生きもののこたえがもらえなかった…");
     case "endingReady":
       return env.payload.generated
-        ? "おわりの紙芝居ができました"
-        : "おわりの紙芝居を用意しています";
+        ? t("おわりの紙芝居ができました")
+        : t("おわりの紙芝居を用意しています");
     case "roomClosed":
-      return "へやが閉じられました";
+      return t("へやが閉じられました");
     default:
       return env.type;
   }

@@ -5,6 +5,7 @@
 // never color alone.
 import type { CSSProperties } from "react";
 import { LOBBY_SEAT_COUNT, type LobbyState, type RoomPlayerView } from "@yuragoo/protocol";
+import { useT } from "../i18n";
 import { SLOT_LETTERS, SLOT_SYMBOLS, slotColor } from "../game/slots";
 import styles from "./ChoiceEditor.module.css";
 import shared from "./Lobby.module.css";
@@ -20,9 +21,6 @@ interface ChoiceEditorProps {
   readonly onAddSeat: () => void;
 }
 
-const memberName = (p: RoomPlayerView | undefined, index: number): string =>
-  p?.displayName ?? `プレイヤー${index + 1}`;
-
 export function ChoiceEditor({
   lobby,
   members,
@@ -31,10 +29,13 @@ export function ChoiceEditor({
   onEdit,
   onAddSeat,
 }: ChoiceEditorProps) {
+  const t = useT();
+  const memberName = (p: RoomPlayerView | undefined, index: number): string =>
+    p?.displayName ?? t("プレイヤー{n}", { n: index + 1 });
   const activeCount = members.length;
   return (
-    <section className={shared.plate} aria-label="選択肢">
-      <h2 className={shared.sectionTitle}>選択肢（メンバーに公開）</h2>
+    <section className={shared.plate} aria-label={t("選択肢")}>
+      <h2 className={shared.sectionTitle}>{t("選択肢（メンバーに公開）")}</h2>
       <ul className={styles.choiceList}>
         {lobby.choices.map((choice, i) => {
           const orphan = i >= activeCount;
@@ -45,9 +46,11 @@ export function ChoiceEditor({
           // Non-color identity for the whole row (Task 27): the accessible
           // name carries symbol + letter + label + assignee — color is a
           // redundant accent only.
-          const rowName = `${seat}：${orphan ? "空き" : memberName(assignee, i)}の選択肢「${
-            value === "" ? "未入力" : value
-          }」`;
+          const rowName = t("{seat}：{name}の選択肢「{label}」", {
+            seat,
+            name: orphan ? t("空き") : memberName(assignee, i),
+            label: value === "" ? t("未入力") : value,
+          });
           return (
             <li
               key={choice.choiceId}
@@ -65,33 +68,33 @@ export function ChoiceEditor({
               </span>
               <span className={styles.slotLetter}>{SLOT_LETTERS[i] ?? "?"}</span>
               <span className={styles.assignee}>
-                {orphan ? "（空き）" : memberName(assignee, i)}
+                {orphan ? t("（空き）") : memberName(assignee, i)}
               </span>
               {editable ? (
                 <input
                   className={styles.choiceInput}
                   value={value}
                   maxLength={60}
-                  placeholder="選択肢を入力"
-                  aria-label={`選択肢 ${seat}`}
+                  placeholder={t("選択肢を入力")}
+                  aria-label={t("選択肢 {seat}", { seat })}
                   onChange={(e) => onEdit(choice.choiceId, e.target.value)}
                 />
               ) : (
-                <span className={styles.choiceRead}>{value === "" ? "（未入力）" : value}</span>
+                <span className={styles.choiceRead}>{value === "" ? t("（未入力）") : value}</span>
               )}
               {draft?.conflict === true && (
-                <span className={shared.conflictBadge}>他の変更あり</span>
+                <span className={shared.conflictBadge}>{t("他の変更あり")}</span>
               )}
             </li>
           );
         })}
         {lobby.choices.length === 0 && (
-          <li className={shared.note}>メンバーが入ると選択肢ができます</li>
+          <li className={shared.note}>{t("メンバーが入ると選択肢ができます")}</li>
         )}
       </ul>
       {editable && lobby.choices.length < LOBBY_SEAT_COUNT && (
         <button type="button" className={shared.presetButton} onClick={onAddSeat}>
-          ＋空席をつくる
+          {t("＋空席をつくる")}
         </button>
       )}
     </section>

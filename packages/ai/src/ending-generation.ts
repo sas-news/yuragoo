@@ -9,6 +9,8 @@
 import {
   countGraphemes,
   type EndingStory,
+  ROOM_LANGUAGE_DEFAULT,
+  type RoomLanguage,
   STORY_CAPTION_MAX_GRAPHEMES,
   STORY_TITLE_MAX_GRAPHEMES,
   type StoryPanelKind,
@@ -38,10 +40,29 @@ export interface EndingGenerationInput {
   readonly scenario: string;
   readonly outcome: EndingOutcomeSummary;
   readonly panels: readonly EndingPanelInput[];
+  // Room language — the model writes the whole story in it. Absent
+  // (older callers/tests) means "ja".
+  readonly language?: RoomLanguage;
 }
 
-export const buildEndingPrompt = (input: EndingGenerationInput): string =>
-  [
+export const buildEndingPrompt = (input: EndingGenerationInput): string => {
+  if ((input.language ?? ROOM_LANGUAGE_DEFAULT) === "en") {
+    return [
+      'You are the kamishibai (picture-story) writer for the party game "Yuragoo!".',
+      "Read the match record (scenario, outcome, per-page quotes) and write a story title plus one caption per page.",
+      "",
+      `Input: ${JSON.stringify(input)}`,
+      "",
+      "Rules:",
+      `- One story title (within ${STORY_TITLE_MAX_GRAPHEMES} characters)`,
+      `- One caption per page (each within ${STORY_CAPTION_MAX_GRAPHEMES} characters)`,
+      "- Write only facts present in the input — never invent facts, names or winners",
+      "- Quote the winner's choice label verbatim, unchanged",
+      "- Use gentle, simple storybook English",
+      'Reply with JSON only: {"title": "...", "panels": [{"eventId": <the page\'s eventId>, "caption": "..."}]}',
+    ].join("\n");
+  }
+  return [
     "あなたはパーティーゲーム「ゆらぐー！」の紙芝居ライターです。",
     "対戦の記録（シナリオ・結果・各ページの引用）を読み、物語のタイトルと各ページのキャプションを書いてください。",
     "",
@@ -55,6 +76,7 @@ export const buildEndingPrompt = (input: EndingGenerationInput): string =>
     "- ひらがな中心のやわらかい日本語で",
     '出力はJSONのみ: {"title": "...", "panels": [{"eventId": <ページのeventId>, "caption": "..."}]}',
   ].join("\n");
+};
 
 // Structured-output schema: panel entries carry the SAME eventIds the
 // input lists (enum), so a schema-faithful reply can never invent pages.

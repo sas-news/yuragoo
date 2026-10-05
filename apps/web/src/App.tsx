@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { gameRulesVersion } from "@yuragoo/game-core";
 import { CreatureStage } from "./game/CreatureStage";
+import { useT } from "./i18n";
 import { StatsLink } from "./info/Stats";
 import { apiOrigin, createRoom } from "./lobby/room-session";
 import { Button } from "./ui/Button";
@@ -12,6 +13,7 @@ import { LegalFoot } from "./ui/LegalLinks";
 import styles from "./App.module.css";
 
 export function App() {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +30,7 @@ export function App() {
       })
       .catch((e: Error) => {
         setBusy(false);
-        setError(`へやをつくれませんでした（${e.message}）`);
+        setError(t("へやをつくれませんでした（{detail}）", { detail: e.message }));
       });
   };
 
@@ -41,12 +43,12 @@ export function App() {
       <div className="stage-area">
         <CreatureStage visualState="normal" />
       </div>
-      <section className={styles.entry} aria-label="はじめる">
+      <section className={styles.entry} aria-label={t("はじめる")}>
         <p className={styles.lead}>
-          なまえのない生命体を、みんなのひとことで引っ張るパーティーゲーム。
+          {t("なまえのない生命体を、みんなのひとことで引っ張るパーティーゲーム。")}
         </p>
         <Button variant="big" onClick={onCreate} disabled={busy} data-testid="create-room">
-          {busy ? "つくっています…" : "部屋を作る"}
+          {busy ? t("つくっています…") : t("部屋を作る")}
         </Button>
         {error !== null && (
           <p className={styles.error} role="alert">

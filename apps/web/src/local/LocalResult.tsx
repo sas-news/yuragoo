@@ -6,13 +6,14 @@
 // heading, focus is trapped, Esc/とじる dismisses to the finished arena
 // and a corner chip re-opens it (focus lands back on the chip).
 import { type CSSProperties, useRef, useState } from "react";
-import type { GameOutcome, GameState } from "@yuragoo/game-core";
+import type { GameOutcome, GameState, PlayerId } from "@yuragoo/game-core";
 import { slotColor } from "../game/slots";
+import { type Locale, useLocale, useT, type Translate, tx } from "../i18n";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import uiStyles from "../ui/ui.module.css";
 import styles from "./LocalGame.module.css";
-import { choicesFor, LOCAL_SCENARIO, localNameOf } from "./scenario";
+import { choicesFor, localNameOf, localScenario } from "./scenario";
 
 export interface LocalResultProps {
   readonly game: GameState;
@@ -26,20 +27,31 @@ const NO_CONTEST_TEXT: Readonly<Record<string, string>> = {
   aborted: "ちゅうだん",
 };
 
-const outcomeText = (outcome: GameOutcome | null, game: GameState): string => {
+const outcomeText = (
+  outcome: GameOutcome | null,
+  game: GameState,
+  lang: Locale,
+  t: Translate,
+): string => {
   if (outcome === null) return "…";
   switch (outcome.kind) {
     case "winner": {
-      const choice = choicesFor(game.roster.length)[outcome.slot];
-      const name = localNameOf(outcome.playerId);
+      const choice = choicesFor(game.roster.length, lang)[outcome.slot];
+      const name = localNameOf(outcome.playerId, lang);
       return choice === undefined
-        ? `${name} の勝ち！`
-        : `${name} の勝ち！ ${choice.symbol} ${choice.label}`;
+        ? t("{name} の勝ち！", { name })
+        : t("{name} の勝ち！ {symbol} {label}", {
+            name,
+            symbol: choice.symbol,
+            label: choice.label,
+          });
     }
     case "draw":
-      return "ひきわけ";
-    case "noContest":
-      return NO_CONTEST_TEXT[outcome.reason] ?? "むこう";
+      return t("ひきわけ");
+    case "noContest": {
+      const reason = NO_CONTEST_TEXT[outcome.reason];
+      return reason === undefined ? t("むこう") : t(reason);
+    }
     default:
       return "…";
   }
@@ -47,10 +59,13 @@ const outcomeText = (outcome: GameOutcome | null, game: GameState): string => {
 
 export function LocalResult(props: LocalResultProps) {
   const { game, onRematch } = props;
+  const t = useT();
+  const lang = useLocale();
   const [dismissed, setDismissed] = useState(false);
   const reopenRef = useRef<HTMLButtonElement | null>(null);
-  const choices = choicesFor(game.roster.length);
+  const choices = choicesFor(game.roster.length, lang);
   const ownerOf = (slot: number) => game.roster.find((p) => p.slot === slot);
+  const nameOf = (id: PlayerId): string => localNameOf(id, lang);
 
   if (dismissed) {
     return (
@@ -60,32 +75,36 @@ export function LocalResult(props: LocalResultProps) {
         data-testid="result-reopen"
         onClick={() => setDismissed(false)}
       >
-        けっかをみる
+        {t("けっかをみる")}
       </Button>
     );
   }
   return (
     <Dialog
-      label="けっか"
+      label={t("けっか")}
       veil="paper"
       testId="result-overlay"
       onClose={() => setDismissed(true)}
       returnFocus={() => reopenRef.current}
     >
       <h2 className={styles.title} data-autofocus tabIndex={-1}>
-        けっか
+        {t("けっか")}
       </h2>
-      <p className={styles.scenario}>{LOCAL_SCENARIO}</p>
+      <p className={styles.scenario}>{localScenario(lang)}</p>
       <ul className={styles.choices}>
         {choices.map((choice, slot) => {
           const owner = ownerOf(slot);
-          const ownerName = owner === undefined ? "—" : localNameOf(owner.id);
+          const ownerName = owner === undefined ? "—" : nameOf(owner.id);
           return (
             <li
               key={choice.id}
               className={styles.choice}
               data-testid="result-choice"
-              aria-label={`${choice.symbol} ${choice.label} — ${ownerName}`}
+              aria-label={t("{symbol} {label} — {name}", {
+                symbol: choice.symbol,
+                label: choice.label,
+                name: ownerName,
+              })}
             >
               <span
                 className={styles.choiceBadge}
@@ -101,14 +120,21 @@ export function LocalResult(props: LocalResultProps) {
         })}
       </ul>
       <p className={styles.outcome} data-testid="result-outcome">
-        {outcomeText(game.outcome, game)}
+        {outcomeText(game.outcome, game, lang, t)}
       </p>
       <div className={styles.resultButtons}>
         <Button variant="big" data-testid="rematch-button" onClick={onRematch}>
-          もう一回
+          {t("もう一回")}
         </Button>
-        <Button onClick={() => setDismissed(true)}>とじる</Button>
+        <Button onClick={() => setDismissed(true)}>{t("とじる")}</Button>
       </div>
     </Dialog>
   );
 }
+
+// Non-hook variant for tests/non-React callers.
+export const localOutcomeText = (
+  outcome: GameOutcome | null,
+  game: GameState,
+  lang: Locale,
+): string => outcomeText(outcome, game, lang, (ja, vars) => tx(lang, ja, vars));

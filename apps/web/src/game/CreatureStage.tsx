@@ -7,6 +7,7 @@ import {
   mountCreatureScene,
   type StageVisualState,
 } from "@yuragoo/creature";
+import { useLocale, useT } from "../i18n";
 import { Status } from "../ui/Status";
 import { describeCreature } from "./creatureStatus";
 import styles from "./CreatureStage.module.css";
@@ -97,6 +98,8 @@ export function CreatureStage(props: CreatureStageProps) {
     });
   }, [presentation, systemReduced, status]);
 
+  const t = useT();
+  const lang = useLocale();
   const choiceCount = (presentation ?? DEFAULT_PRESENTATION).samples.length;
   return (
     <section
@@ -105,27 +108,29 @@ export function CreatureStage(props: CreatureStageProps) {
       data-testid="creature-stage"
       data-state={visualState}
       data-status={status}
-      aria-label={`半透明の生きものが${choiceCount}つの選択肢に向かって伸びている様子`}
+      aria-label={t("半透明の生きものが{n}つの選択肢に向かって伸びている様子", {
+        n: choiceCount,
+      })}
       aria-busy={visualState === "loading"}
     >
       {status === "unsupported" ? (
         <div role="alert" className={styles.alert}>
-          このブラウザーでは WebGL が使えないため、ゲームを開始できません。
+          {t("このブラウザーでは WebGL が使えないため、ゲームを開始できません。")}
         </div>
       ) : null}
       {visualState === "error" ? (
         <div role="alert" className={styles.errorBadge}>
           <span aria-hidden="true">!</span>
-          うまくいきませんでした。もう一度お試しください。
+          {t("うまくいきませんでした。もう一度お試しください。")}
         </div>
       ) : null}
-      {status === "initializing" ? <div className={styles.status}>読み込み中…</div> : null}
+      {status === "initializing" ? <div className={styles.status}>{t("読み込み中…")}</div> : null}
       {/* Non-numeric DOM alternative for the canvas (DESIGN.md §9): a
           short state line — direction/state words, never numbers — that
           updates only on meaningful changes. role=status announces it. */}
       {statusHidden !== true && (
         <Status
-          text={describeCreature(visualState, presentation)}
+          text={describeCreature(visualState, presentation, lang)}
           className={styles.creatureStatus}
           testId="creature-status"
         />

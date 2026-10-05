@@ -1,10 +1,12 @@
 // The shared game settings panel (Task 26): the mode, the mode-relevant
-// durations and the two optional early-end switches — identical on every
-// member's screen. The host edits through the normal updateLobby command;
-// members see the same controls read-only. The server's lobbyChanged
-// (new view; ready flags cleared only when the mode moved) is the only
-// truth this panel renders — nothing is applied optimistically.
+// durations, the two optional early-end switches and the room's shared-text
+// language — identical on every member's screen. The host edits through the
+// normal updateLobby command; members see the same controls read-only. The
+// server's lobbyChanged (new view; ready flags cleared only when the mode
+// moved) is the only truth this panel renders — nothing is applied
+// optimistically.
 import type { LobbySettings, LobbySettingsView } from "@yuragoo/protocol";
+import { useT } from "../i18n";
 import { commandErrorText } from "./lobby-errors";
 import styles from "./Lobby.module.css";
 
@@ -51,38 +53,48 @@ function Segmented<T extends string | number>({
   );
 }
 
-const MODES = [
-  { value: "turn" as const, label: "じゅんばん" },
-  { value: "live" as const, label: "いっせいに" },
-];
-const TURN_SECONDS = ([10, 20, 30, 45, 60] as const).map((v) => ({ value: v, label: `${v}秒` }));
+// Duration labels are per-locale: "60秒"/"5分" vs "60s"/"5 min".
+const turnSecondsOptions = (t: (ja: string) => string) =>
+  ([10, 20, 30, 45, 60] as const).map((v) => ({
+    value: v,
+    label: t("{n}秒").replace("{n}", String(v)),
+  }));
 const ROUNDS = ([1, 2, 3, 4, 5, 6, 8] as const).map((v) => ({ value: v, label: `${v}` }));
-// Long sittings: the live menu jumps to minutes past 3 — a 10-minute
-// round is a real "のんびり" session, not a typo for 600秒.
-const LIVE_SECONDS = (
-  [
-    [60, "60秒"],
-    [120, "120秒"],
-    [180, "180秒"],
-    [300, "5分"],
-    [600, "10分"],
-  ] as const
-).map(([value, label]) => ({ value, label }));
 
 export function GameSettings({ settings, editable, onChange, onError }: GameSettingsProps) {
+  const t = useT();
   const send = (patch: LobbySettings): void => {
     void onChange(patch)?.catch((e: Error) => onError(commandErrorText(e)));
   };
+  const modes = [
+    { value: "turn" as const, label: t("じゅんばん") },
+    { value: "live" as const, label: t("いっせいに") },
+  ];
+  // Long sittings: the live menu jumps to minutes past 3 — a 10-minute
+  // round is a real relaxed session, not a typo for 600 seconds.
+  const liveSeconds = (
+    [
+      [60, t("60秒")],
+      [120, t("120秒")],
+      [180, t("180秒")],
+      [300, t("5分")],
+      [600, t("10分")],
+    ] as const
+  ).map(([value, label]) => ({ value, label }));
+  const languages = [
+    { value: "ja" as const, label: t("にほんご") },
+    { value: "en" as const, label: "English" },
+  ];
   return (
     <section className={styles.plate} data-settings="panel">
       <div className={styles.plateHeader}>
-        <h2 className={styles.sectionTitle}>ゲーム設定</h2>
-        {!editable && <span className={styles.badge}>全員に表示</span>}
+        <h2 className={styles.sectionTitle}>{t("ゲーム設定")}</h2>
+        {!editable && <span className={styles.badge}>{t("全員に表示")}</span>}
       </div>
 
       <Segmented
-        label="モード"
-        options={MODES}
+        label={t("モード")}
+        options={modes}
         value={settings.mode}
         editable={editable}
         onPick={(mode) => send({ mode })}
@@ -90,15 +102,15 @@ export function GameSettings({ settings, editable, onChange, onError }: GameSett
       {settings.mode === "turn" ? (
         <>
           <Segmented
-            label="ラウンド数"
+            label={t("ラウンド数")}
             options={ROUNDS}
             value={settings.rounds}
             editable={editable}
             onPick={(rounds) => send({ rounds })}
           />
           <Segmented
-            label="1ターンの時間"
-            options={TURN_SECONDS}
+            label={t("1ターンの時間")}
+            options={turnSecondsOptions(t)}
             value={settings.turnSeconds}
             editable={editable}
             onPick={(turnSeconds) => send({ turnSeconds })}
@@ -106,24 +118,35 @@ export function GameSettings({ settings, editable, onChange, onError }: GameSett
         </>
       ) : (
         <Segmented
-          label="試合の時間"
-          options={LIVE_SECONDS}
+          label={t("試合の時間")}
+          options={liveSeconds}
           value={settings.liveSeconds}
           editable={editable}
           onPick={(liveSeconds) => send({ liveSeconds })}
         />
       )}
 
+      {/* Room language: the shared text (scenario/choices/ending) — every
+          member sees the same value; per-player UI language is the
+          device's own and lives outside this panel. */}
+      <Segmented
+        label={t("部屋のことば")}
+        options={languages}
+        value={settings.language}
+        editable={editable}
+        onPick={(language) => send({ language })}
+      />
+
       {(
         [
           [
             "earlyDecision",
-            "早期決着 — 強い流れが続くと試合が早めに終わります",
+            t("早期決着 — 強い流れが続くと試合が早めに終わります"),
             () => send({ earlyDecision: !settings.earlyDecision }),
           ],
           [
             "hostDecision",
-            "ホスト決着 — ホストが試合の終了を宣言できます",
+            t("ホスト決着 — ホストが試合の終了を宣言できます"),
             () => send({ hostDecision: !settings.hostDecision }),
           ],
         ] as const
@@ -134,18 +157,18 @@ export function GameSettings({ settings, editable, onChange, onError }: GameSett
             type="button"
             className={styles.toggle}
             // オン/オフ alone is ambiguous — the caption joins the name.
-            aria-label={`${caption.split(" — ")[0]}：${settings[key] ? "オン" : "オフ"}`}
+            aria-label={`${caption.split(" — ")[0]}：${settings[key] ? t("オン") : t("オフ")}`}
             aria-pressed={settings[key]}
             disabled={!editable}
             onClick={toggle}
           >
-            {settings[key] ? "オン" : "オフ"}
+            {settings[key] ? t("オン") : t("オフ")}
           </button>
         </div>
       ))}
 
       <p className={styles.note}>
-        この設定は全員に表示されます。モードを変えると全員の準備OKがリセットされます。
+        {t("この設定は全員に表示されます。モードを変えると全員の準備OKがリセットされます。")}
       </p>
     </section>
   );

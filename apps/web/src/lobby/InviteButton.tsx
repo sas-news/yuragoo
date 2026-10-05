@@ -5,6 +5,7 @@
 // browser link stays host-only so invite secrecy stays with the owner.
 import { useState } from "react";
 import { shareInvite, type ShareInviteResult } from "@yuragoo/platform";
+import { type Locale, useLocale, useT, tx } from "../i18n";
 import { discordClientId, getDiscordSdk, platformKind } from "../platform/bootstrap";
 import styles from "./Lobby.module.css";
 
@@ -17,15 +18,18 @@ export interface InviteButtonProps {
 // Toasts don't reliably render inside the Discord Activity, so the
 // button carries its own persistent status line — the last attempt's
 // stage + failure detail stay on screen until the next click (Task 47).
-const inviteErrorText = (result: Extract<ShareInviteResult, object>): string => {
+const inviteErrorText = (result: Extract<ShareInviteResult, object>, lang: Locale): string => {
   const detail = result.detail === "" ? "" : `（${result.detail}）`;
   switch (result.reason) {
     case "dm":
-      return "DM/グループ通話では招待を作れません — サーバーのボイスチャンネルで開いてください";
+      return tx(
+        lang,
+        "DM/グループ通話では招待を作れません — サーバーのボイスチャンネルで開いてください",
+      );
     case "no-invite-permission":
-      return "このチャンネルでは招待を作成する権限がありません";
+      return tx(lang, "このチャンネルでは招待を作成する権限がありません");
     default:
-      return `招待できませんでした${detail}`;
+      return tx(lang, "招待できませんでした{detail}", { detail });
   }
 };
 
@@ -35,6 +39,8 @@ interface InviteStatus {
 }
 
 export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) {
+  const t = useT();
+  const lang = useLocale();
   const [copied, setCopied] = useState(false);
   const [status, setStatus] = useState<InviteStatus | null>(null);
   if (platformKind() === "discord") {
@@ -48,7 +54,7 @@ export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) 
           type="button"
           data-testid="discord-share"
           onClick={() => {
-            setStatus({ kind: "info", text: "Discord に接続中…（sdk-load）" });
+            setStatus({ kind: "info", text: t("Discord に接続中…（sdk-load）") });
             void (async () => {
               // The gate's SPA hand-off keeps the module-memoized,
               // already-authenticated SDK — authorize may only run ONCE
@@ -60,20 +66,22 @@ export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) 
                   setTimeout(() => reject(new Error("timeout:sdk-load")), 15_000),
                 ),
               ]);
-              setStatus({ kind: "info", text: "招待画面をひらいています…" });
+              setStatus({ kind: "info", text: t("招待画面をひらいています…") });
               const result = await shareInvite(
                 sdk,
-                "ゆらぐー！ このボイスチャンネルであそぼう",
+                t("ゆらぐー！ このボイスチャンネルであそぼう"),
                 sdk.instanceId,
               );
-              if (result === "shared") setStatus({ kind: "ok", text: "招待を送りました" });
+              if (result === "shared") setStatus({ kind: "ok", text: t("招待を送りました") });
               else if (result === "cancelled")
-                setStatus({ kind: "info", text: "（キャンセルしました）" });
-              else fail(inviteErrorText(result));
-            })().catch((e: Error) => fail(`招待できませんでした（${e.message.slice(0, 60)}）`));
+                setStatus({ kind: "info", text: t("（キャンセルしました）") });
+              else fail(inviteErrorText(result, lang));
+            })().catch((e: Error) =>
+              fail(t("招待できませんでした（{detail}）", { detail: e.message.slice(0, 60) })),
+            );
           }}
         >
-          メンバーをよぶ
+          {t("メンバーをよぶ")}
         </button>
         {status !== null && (
           <p
@@ -99,7 +107,7 @@ export function InviteButton({ inviteUrl, isHost, onError }: InviteButtonProps) 
         });
       }}
     >
-      {copied ? "コピーしました" : "招待リンクをコピー"}
+      {copied ? t("コピーしました") : t("招待リンクをコピー")}
     </button>
   );
 }

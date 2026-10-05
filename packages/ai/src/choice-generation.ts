@@ -5,11 +5,45 @@
 // non-empty and <=40 graphemes after trim, pairwise distinct under the
 // same NFKC+trim key the start gate uses. Anything less rejects: a
 // failed parse consumed the attempt like any upstream failure.
-import { CHOICE_LABEL_MAX_GRAPHEMES, countGraphemes, labelKey } from "@yuragoo/protocol";
+import {
+  CHOICE_LABEL_MAX_GRAPHEMES,
+  countGraphemes,
+  labelKey,
+  ROOM_LANGUAGE_DEFAULT,
+  type RoomLanguage,
+} from "@yuragoo/protocol";
 import { GenerationProviderError } from "./generative-provider";
 
-export const buildChoicePrompt = (scenario: string, memberCount: number): string =>
-  [
+export const buildChoicePrompt = (
+  scenario: string,
+  memberCount: number,
+  language: RoomLanguage = ROOM_LANGUAGE_DEFAULT,
+): string => {
+  if (language === "en") {
+    return [
+      // /no_think suppresses Qwen3's reasoning trace: the think block eats
+      // the token budget, delays the answer and can truncate the JSON.
+      "/no_think",
+      'You are the choice generator for the party game "Yuragoo!".',
+      'Each player is a participant inside the scenario and picks "what I\'d do". Invent concrete action choices for them.',
+      "",
+      "Rules:",
+      '- Every choice must be an action specific to THIS scenario (generic moves usable anywhere — "run away", "shout" — are banned)',
+      "- Each choice takes a different approach (e.g. face it head-on / sneak around / observe / delegate / use the rules / goof off)",
+      "- No obviously right or obviously wrong options",
+      "- Weave the scenario's objects, places and goals into the actions",
+      '  e.g. for "fighting over the last pudding": "slip it into the bottom of the shopping bag", "keep guarding the fridge" — actions only this scenario allows',
+      "- A slightly odd choice is welcome",
+      `- Keep it short (each within ${CHOICE_LABEL_MAX_GRAPHEMES} characters)`,
+      "- Output MUST be in English (no other language)",
+      "",
+      'Reply with JSON only: {"choices": ["choice 1", "choice 2", ...]}',
+      "",
+      `Scenario: ${scenario}`,
+      `Return exactly ${memberCount} choices for that scenario as {"choices": [...]}.`,
+    ].join("\n");
+  }
+  return [
     // /no_think suppresses Qwen3's reasoning trace: the think block eats
     // the token budget, delays the answer and can truncate the JSON.
     "/no_think",
@@ -31,6 +65,7 @@ export const buildChoicePrompt = (scenario: string, memberCount: number): string
     `シナリオ: ${scenario}`,
     `上のシナリオに沿った選択肢をちょうど${memberCount}個、{"choices": [...]}で返してください。`,
   ].join("\n");
+};
 
 // Structured-output schema: exactly `count` distinct short labels.
 export const choiceLabelsJsonSchema = (count: number): Record<string, unknown> => ({

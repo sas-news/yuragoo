@@ -5,6 +5,7 @@
 // list itself is never a live region, so readers are not flooded.
 import { type CSSProperties, useEffect, useRef } from "react";
 import type { Player, PlayerId, PostedInput } from "@yuragoo/game-core";
+import { useT } from "../i18n";
 import styles from "./MessageFeed.module.css";
 import { slotBadge, slotColor } from "./slots";
 
@@ -15,6 +16,7 @@ export interface MessageFeedProps {
 }
 
 export function MessageFeed(props: MessageFeedProps) {
+  const t = useT();
   const { posts, roster, nameOf = (id) => id } = props;
   const listRef = useRef<HTMLUListElement | null>(null);
   const latest = posts[posts.length - 1];
@@ -29,7 +31,7 @@ export function MessageFeed(props: MessageFeedProps) {
   const slotOf = (playerId: PlayerId): number => roster.find((p) => p.id === playerId)?.slot ?? -1;
 
   return (
-    <section className={styles.feed} aria-label="投稿フィード">
+    <section className={styles.feed} aria-label={t("投稿フィード")}>
       <ul ref={listRef} className={styles.list} data-testid="feed-list">
         {posts.map((post) => {
           const slot = slotOf(post.playerId);
@@ -51,7 +53,9 @@ export function MessageFeed(props: MessageFeedProps) {
         })}
       </ul>
       <p className={styles.srOnly} aria-live="polite" data-testid="live-announcer">
-        {latest === undefined ? "" : `${nameOf(latest.playerId)} が投稿：${latest.text}`}
+        {latest === undefined
+          ? ""
+          : t("{name} が投稿：{text}", { name: nameOf(latest.playerId), text: latest.text })}
       </p>
     </section>
   );

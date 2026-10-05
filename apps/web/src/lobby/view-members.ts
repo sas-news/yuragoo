@@ -2,17 +2,24 @@
 // fallback, the seated-member filter, and the players/host patch each
 // membership event applies. Type-only imports keep this module a leaf.
 import type { RoomPlayerView, ServerEnvelope } from "@yuragoo/protocol";
+import { type Translate, tx } from "../i18n";
 import type { RoomView } from "./room-view";
 
 // Unnamed members never render their raw id (a ULID fragment reads as
 // random noise) — fall back to a stable seat label. Same rule in the
 // lobby roster, the dock, the HUD and the feed so one member is one name
 // everywhere. `players` is joinOrder-sorted, so the index is stable.
-export const memberName = (players: readonly RoomPlayerView[], id: string): string => {
+// t translates the fallback words only — real display names pass through.
+// The ja default still interpolates ({n} must never reach the screen).
+export const memberName = (
+  players: readonly RoomPlayerView[],
+  id: string,
+  t: Translate = (ja, vars) => tx("ja", ja, vars),
+): string => {
   const at = players.findIndex((p) => p.playerId === id);
-  if (at < 0) return "メンバー"; // a departed member's old feed lines
+  if (at < 0) return t("メンバー"); // a departed member's old feed lines
   const display = players[at]?.displayName?.trim();
-  return display !== undefined && display !== "" ? display : `プレイヤー${at + 1}`;
+  return display !== undefined && display !== "" ? display : t("プレイヤー{n}", { n: at + 1 });
 };
 
 // Members that take part in the lobby gate and the choice assignments:

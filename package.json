@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "check": "biome check && bun run check:types && bun scripts/check-boundaries.ts",
+    "check": "biome check && bun run check:types && bun scripts/check-boundaries.ts && bun scripts/check-i18n-keys.mjs",
     "check:types": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p packages/protocol/tsconfig.json && tsc --noEmit -p packages/game-core/tsconfig.json && tsc --noEmit -p packages/creature/tsconfig.json && tsc --noEmit -p packages/ai/tsconfig.json && tsc --noEmit -p packages/platform/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json && tsc --noEmit -p apps/server/tsconfig.json",
     "build": "bun run check:types && bun --cwd=apps/web run build",
     "test:unit": "bun scripts/test-unit.ts",

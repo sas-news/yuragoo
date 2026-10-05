@@ -8,6 +8,7 @@ export type PlayerName = z.infer<typeof playerNameSchema>;
 
 export * from "./ids";
 export * from "./errors";
+export * from "./language";
 export * from "./decision";
 export * from "./lobby";
 export * from "./story";

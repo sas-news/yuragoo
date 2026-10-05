@@ -8,6 +8,7 @@
 // (ready, shareLink) would be silently dropped (Task 47e).
 import { lazy, Suspense, useEffect, useState } from "react";
 import type { ClassifiedError, DiscordSession } from "@yuragoo/platform";
+import { useI18nControls, useT } from "../i18n";
 import { apiOrigin, saveSession } from "../lobby/room-session";
 import { Button } from "../ui/Button";
 import { bootPlatform, platformErrorText } from "./bootstrap";
@@ -47,6 +48,8 @@ const joinDiscordRoom = async (session: DiscordSession): Promise<JoinedDiscord> 
 const RoomPageLazy = lazy(() => import("../lobby/RoomPage"));
 
 export function DiscordGate({ clientId }: DiscordGateProps) {
+  const t = useT();
+  const { applyHint } = useI18nControls();
   const [error, setError] = useState<ClassifiedError | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [joinedRoomId, setJoinedRoomId] = useState<string | null>(null);
@@ -58,6 +61,9 @@ export function DiscordGate({ clientId }: DiscordGateProps) {
     void (async () => {
       const { boot, error: bootError } = await bootPlatform(clientId);
       if (cancelled) return;
+      // The SDK knows the client's UI locale once ready() has run — a soft
+      // hint only, never stomping ?lang=/storage.
+      applyHint(boot.sdk?.userLocale);
       if (bootError !== null || boot.session === null) {
         setError(bootError ?? { kind: "unavailable", retryable: false });
         return;
@@ -93,7 +99,7 @@ export function DiscordGate({ clientId }: DiscordGateProps) {
 
   if (joinedRoomId !== null) {
     return (
-      <Suspense fallback={<main>読み込み中…</main>}>
+      <Suspense fallback={<main>{t("読み込み中…")}</main>}>
         <RoomPageLazy />
       </Suspense>
     );
@@ -105,11 +111,11 @@ export function DiscordGate({ clientId }: DiscordGateProps) {
       </header>
       {error === null ? (
         <p className="status-strip" data-testid="discord-booting">
-          Discordと つながっています…
+          {t("Discordと つながっています…")}
         </p>
       ) : (
         <section className="status-strip" aria-live="polite">
-          <p data-testid="discord-error">{platformErrorText(error)}</p>
+          <p data-testid="discord-error">{t(platformErrorText(error))}</p>
           {error.retryable && (
             <Button
               data-testid="discord-retry"
@@ -118,7 +124,7 @@ export function DiscordGate({ clientId }: DiscordGateProps) {
                 setAttempt((n) => n + 1);
               }}
             >
-              もういちど
+              {t("もういちど")}
             </Button>
           )}
         </section>

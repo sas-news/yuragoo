@@ -16,6 +16,7 @@ import { PullCue } from "../game/PullCue";
 import { ScenarioStrip } from "../game/ScenarioStrip";
 import { useSeatAnchors } from "../game/seats";
 import { usePostReaction } from "../game/usePostReaction";
+import { useLocale, useT } from "../i18n";
 import { useVisualViewportHeight } from "../ui/useVisualViewport";
 import { Results } from "../results/Results";
 import {
@@ -57,6 +58,8 @@ export function RoomGame({
   backToLobby,
   closeRoom,
 }: RoomGameProps) {
+  const t = useT();
+  const lang = useLocale();
   // IME fallback (Task 27): shrink to the visual viewport so the dock
   // stays under the software keyboard.
   const vvHeight = useVisualViewportHeight();
@@ -83,7 +86,7 @@ export function RoomGame({
     if (list !== null && view.feed.length > 0) list.scrollTop = list.scrollHeight;
   }, [view.feed]);
 
-  const nameOf = (id: string): string => memberName(view.players, id);
+  const nameOf = (id: string): string => memberName(view.players, id, t);
   const seats = useSeatAnchors(view.roster, runtime, arenaRef, pip);
   const presentation = useMemo(() => {
     const dist = latestRoomDist(view);
@@ -116,7 +119,7 @@ export function RoomGame({
   return (
     <main className={arena.page} style={pageStyle} data-testid="room-game">
       <h1 className="sr-only">ゆらぐー！</h1>
-      <h2 className="sr-only">試合中</h2>
+      <h2 className="sr-only">{t("試合中")}</h2>
       <div className={arena.arena} ref={arenaRef}>
         <div className={arena.stageWrap}>
           <CreatureStage
@@ -153,7 +156,7 @@ export function RoomGame({
             ref={feedRef}
             className={feedStyles.list}
             data-testid="event-feed"
-            aria-label="イベント"
+            aria-label={t("イベント")}
           >
             {view.feed.map((env) => (
               <li
@@ -161,14 +164,14 @@ export function RoomGame({
                 className={feedStyles.item}
                 data-testid="feed-line"
               >
-                {roomEventLine(env, view)}
+                {roomEventLine(env, view, lang)}
               </li>
             ))}
           </ul>
         </div>
         {reveal.showingVeil && (
           <div className={arena.revealVeil} data-testid="results-reveal" role="status">
-            <span>さあ、けっかは…</span>
+            <span>{t("さあ、けっかは…")}</span>
           </div>
         )}
         {outcome !== null && reveal.revealed && (

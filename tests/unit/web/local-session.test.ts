@@ -9,7 +9,6 @@ import {
   choicesFor,
   dominanceOf,
   dominantSlot,
-  LOCAL_CHOICES,
   samplesFor,
 } from "../../../apps/web/src/local/scenario";
 import {
@@ -22,9 +21,10 @@ import {
 } from "../../../apps/web/src/local/session";
 import { current, post, started } from "../game/rules-helpers";
 
+const ALL_CHOICES = choicesFor(6);
 const dist = (weights: readonly number[]): DecisionDistribution[] =>
   weights.map((p, i) => ({
-    choiceId: LOCAL_CHOICES[i]?.id ?? parseChoiceId("a"),
+    choiceId: ALL_CHOICES[i]?.id ?? parseChoiceId("a"),
     probability: p,
   }));
 
@@ -35,9 +35,10 @@ const playingWithPost = (): GameState => {
 };
 
 describe("parseLocalParams", () => {
-  test("defaults: 4 players, turn, seed 7, mock provider", () => {
+  test("defaults: 4 players, turn, seed 7, mock provider, ja language", () => {
     const p = parseLocalParams("");
     expect(p).toMatchObject({
+      language: "ja",
       players: 4,
       mode: "turn",
       seed: 7,
@@ -46,6 +47,11 @@ describe("parseLocalParams", () => {
       failEval: false,
     });
     expect(p.turnSeconds).toBeUndefined();
+  });
+
+  test("the device language seeds the local room language", () => {
+    expect(parseLocalParams("", "en").language).toBe("en");
+    expect(parseLocalParams("players=3", "en").players).toBe(3);
   });
 
   test("reads players/mode/seed/eval knobs and clamps ranges", () => {
@@ -213,5 +219,18 @@ describe("buildPostDecisionState", () => {
     expect(ds.choices.map((c) => String(c.id))).toEqual(["a", "b", "c", "d"]);
     expect(ds.mockScenarioKey).toBe(`favor-${choicesFor(4)[poster?.slot ?? -1]?.id}`);
     expect(ds.activeContext).toContain("たべたい");
+    expect(ds.language).toBe("ja");
+  });
+
+  test("en language carries English scenario/persona/labels", () => {
+    const s = playingWithPost();
+    const first = s.posts[0];
+    if (first === undefined) throw new Error("no post");
+    const ds = buildPostDecisionState(s, first, "en");
+    expect(ds.language).toBe("en");
+    expect(ds.scenario).toContain("Snack");
+    expect(ds.persona).toContain("sweet tooth");
+    expect(ds.choices.map((c) => String(c.id))).toEqual(["a", "b", "c", "d"]);
+    expect(ds.choices.every((c) => /[\p{ASCII}]/u.test(c.label))).toBe(true);
   });
 });

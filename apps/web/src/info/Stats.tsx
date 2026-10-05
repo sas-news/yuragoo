@@ -5,6 +5,7 @@
 // "pending" and we say so politely; nothing per-room or per-player is
 // ever displayed because the payload cannot carry it.
 import { useEffect, useState } from "react";
+import { useT } from "../i18n";
 import { apiOrigin } from "../lobby/room-session";
 import { Dialog } from "../ui/Dialog";
 import styles from "./Stats.module.css";
@@ -38,6 +39,7 @@ const isStats = (v: unknown): v is PublicStats =>
 const minutesOf = (ms: number): number => Math.max(1, Math.round(ms / 60_000));
 
 export function StatsLink() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [load, setLoad] = useState<Load>({ kind: "loading" });
 
@@ -66,48 +68,48 @@ export function StatsLink() {
         onClick={() => setOpen(true)}
         data-testid="stats-link"
       >
-        とうけい
+        {t("とうけい")}
       </button>
       {open && (
         <Dialog
-          label="ゆらぐー！の とうけい"
+          label={t("ゆらぐー！の とうけい")}
           veil="paper"
           onClose={() => setOpen(false)}
           testId="stats"
         >
           <h2 className={styles.title} data-autofocus tabIndex={-1}>
-            ゆらぐー！の とうけい
+            {t("ゆらぐー！の とうけい")}
           </h2>
-          {load.kind === "loading" && <p className={styles.note}>よんでいます…</p>}
+          {load.kind === "loading" && <p className={styles.note}>{t("よんでいます…")}</p>}
           {load.kind === "error" && (
             <p className={styles.note} role="alert">
-              いまは よめませんでした。
+              {t("いまは よめませんでした。")}
             </p>
           )}
           {load.kind === "ready" && load.stats.status === "pending" && (
             <p className={styles.note}>
-              まだ あつまっていません。
+              {t("まだ あつまっていません。")}
               <br />
-              20ゲーム あつまると ひらきます。
+              {t("20ゲーム あつまると ひらきます。")}
             </p>
           )}
           {load.kind === "ready" && load.stats.status === "ok" && (
             <>
               <dl className={styles.rows}>
                 <div className={styles.row}>
-                  <dt>おわったゲーム</dt>
+                  <dt>{t("おわったゲーム")}</dt>
                   <dd>{load.stats.completedGames}</dd>
                 </div>
                 <div className={styles.row}>
-                  <dt>みんなの ひとこと</dt>
+                  <dt>{t("みんなの ひとこと")}</dt>
                   <dd>{load.stats.totalMessages}</dd>
                 </div>
                 <div className={styles.row}>
-                  <dt>1ゲームの ながさ</dt>
-                  <dd>だいたい {minutesOf(load.stats.averageDurationMs)} ふん</dd>
+                  <dt>{t("1ゲームの ながさ")}</dt>
+                  <dd>{t("だいたい {n} ふん", { n: minutesOf(load.stats.averageDurationMs) })}</dd>
                 </div>
               </dl>
-              <p className={styles.hint}>あさまでに あつまった ぶんです。</p>
+              <p className={styles.hint}>{t("あさまでに あつまった ぶんです。")}</p>
             </>
           )}
         </Dialog>

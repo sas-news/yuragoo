@@ -6,7 +6,7 @@
 // EndingStory (protocol/story); `pose` stays NULL — panels embed their
 // canonical pull and blob images never leave the client.
 import { buildStory, type GameOutcome, type StorySource } from "@yuragoo/game-core";
-import { type EndingStory, parseEndingStory } from "@yuragoo/protocol";
+import { type EndingStory, parseEndingStory, type RoomLanguage } from "@yuragoo/protocol";
 import { listRoomPlayers } from "./auth-storage";
 import { slotSpent } from "./generation-slots";
 import { runEndingGeneration, type EndingGenHost } from "./generate-ending";
@@ -47,12 +47,13 @@ export const clearEnding = (sql: SqlStorage): void => {
 // generation call may replace it, but a template-only finish must still
 // carry a title (the wire schema requires one). Grapheme-safe truncation:
 // Intl.Segmenter keeps combining marks and emoji sequences intact.
-const titleFor = (scenario: string): string => {
+const titleFor = (scenario: string, lang: RoomLanguage): string => {
   const seg = new Intl.Segmenter("ja", { granularity: "grapheme" });
   const head = [...seg.segment(scenario.trim())]
     .slice(0, 20)
     .map((s) => s.segment)
     .join("");
+  if (lang === "en") return head === "" ? "one little creature's day" : `"${head}"`;
   return head === "" ? "ある日のいきもの" : `「${head}」`;
 };
 
@@ -70,6 +71,7 @@ export interface EndingHost extends BroadcastHost {
 const storySourceFor = (sql: SqlStorage, books: Books): StorySource => {
   const lobby = readLobby(sql);
   const outcome: GameOutcome = books.state.outcome ?? { kind: "noContest", reason: "timeout" };
+  const lang = books.state.settings.language;
   return {
     events: listEvents(sql).map((row) => ({
       seq: row.seq,
@@ -86,7 +88,8 @@ const storySourceFor = (sql: SqlStorage, books: Books): StorySource => {
     choices: lobby.choices.slice(0, books.state.roster.length),
     scenario: lobby.scenario,
     outcome,
-    winnerName: winnerNameFor(sql, outcome),
+    winnerName: winnerNameFor(sql, outcome, lang),
+    language: lang,
   };
 };
 
@@ -94,13 +97,18 @@ const storySourceFor = (sql: SqlStorage, books: Books): StorySource => {
 // client applies (memberName): displayName else the joinOrder seat label,
 // and "メンバー" once the player row itself is gone. Player ids are wire
 // keys and never readable copy.
-const winnerNameFor = (sql: SqlStorage, outcome: GameOutcome): string | null => {
+const winnerNameFor = (
+  sql: SqlStorage,
+  outcome: GameOutcome,
+  lang: RoomLanguage,
+): string | null => {
   if (outcome.kind !== "winner") return null;
   const players = listRoomPlayers(sql);
   const at = players.findIndex((p) => p.playerId === outcome.playerId);
-  if (at < 0) return "メンバー";
+  if (at < 0) return lang === "en" ? "a member" : "メンバー";
   const display = players[at]?.displayName?.trim();
-  return display !== undefined && display !== "" ? display : `プレイヤー${at + 1}`;
+  if (display !== undefined && display !== "") return display;
+  return lang === "en" ? `Player ${at + 1}` : `プレイヤー${at + 1}`;
 };
 
 // The finish-time ending drive, single-flight on GameRoom's drive lanes.
@@ -120,7 +128,7 @@ export const kickEnding = async (host: EndingHost, deps: GenerationDeps): Promis
       gameEpoch: epoch,
       outcome: books.state.outcome ?? { kind: "noContest", reason: "timeout" },
       generated: false,
-      title: titleFor(readLobby(host.sql).scenario),
+      title: titleFor(readLobby(host.sql).scenario, books.state.settings.language),
       panels: [...buildStory(storySourceFor(host.sql, books))],
     };
     const since = maxEventSeq(host.sql);

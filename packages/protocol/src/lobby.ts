@@ -6,6 +6,7 @@
 // docs/game-rules.md (scenario <= 1000, choice label <= 40, display name
 // <= 24) and count via Intl.Segmenter like every other text bound.
 import { z } from "zod";
+import { ROOM_LANGUAGE_DEFAULT, roomLanguageSchema } from "./language";
 import { countGraphemes } from "./text";
 
 export const SCENARIO_MAX_GRAPHEMES = 1000;
@@ -55,6 +56,8 @@ export const lobbySettingsViewSchema = z.strictObject({
   liveSeconds: z.literal([60, 120, 180, 300, 600]),
   earlyDecision: z.boolean(),
   hostDecision: z.boolean(),
+  // Shared-text language (scenario/choices/ending) — same for every member.
+  language: roomLanguageSchema,
 });
 export type LobbySettingsView = z.infer<typeof lobbySettingsViewSchema>;
 
@@ -67,6 +70,7 @@ export const LOBBY_SETTINGS_DEFAULT: LobbySettingsView = {
   liveSeconds: 120,
   earlyDecision: false,
   hostDecision: false,
+  language: ROOM_LANGUAGE_DEFAULT,
 };
 
 // The ledger's wire/read model — identical for the snapshot `lobby` field

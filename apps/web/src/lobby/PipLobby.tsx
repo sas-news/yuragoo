@@ -3,6 +3,7 @@
 // two actions that matter (invite, ready/start). Editing, generation and
 // settings stay on the focused layout; popping back restores them.
 import { LOBBY_SEAT_COUNT } from "@yuragoo/protocol";
+import { useT } from "../i18n";
 import { InviteButton } from "./InviteButton";
 import { startGateReason } from "./lobby-gate";
 import styles from "./PipLobby.module.css";
@@ -28,23 +29,24 @@ export function PipLobby({
   startGame,
   onLeave,
 }: PipLobbyProps) {
+  const t = useT();
   const lobby = view.lobby;
   const members = seatedMembers(view);
   const isHost = view.hostPlayerId === selfId;
   const self = view.players.find((p) => p.playerId === selfId);
   const ready = lobby.ready.includes(selfId);
   const readyCount = members.filter((m) => lobby.ready.includes(m.playerId)).length;
-  const gateReason = startGateReason(lobby, members);
+  const gateReason = startGateReason(lobby, members, t);
   const scenario = lobby.scenario.trim();
   const error = lastError ?? (isHost ? view.generationError?.message : null) ?? null;
 
   return (
-    <section className={styles.pip} aria-label="ロビー（簡易表示）">
+    <section className={styles.pip} aria-label={t("ロビー（簡易表示）")}>
       <p className={styles.scenario} title={scenario === "" ? undefined : scenario}>
-        {scenario === "" ? "お題がまだありません" : scenario}
+        {scenario === "" ? t("お題がまだありません") : scenario}
       </p>
 
-      <ul className={styles.members} aria-label="メンバー">
+      <ul className={styles.members} aria-label={t("メンバー")}>
         {members.map((p) => (
           <li
             key={p.playerId}
@@ -55,19 +57,19 @@ export function PipLobby({
             <span
               className={p.connected ? styles.dotOn : styles.dotOff}
               aria-hidden="true"
-              title={p.connected ? "接続中" : "切断"}
+              title={p.connected ? t("接続中") : t("切断")}
             />
-            <span className={styles.name} title={memberName(view.players, p.playerId)}>
-              {memberName(view.players, p.playerId)}
+            <span className={styles.name} title={memberName(view.players, p.playerId, t)}>
+              {memberName(view.players, p.playerId, t)}
             </span>
             {p.playerId === view.hostPlayerId && (
-              <span className={styles.host} title="ホスト">
-                ★<span className={styles.srOnly}>ホスト</span>
+              <span className={styles.host} title={t("ホスト")}>
+                ★<span className={styles.srOnly}>{t("ホスト")}</span>
               </span>
             )}
             {lobby.ready.includes(p.playerId) && (
-              <span className={styles.readyMark} title="準備OK">
-                ✓<span className={styles.srOnly}>準備OK</span>
+              <span className={styles.readyMark} title={t("準備OK")}>
+                ✓<span className={styles.srOnly}>{t("準備OK")}</span>
               </span>
             )}
           </li>
@@ -75,16 +77,21 @@ export function PipLobby({
       </ul>
 
       <p className={styles.status}>
-        選択肢 {lobby.choices.length}/{LOBBY_SEAT_COUNT}席 ・ 準備 {readyCount}/{members.length}
+        {t("選択肢 {n}/{max}席 ・ 準備 {r}/{m}", {
+          n: lobby.choices.length,
+          max: LOBBY_SEAT_COUNT,
+          r: readyCount,
+          m: members.length,
+        })}
       </p>
 
       <div className={styles.actions}>
         <InviteButton inviteUrl={inviteUrl} isHost={isHost} onError={() => {}} />
         {self?.lobbyWaiting === true ? (
-          <p className={styles.note}>観戦待ち</p>
+          <p className={styles.note}>{t("観戦待ち")}</p>
         ) : (
           <button type="button" aria-pressed={ready} onClick={() => void setReady(!ready)}>
-            {ready ? "準備OK！" : "準備OKにする"}
+            {ready ? t("準備OK！") : t("準備OKにする")}
           </button>
         )}
         {isHost ? (
@@ -95,11 +102,16 @@ export function PipLobby({
             title={gateReason ?? undefined}
             onClick={() => void startGame()}
           >
-            はじめる
+            {t("はじめる")}
           </button>
         ) : null}
-        <button type="button" className={styles.leave} onClick={onLeave} aria-label="へやを出る">
-          出る
+        <button
+          type="button"
+          className={styles.leave}
+          onClick={onLeave}
+          aria-label={t("へやを出る")}
+        >
+          {t("出る")}
         </button>
       </div>
 

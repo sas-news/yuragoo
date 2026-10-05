@@ -101,6 +101,7 @@ export const runEvalSuite = async (
         persona: evalCase.persona,
         activeContext: evalCase.activeContext,
         choices: evalCase.choices,
+        ...(evalCase.language === undefined ? {} : { language: evalCase.language }),
       };
       const started = opts.nowMs();
       let result: DecisionResult | null = null;

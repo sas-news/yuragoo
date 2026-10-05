@@ -4,11 +4,27 @@
 // canonical slot angles. Player ids and display names are fixed too: the
 // single-screen match has no accounts, seats just get passed around.
 import { type AttractionSample, CANONICAL_SLOT_ANGLES } from "@yuragoo/creature";
-import { type ChoiceId, type DecisionDistribution, parseChoiceId } from "@yuragoo/protocol";
+import {
+  type ChoiceId,
+  type DecisionDistribution,
+  parseChoiceId,
+  type RoomLanguage,
+} from "@yuragoo/protocol";
 import { SLOT_SYMBOLS } from "../game/slots";
 
-export const LOCAL_SCENARIO = "おやつの時間。目の前に食べ物がならんでいる。";
-export const LOCAL_PERSONA = "甘党の生きもの";
+// Single-screen local mode has no "room", but its scenario/persona/choices
+// feed BOTH the display and the eval prompt — so they follow the device's
+// UI language (ja default).
+const SCENARIO: Record<RoomLanguage, string> = {
+  ja: "おやつの時間。目の前に食べ物がならんでいる。",
+  en: "Snack time. A row of treats sits in front of you.",
+};
+const PERSONA: Record<RoomLanguage, string> = {
+  ja: "甘党の生きもの",
+  en: "a creature with a sweet tooth",
+};
+export const localScenario = (lang: RoomLanguage): string => SCENARIO[lang];
+export const localPersona = (lang: RoomLanguage): string => PERSONA[lang];
 
 export interface LocalChoice {
   readonly id: ChoiceId;
@@ -17,48 +33,57 @@ export interface LocalChoice {
 }
 
 const CHOICE_IDS = ["a", "b", "c", "d", "e", "f"] as const;
-const CHOICE_LABELS = [
-  "季節限定の濃厚プリン",
-  "素朴な塩むすび",
-  "なぞの紫色のゼリー",
-  "何も食べずに我慢する",
-  "あつあつのたいやき",
-  "ひんやりクリームソーダ",
-] as const;
+const CHOICE_LABELS: Record<RoomLanguage, readonly string[]> = {
+  ja: [
+    "季節限定の濃厚プリン",
+    "素朴な塩むすび",
+    "なぞの紫色のゼリー",
+    "何も食べずに我慢する",
+    "あつあつのたいやき",
+    "ひんやりクリームソーダ",
+  ],
+  en: [
+    "the rich seasonal pudding",
+    "a plain salted rice ball",
+    "a mysterious purple jelly",
+    "eat nothing and tough it out",
+    "a hot taiyaki fresh off the grill",
+    "an ice-cold cream soda",
+  ],
+};
 
 // Choice i pairs with slot i: the symbol is the same SLOT_SYMBOLS badge the
 // seat chips carry, so the result list and the arena read as one system.
-export const LOCAL_CHOICES: readonly LocalChoice[] = CHOICE_IDS.map((id, i) => ({
-  id: parseChoiceId(id),
-  symbol: SLOT_SYMBOLS[i] ?? "?",
-  label: CHOICE_LABELS[i] ?? "?",
-}));
+const localChoices = (lang: RoomLanguage): readonly LocalChoice[] =>
+  CHOICE_IDS.map((id, i) => ({
+    id: parseChoiceId(id),
+    symbol: SLOT_SYMBOLS[i] ?? "?",
+    label: CHOICE_LABELS[lang][i] ?? "?",
+  }));
 
 // Fixed six-seat roster — slot i is LOCAL_PLAYER_IDS[i] since the create
 // shuffle was removed (slot order now matches the lobby's choice rows).
 export const LOCAL_PLAYER_IDS = ["aiko", "ren", "yuu", "riku", "sora", "nagi"] as const;
-export const LOCAL_NAMES: Readonly<Record<string, string>> = {
-  aiko: "あいこ",
-  ren: "れん",
-  yuu: "ゆう",
-  riku: "りく",
-  sora: "そら",
-  nagi: "なぎ",
+const LOCAL_NAMES: Record<RoomLanguage, Readonly<Record<string, string>>> = {
+  ja: { aiko: "あいこ", ren: "れん", yuu: "ゆう", riku: "りく", sora: "そら", nagi: "なぎ" },
+  en: { aiko: "Aiko", ren: "Ren", yuu: "Yu", riku: "Riku", sora: "Sora", nagi: "Nagi" },
 };
-export const localNameOf = (id: string): string => LOCAL_NAMES[id] ?? id;
+export const localNameOf = (id: string, lang: RoomLanguage = "ja"): string =>
+  LOCAL_NAMES[lang][id] ?? id;
 
 // The first N choices — one per seat, in slot order.
-export const choicesFor = (rosterSize: number): readonly LocalChoice[] =>
-  LOCAL_CHOICES.slice(0, Math.max(0, Math.min(rosterSize, LOCAL_CHOICES.length)));
+export const choicesFor = (rosterSize: number, lang: RoomLanguage = "ja"): readonly LocalChoice[] =>
+  localChoices(lang).slice(0, Math.max(0, Math.min(rosterSize, CHOICE_IDS.length)));
 
 // Attraction samples for the creature: each choice sits on its canonical
 // slot angle with the evaluated weight; a missing distribution is uniform.
 export const samplesFor = (
   distribution: readonly DecisionDistribution[] | null,
   rosterSize: number,
+  lang: RoomLanguage = "ja",
 ): readonly AttractionSample[] => {
   const angles = CANONICAL_SLOT_ANGLES[rosterSize] ?? [];
-  const choices = choicesFor(rosterSize);
+  const choices = choicesFor(rosterSize, lang);
   const fallback = choices.length > 0 ? 1 / choices.length : 0;
   return choices.map((choice, i) => ({
     angleRad: angles[i] ?? 0,

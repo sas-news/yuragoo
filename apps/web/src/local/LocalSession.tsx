@@ -10,6 +10,7 @@ import type { CreaturePresentation, CreatureRuntime, SceneLayoutSummary } from "
 import type { GameAction, GameEvent, GamePhase, GameState } from "@yuragoo/game-core";
 import type { DecisionDistribution } from "@yuragoo/protocol";
 import { createSessionId } from "../dev/decision-providers";
+import { useLocale } from "../i18n";
 import { expressionFor } from "../lobby/room-expression";
 import { latestVerdictPostId, moodOf } from "../lobby/view-decisions";
 import { LocalGame } from "./LocalGame";
@@ -35,7 +36,8 @@ declare global {
 }
 
 export default function LocalSession() {
-  const params = useMemo(() => parseLocalParams(window.location.search), []);
+  const lang = useLocale();
+  const params = useMemo(() => parseLocalParams(window.location.search, lang), [lang]);
   const [setup, setSetup] = useState<LocalSetup>({
     players: params.players,
     mode: params.mode,
@@ -55,7 +57,7 @@ export default function LocalSession() {
   if (loopRef.current === null) {
     loopRef.current = createLocalLoop({
       params,
-      makeEvaluate: (rosterSize) => selectEvaluate(params, choicesFor(rosterSize), sessionId),
+      makeEvaluate: (rosterSize) => selectEvaluate(params, choicesFor(rosterSize, lang), sessionId),
       onGame: setGame,
       onStatus: setStatus,
     });
@@ -116,11 +118,11 @@ export default function LocalSession() {
     const mood =
       game === null ? null : moodOf(loop.moods(), latestVerdictPostId(game.posts, dists));
     return {
-      samples: samplesFor(dist, rosterSize),
+      samples: samplesFor(dist, rosterSize, lang),
       expression: expressionFor(dist, mood, rosterSize, 0, game?.round ?? 0),
       reducedMotion: false,
     };
-  }, [game, loop]);
+  }, [game, loop, lang]);
 
   return (
     <LocalGame

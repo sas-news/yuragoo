@@ -6,6 +6,7 @@
 // into a new game blind. The server NEVER trusts payload-declared
 // identity: playerId/host come from the WebSocket attachment.
 import { z } from "zod";
+import { roomLanguageSchema } from "./language";
 import { updateLobbyContentPayloadSchema } from "./lobby";
 import { postTextSchema } from "./text";
 
@@ -29,6 +30,9 @@ export const lobbySettingsSchema = z.strictObject({
   // every member sees them before start.
   earlyDecision: z.boolean().optional(),
   hostDecision: z.boolean().optional(),
+  // Shared-text language — a display field like mode (members see it
+  // pre-start; startGame may confirm but never contradict it).
+  language: roomLanguageSchema.optional(),
 });
 export type LobbySettings = z.infer<typeof lobbySettingsSchema>;
 

@@ -27,6 +27,9 @@ export interface DiscordSdkLike {
   // null inside (G)DM contexts — openInviteDialog throws INVALID_CHANNEL
   // there, so the fallback path checks it before calling.
   readonly guildId?: string | null;
+  // Populated after ready(): the user's Discord client locale ("ja",
+  // "en-US", …) — the app's UI-language hint when nothing was chosen.
+  readonly userLocale?: string;
   ready(): Promise<void>;
   commands: {
     authorize(input: {

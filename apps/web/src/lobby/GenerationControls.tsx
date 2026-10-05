@@ -2,6 +2,7 @@
 // freely — "もう一度生成" once a proposal has landed; 生成中… while in
 // flight) and the proposal plate the host applies, rerolls or dismisses.
 // Lobby renders this only for the host — members never see any of it.
+import { useT } from "../i18n";
 import type { ChoiceProposal } from "./room-view";
 import styles from "./Lobby.module.css";
 
@@ -28,6 +29,7 @@ export function GenerationControls({
   onApply,
   onDismiss,
 }: Props) {
+  const t = useT();
   return (
     <>
       <button
@@ -36,15 +38,15 @@ export function GenerationControls({
         disabled={busy || scenarioEmpty}
         onClick={onGenerate}
       >
-        {spent ? "もう一度生成" : "AIで選択肢を生成"}{" "}
-        {busy && <span className={styles.badge}>生成中…</span>}
+        {spent ? t("もう一度生成") : t("AIで選択肢を生成")}{" "}
+        {busy && <span className={styles.badge}>{t("生成中…")}</span>}
       </button>
-      {scenarioEmpty && <p className={styles.note}>シナリオを入力すると生成できます</p>}
+      {scenarioEmpty && <p className={styles.note}>{t("シナリオを入力すると生成できます")}</p>}
       {proposal !== null && (
-        <section className={styles.plate} aria-label="AIの生成案">
-          <h2 className={styles.sectionTitle}>AIの生成案</h2>
+        <section className={styles.plate} aria-label={t("AIの生成案")}>
+          <h2 className={styles.sectionTitle}>{t("AIの生成案")}</h2>
           {proposal.lobbyRevision !== currentRevision && (
-            <p className={styles.note}>生成したあとにロビーが変更されています</p>
+            <p className={styles.note}>{t("生成したあとにロビーが変更されています")}</p>
           )}
           <ul className={styles.proposalList}>
             {proposal.labels.map((label) => (
@@ -56,13 +58,13 @@ export function GenerationControls({
           </ul>
           <div className={styles.proposalButtons}>
             <button type="button" className={styles.primary} onClick={onApply}>
-              生成案を適用
+              {t("生成案を適用")}
             </button>
             <button type="button" disabled={busy} onClick={onGenerate}>
-              もう一度生成
+              {t("もう一度生成")}
             </button>
             <button type="button" onClick={onDismiss}>
-              やめる
+              {t("やめる")}
             </button>
           </div>
         </section>

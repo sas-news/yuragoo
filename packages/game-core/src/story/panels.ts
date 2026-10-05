@@ -69,6 +69,7 @@ const buildPanel = (
     winnerName: source.winnerName,
     leaderLabel: d.leaderLabel,
     isCompleteRow: d.kind === "endgame" && d.landedIndex < 0,
+    ...(source.language === undefined ? {} : { language: source.language }),
   });
   return {
     kind: d.kind,

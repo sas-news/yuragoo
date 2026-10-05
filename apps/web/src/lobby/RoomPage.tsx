@@ -1,8 +1,9 @@
-// /r/<roomId> product page (Task 24). Boot: read the invite fragment once ->
-// join (or recover the stored session) -> ticket -> WebSocket through
-// RoomConnection. The page owns the RoomView reducer; children render-only.
+// /r/<roomId> product page (Task 24). Boot: read the invite fragment once
+// -> join (or recover the stored session) -> ticket -> WebSocket. The page
+// owns the RoomView reducer; children render-only.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SnapshotPayload } from "@yuragoo/protocol";
+import { useLocale, useT } from "../i18n";
 import { StatsLink } from "../info/Stats";
 import { RoomConnection } from "../net/reconnect";
 import { inviteUrl as buildInviteUrl } from "../net/urls";
@@ -40,31 +41,35 @@ type Stage =
 const roomIdOf = (): string => window.location.pathname.split("/")[2] ?? "";
 
 export default function RoomPage() {
+  const t = useT();
+  const lang = useLocale();
   const roomId = roomIdOf();
   // PIP (Task 48): html[data-pip] flips from Discord's layout event or
-  // the pixel tier. The same watch forwards participant ids so the server
-  // drops members who left the Activity; the boot-fetch list is kept and
-  // flushed once connect() finishes.
+  // the pixel tier. The same watch forwards participant ids (server drops
+  // members who left); the boot-fetch list flushes once connect() runs.
   const lastParticipantIds = useRef<readonly string[] | null>(null);
   const sendReport = useCallback((ids: readonly string[]): void => {
     lastParticipantIds.current = ids;
     void connRef.current?.send("reportParticipants", { userIds: [...ids] }).catch(() => undefined);
   }, []);
   const pip = usePipMode(sendReport);
-  // One-shot page inputs: fragment secret + optional ?name=.
+  // One-shot page inputs: fragment secret + optional ?name=; ?hb=<ms>
+  // compresses the heartbeat for e2e/dev (prod: 15s contract).
   const [inviteSecret] = useState(() => readInviteFragment());
-  const [nameParam] = useState(() => new URLSearchParams(window.location.search).get("name"));
-  // `?hb=<ms>` compresses the heartbeat for e2e/dev (prod: 15s contract).
-  const [heartbeatMs] = useState(() => {
-    const raw = new URLSearchParams(window.location.search).get("hb");
-    const n = raw === null ? Number.NaN : Number(raw);
-    return Number.isFinite(n) && n > 0 ? n : undefined;
+  const [params] = useState(() => {
+    const q = new URLSearchParams(window.location.search);
+    const n = Number(q.get("hb") ?? "");
+    return { name: q.get("name"), heartbeatMs: Number.isFinite(n) && n > 0 ? n : undefined };
   });
-  const [stage, setStage] = useState<Stage>({ kind: "busy", note: "つないでいます…" });
+  const [stage, setStage] = useState<Stage>({ kind: "busy", note: "" });
   const [view, setView] = useState<RoomView>(initialView);
   const [lastError, setLastError] = useState<string | null>(null);
   const connRef = useRef<RoomConnection | null>(null);
   const booted = useRef(false);
+  const failStage = useCallback(
+    (message: string): void => setStage({ kind: "error", message }),
+    [],
+  );
 
   const connect = useCallback(
     async (session: JoinedSession): Promise<void> => {
@@ -74,11 +79,11 @@ export default function RoomPage() {
           roomId,
           credentials,
           workerOrigin: origin,
-          heartbeatMs,
+          heartbeatMs: params.heartbeatMs,
           onSnapshot: (p: SnapshotPayload, env) =>
             setView((v) => applySnapshot(v, p, env.serverTime, env.gameEpoch)),
           onEvent: (env) => setView((v) => applyEvent(v, env)),
-          onError: (p) => setLastError(serverErrorText(p)),
+          onError: (p) => setLastError(serverErrorText(p, lang)),
           onClose: () => {
             // A live room flips to "closed"; an intentional leave wins.
             setStage((s) =>
@@ -103,26 +108,21 @@ export default function RoomPage() {
         const recovered = await recoverSession(origin, roomId, session).catch(() => null);
         if (recovered === null) {
           clearSession(roomId);
-          setStage({
-            kind: "error",
-            message: "セッションが切れました。招待リンクから入り直してください。",
-          });
+          failStage(t("セッションが切れました。招待リンクから入り直してください。"));
           return;
         }
         saveSession(roomId, recovered);
-        await open(recovered).catch(() =>
-          setStage({ kind: "error", message: "へやにつながりませんでした。" }),
-        );
+        await open(recovered).catch(() => failStage(t("へやにつながりませんでした。")));
       }
       setStage({ kind: "room" });
       if (lastParticipantIds.current !== null) sendReport(lastParticipantIds.current); // flush boot fetch
     },
-    [heartbeatMs, roomId, sendReport],
+    [params, roomId, sendReport, lang, t, failStage],
   );
 
   const doJoin = useCallback(
     async (secret: string, displayName: string): Promise<void> => {
-      setStage({ kind: "busy", note: "へやに入っています…" });
+      setStage({ kind: "busy", note: t("へやに入っています…") });
       try {
         const session = await joinRoom(
           apiOrigin(),
@@ -134,31 +134,32 @@ export default function RoomPage() {
         saveSession(roomId, session);
         await connect(session);
       } catch (error) {
-        setStage({
-          kind: "error",
-          message: `へやに入れませんでした（${error instanceof Error ? error.message : "error"}）`,
-        });
+        failStage(
+          t("へやに入れませんでした（{detail}）", {
+            detail: error instanceof Error ? error.message : "error",
+          }),
+        );
       }
     },
-    [connect, roomId],
+    [connect, roomId, t, failStage],
   );
 
   // Boot once: stored session wins, then the invite fragment (auto-join
-  // when ?name= is supplied), then the name panel, else invite-required.
+  // when ?name= is supplied), then the name panel, else invite error.
   useEffect(() => {
     if (booted.current) return;
     booted.current = true;
     const session = loadSession(roomId);
     if (session !== null) void connect(session);
-    else if (inviteSecret !== null && nameParam !== null) {
-      void doJoin(inviteSecret, nameParam);
+    else if (inviteSecret !== null && params.name !== null) {
+      void doJoin(inviteSecret, params.name);
     } else if (inviteSecret !== null) {
       setStage({ kind: "name", inviteSecret });
     } else {
-      setStage({ kind: "error", message: "招待リンクから開いてください。" });
+      failStage(t("招待リンクから開いてください。"));
     }
-    // The socket outlives the component only through page navigation.
-  }, [connect, doJoin, inviteSecret, nameParam, roomId]);
+    // booted.current makes a mid-boot locale-switch re-run a no-op.
+  }, [connect, doJoin, inviteSecret, params, roomId, t, failStage]);
 
   const selfId = connRef.current?.credentials.playerId ?? "";
 
@@ -179,14 +180,11 @@ export default function RoomPage() {
   const inviteUrl = inviteSecret === null ? null : buildInviteUrl(roomId, inviteSecret);
 
   // IME fallback (Task 27): where 100dvh does not track the software
-  // keyboard, the page shrinks to the visual viewport so inputs and the
-  // footer controls are never pushed underneath it.
+  // keyboard, the page shrinks to the visual viewport.
   const vvHeight = useVisualViewportHeight();
 
-  // In-game phases get the full-viewport arena (creature stage + bottom
-  // tray) — the lobby card column must not wrap it. key=epoch remounts
-  // the arena on rematch so per-game visuals (post-reaction seen-set,
-  // seat anchors) reset with the new game.
+  // In-game phases get the full-viewport arena. key=epoch remounts the
+  // arena on rematch so per-game visuals reset with the new game.
   if (stage.kind === "room" && view.phase !== "lobby") {
     return (
       <RoomGame
@@ -210,9 +208,11 @@ export default function RoomPage() {
       {stage.kind === "name" && (
         <NamePanel onJoin={(name) => void doJoin(stage.inviteSecret, name)} />
       )}
-      {stage.kind === "busy" && <p className={styles.note}>{stage.note}</p>}
-      {stage.kind === "left" && <p className={styles.note}>へやを出ました。</p>}
-      {stage.kind === "closed" && <p className={styles.note}>このへやは閉じられました。</p>}
+      {stage.kind === "busy" && (
+        <p className={styles.note}>{stage.note === "" ? t("つないでいます…") : stage.note}</p>
+      )}
+      {stage.kind === "left" && <p className={styles.note}>{t("へやを出ました。")}</p>}
+      {stage.kind === "closed" && <p className={styles.note}>{t("このへやは閉じられました。")}</p>}
       {stage.kind === "error" && <p className={styles.note}>{stage.message}</p>}
       {stage.kind === "room" && pip ? (
         <PipLobby

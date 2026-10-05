@@ -22,9 +22,11 @@ import {
   type DecisionState,
   parseChoiceId,
   parseDecisionRevision,
+  type RoomLanguage,
+  ROOM_LANGUAGE_DEFAULT,
 } from "@yuragoo/protocol";
 import { CONTEXT_CONFIG } from "../dev/decision-flow";
-import { choicesFor, dominanceOf, dominantSlot, LOCAL_PERSONA, LOCAL_SCENARIO } from "./scenario";
+import { choicesFor, dominanceOf, dominantSlot, localPersona, localScenario } from "./scenario";
 
 export interface LocalSetup {
   readonly players: number;
@@ -37,6 +39,9 @@ export interface LocalSetup {
 // are timing/rule overrides kept for deterministic e2e. ?grace= sets the
 // consecutive-dominance streak needed for an early end (posts, not seconds).
 export interface LocalParams extends LocalSetup {
+  // The device's UI language doubles as the local room language — the
+  // scenario, choices and eval instructions all ride it.
+  readonly language: RoomLanguage;
   readonly evalKind: "mock" | "live";
   readonly evalDelayMs: number;
   readonly failEval: boolean;
@@ -75,7 +80,10 @@ const ranged = (
   return value === undefined ? undefined : Math.min(Math.max(value, min), max);
 };
 
-export const parseLocalParams = (search: string): LocalParams => {
+export const parseLocalParams = (
+  search: string,
+  language: RoomLanguage = ROOM_LANGUAGE_DEFAULT,
+): LocalParams => {
   const params = new URLSearchParams(search);
   const turnSeconds = ranged(params, "turn", 1, TURN_SECONDS_MAX);
   const liveSeconds = ranged(params, "live", 1, LIVE_SECONDS_MAX);
@@ -83,6 +91,7 @@ export const parseLocalParams = (search: string): LocalParams => {
   const settleSeconds = ranged(params, "settle", 1, SETTLE_SECONDS_MAX);
   const rounds = ranged(params, "rounds", 1, ROUNDS_MAX);
   return {
+    language,
     players: ranged(params, "players", 2, ROSTER_SIZE_MAX) ?? 4,
     mode: params.get("mode") === "live" ? "live" : "turn",
     seed: intParam(params, "seed") ?? 7,
@@ -104,6 +113,7 @@ export const parseLocalParams = (search: string): LocalParams => {
 // behaviour is unchanged by the new server defaults (Task 26).
 export const buildLocalSettings = (setup: LocalSetup, params: LocalParams): GameSettings => ({
   mode: setup.mode,
+  language: params.language,
   seed: setup.seed,
   rosterSize: setup.players,
   devMode: true,
@@ -122,8 +132,9 @@ export const buildLocalSettings = (setup: LocalSetup, params: LocalParams): Game
 export const toAcceptedMessages = (
   posts: readonly PostedInput[],
   roster: readonly Player[],
+  lang: RoomLanguage = "ja",
 ): AcceptedMessage[] => {
-  const choices = choicesFor(roster.length);
+  const choices = choicesFor(roster.length, lang);
   const fallback = choices[0]?.id ?? parseChoiceId("a");
   return posts.map((post) => {
     const slot = roster.find((p) => p.id === post.playerId)?.slot ?? 0;
@@ -202,18 +213,23 @@ export const claimFor = (
 // The DecisionState handed to the provider for one post: scenario/persona,
 // bounded context of accepted posts up to this post's seq, the seat-count
 // choices, and the mock key pinning the fixture to the poster's slot.
-export const buildPostDecisionState = (state: GameState, post: PostedInput): DecisionState => {
-  const choices = choicesFor(state.roster.length);
+export const buildPostDecisionState = (
+  state: GameState,
+  post: PostedInput,
+  lang: RoomLanguage = "ja",
+): DecisionState => {
+  const choices = choicesFor(state.roster.length, lang);
   const prior = state.posts.filter((p) => p.seq <= post.seq);
-  const context = buildActiveContext(toAcceptedMessages(prior, state.roster), CONTEXT_CONFIG);
+  const context = buildActiveContext(toAcceptedMessages(prior, state.roster, lang), CONTEXT_CONFIG);
   const slot = state.roster.find((p) => p.id === post.playerId)?.slot ?? 0;
   const choice = choices[slot] ?? choices[0];
   return {
     revision: parseDecisionRevision(post.seq),
-    scenario: LOCAL_SCENARIO,
-    persona: LOCAL_PERSONA,
+    scenario: localScenario(lang),
+    persona: localPersona(lang),
     activeContext: context.items.map((item) => item.text),
     choices: choices.map(({ id, label }) => ({ id, label })),
+    language: lang,
     ...(choice !== undefined ? { mockScenarioKey: `favor-${choice.id}` } : {}),
   };
 };

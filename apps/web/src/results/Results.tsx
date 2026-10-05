@@ -6,6 +6,7 @@
 // room close stays host-gated with an explicit confirm.
 import { useRef, useState } from "react";
 import { SLOT_SYMBOLS } from "../game/slots";
+import { type Locale, useLocale, useT, type Translate, tx } from "../i18n";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import { LegalFoot } from "../ui/LegalLinks";
@@ -23,22 +24,28 @@ const NO_CONTEST_TEXT: Readonly<Record<string, string>> = {
   aborted: "ちゅうだん",
 };
 
-const outcomeLine = (view: RoomView): string => {
+// The headline mixes shared content (member name, choice label — always
+// the room language) with viewer chrome ("wins!", "draw") in the UI locale.
+const outcomeLine = (view: RoomView, t: Translate): string => {
   const outcome = view.outcome;
   if (outcome === null) return "";
   switch (outcome.kind) {
     case "winner": {
-      const name = memberName(view.players, outcome.playerId);
+      const name = memberName(view.players, outcome.playerId, t);
       const label = view.lobby.choices[outcome.slot]?.label;
       const symbol = SLOT_SYMBOLS[outcome.slot] ?? "?";
       return label === undefined
-        ? `${symbol} ${name} の勝ち！`
-        : `${symbol} ${name} の勝ち！ — ${label}`;
+        ? t("{symbol} {name} の勝ち！", { symbol, name })
+        : t("{symbol} {name} の勝ち！ — {label}", { symbol, name, label });
     }
     case "draw":
-      return "ひきわけ";
-    case "noContest":
-      return `むこう（${NO_CONTEST_TEXT[outcome.reason] ?? outcome.reason}）`;
+      return t("ひきわけ");
+    case "noContest": {
+      const reason = NO_CONTEST_TEXT[outcome.reason];
+      return t("むこう（{reason}）", {
+        reason: reason === undefined ? outcome.reason : t(reason),
+      });
+    }
     default:
       return "";
   }
@@ -52,6 +59,8 @@ export interface ResultsProps {
 }
 
 export function Results({ view, isHost, backToLobby, closeRoom }: ResultsProps) {
+  const t = useT();
+  const lang = useLocale();
   const [dismissed, setDismissed] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -67,7 +76,7 @@ export function Results({ view, isHost, backToLobby, closeRoom }: ResultsProps) 
         data-testid="outcome-reopen"
         onClick={() => setDismissed(false)}
       >
-        けっかをみる
+        {t("けっかをみる")}
       </Button>
     );
   }
@@ -78,13 +87,13 @@ export function Results({ view, isHost, backToLobby, closeRoom }: ResultsProps) 
       ?.then(() => setBusy(false))
       .catch((e: Error) => {
         setBusy(false);
-        setError(commandErrorText(e));
+        setError(commandErrorText(e, lang));
       });
   };
 
   return (
     <Dialog
-      label="けっか"
+      label={t("けっか")}
       veil="paper"
       testId="room-results"
       onClose={() => setDismissed(true)}
@@ -92,14 +101,14 @@ export function Results({ view, isHost, backToLobby, closeRoom }: ResultsProps) 
       panelClassName={styles.resultsPanel}
     >
       <h2 className={styles.title} data-autofocus tabIndex={-1}>
-        けっか
+        {t("けっか")}
       </h2>
       <p className={styles.outcomeLine} data-testid="results-outcome">
-        {outcomeLine(view)}
+        {outcomeLine(view, t)}
       </p>
       {view.ending === null ? (
         <p className={styles.pending} data-testid="story-pending">
-          おわりの紙芝居を用意しています…
+          {t("おわりの紙芝居を用意しています…")}
         </p>
       ) : (
         <Kamishibai story={view.ending} />
@@ -111,17 +120,19 @@ export function Results({ view, isHost, backToLobby, closeRoom }: ResultsProps) 
       )}
       {confirming ? (
         <div className={styles.dialogButtons} data-testid="close-confirm">
-          <p className={styles.confirmText}>へやを閉じると、みんなの記録も消えます。いいですか？</p>
+          <p className={styles.confirmText}>
+            {t("へやを閉じると、みんなの記録も消えます。いいですか？")}
+          </p>
           <Button
             variant="primary"
             data-testid="close-room-confirm"
             disabled={busy}
             onClick={() => run(closeRoom)}
           >
-            へやを閉じる
+            {t("へやを閉じる")}
           </Button>
           <Button data-testid="close-room-cancel" onClick={() => setConfirming(false)}>
-            やめる
+            {t("やめる")}
           </Button>
         </div>
       ) : (
@@ -132,15 +143,15 @@ export function Results({ view, isHost, backToLobby, closeRoom }: ResultsProps) 
             disabled={busy}
             onClick={() => run(backToLobby)}
           >
-            ロビーにもどる
+            {t("ロビーにもどる")}
           </Button>
           {isHost && (
             <Button data-testid="close-room" onClick={() => setConfirming(true)}>
-              へやを閉じる
+              {t("へやを閉じる")}
             </Button>
           )}
           <Button data-testid="results-close" onClick={() => setDismissed(true)}>
-            とじる
+            {t("とじる")}
           </Button>
         </div>
       )}
@@ -148,3 +159,8 @@ export function Results({ view, isHost, backToLobby, closeRoom }: ResultsProps) 
     </Dialog>
   );
 }
+
+// Re-exported so non-React call sites (tests, story builders) can render
+// the same outcome line without a hook.
+export const outcomeLineFor = (view: RoomView, lang: Locale): string =>
+  outcomeLine(view, (ja, vars) => tx(lang, ja, vars));

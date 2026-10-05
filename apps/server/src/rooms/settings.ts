@@ -24,6 +24,7 @@ const DISPLAY_KEYS = [
   "liveSeconds",
   "earlyDecision",
   "hostDecision",
+  "language",
 ] as const;
 
 type FieldCheck = { safeParse: (value: unknown) => { success: boolean } };
@@ -62,6 +63,7 @@ export const lobbySettingsView = (patch: LobbySettings): LobbySettingsView => ({
   liveSeconds: patch.liveSeconds ?? LOBBY_SETTINGS_DEFAULT.liveSeconds,
   earlyDecision: patch.earlyDecision === true,
   hostDecision: patch.hostDecision === true,
+  language: patch.language ?? LOBBY_SETTINGS_DEFAULT.language,
 });
 
 // Settings for game create: the display fields come ONLY from the shared
@@ -88,6 +90,7 @@ export const resolveCreateSettings = (
     liveSeconds: view.liveSeconds,
     earlyDecision: view.earlyDecision,
     hostDecision: view.hostDecision,
+    language: view.language,
     ...(patch.maxPendingPerPlayer === undefined
       ? {}
       : { maxPendingPerPlayer: patch.maxPendingPerPlayer }),

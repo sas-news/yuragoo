@@ -5,6 +5,7 @@
 // ring — the glow IS the turn indicator (the HUD turn line stays for a11y).
 import type { CSSProperties } from "react";
 import type { Player, PlayerId } from "@yuragoo/game-core";
+import { useT } from "../i18n";
 import { IconFace } from "./IconFace";
 import styles from "./PlayerSeats.module.css";
 import type { SeatMap } from "./seats";
@@ -35,6 +36,7 @@ export interface PlayerSeatsProps {
 }
 
 export function PlayerSeats(props: PlayerSeatsProps) {
+  const t = useT();
   const {
     roster,
     positions,
@@ -47,7 +49,7 @@ export function PlayerSeats(props: PlayerSeatsProps) {
   } = props;
 
   return (
-    <ul className={styles.seats} aria-label="プレイヤーの席">
+    <ul className={styles.seats} aria-label={t("プレイヤーの席")}>
       {roster.map((player) => {
         const pos = positions[player.id];
         // No anchor yet (creature still warming up) -> no chip.
@@ -71,7 +73,7 @@ export function PlayerSeats(props: PlayerSeatsProps) {
             data-current={isCurrent || undefined}
             data-pulled={player.id === pulledId || undefined}
             data-selectable={onSelect !== undefined || undefined}
-            aria-label={`${nameOf(player.id)} の席`}
+            aria-label={t("{name} の席", { name: nameOf(player.id) })}
             aria-current={isCurrent || undefined}
           >
             {/* The turn pointer: a slot-colored wedge over the acting
@@ -117,7 +119,7 @@ export function PlayerSeats(props: PlayerSeatsProps) {
               <button
                 type="button"
                 className={styles.seatHit}
-                aria-label={`${nameOf(player.id)} の席をえらぶ`}
+                aria-label={t("{name} の席をえらぶ", { name: nameOf(player.id) })}
                 onClick={() => onSelect(player.id)}
               />
             )}

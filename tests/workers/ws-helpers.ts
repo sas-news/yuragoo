@@ -148,7 +148,7 @@ export class Sock {
       headers: { upgrade: "websocket", origin: GOOD_ORIGIN },
     });
     if (up.status !== 101 || up.webSocket === null) {
-      throw new Error(`upgrade failed: ${up.status}`);
+      throw new Error(`upgrade failed: ${up.status} ${await up.text()}`);
     }
     const sock = new Sock(up.webSocket);
     // Every admitted socket starts with a snapshot frame.

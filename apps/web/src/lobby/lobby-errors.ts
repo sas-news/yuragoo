@@ -2,6 +2,10 @@
 // English text — the toast shows localized text for the codes a lobby
 // action can actually hit (Task 46). Unknown codes keep the raw message
 // (with the code appended) so nothing is swallowed.
+//
+// The map values are the JA product voice; the UI locale translates them
+// through the shared EN dictionary (key = the Japanese string).
+import { type Locale, tx } from "../i18n";
 
 const TEXT: Readonly<Record<string, string>> = {
   "lobby-scenario-empty": "シナリオを入力してから生成できます",
@@ -39,15 +43,22 @@ const TEXT: Readonly<Record<string, string>> = {
 
 // e.message is "<code>: <message>" for command rejections; anything
 // else (network, timeouts) passes through unchanged.
-export const commandErrorText = (error: Error): string => {
+export const commandErrorText = (error: Error, lang: Locale = "ja"): string => {
   const sep = error.message.indexOf(":");
   if (sep <= 0) return error.message;
   const code = error.message.slice(0, sep);
   const mapped = TEXT[code];
-  return mapped === undefined ? `${error.message.slice(sep + 1).trim()}（${code}）` : mapped;
+  return mapped === undefined
+    ? `${error.message.slice(sep + 1).trim()}（${code}）`
+    : tx(lang, mapped);
 };
 
 // Server-sent `error` frames (no pending command) carry the same
 // code:english pair — localize by code, keep unknowns diagnosable.
-export const serverErrorText = (payload: { code: string; message: string }): string =>
-  TEXT[payload.code] ?? `${payload.message}（${payload.code}）`;
+export const serverErrorText = (
+  payload: { code: string; message: string },
+  lang: Locale = "ja",
+): string => {
+  const mapped = TEXT[payload.code];
+  return mapped === undefined ? `${payload.message}（${payload.code}）` : tx(lang, mapped);
+};

@@ -88,7 +88,7 @@ export const createLocalLoop = (deps: LocalLoopDeps): LocalLoop => {
     const post = current?.posts.find((p) => p.postId === postId);
     if (current === null || post === undefined || evaluate === null) return;
     const myEpoch = epoch;
-    void evaluate(buildPostDecisionState(current, post)).then(
+    void evaluate(buildPostDecisionState(current, post, deps.params.language)).then(
       (evaluation) => {
         if (epoch !== myEpoch) return; // rematch mid-flight: drop the answer
         dists.set(postId, evaluation.result.distribution);

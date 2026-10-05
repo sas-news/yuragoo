@@ -1,18 +1,12 @@
 // Post-game ending-caption generation (Task 31): one attempt per game
 // that upgrades the template story's captions in place, under waitUntil.
-//
-//   ControlPlane.reserve (kind="generation", token per room+epoch)
-//     -> send boundary: "post" slot row + gates in one txn (still
-//        finished, same epoch, ending row present, slot unspent)
-//     -> provider.generate under the deadline (never auto-retried)
-//     -> consume the grant whatever landed (honest Task 22 accounting)
-//     -> apply txn: re-verify the same gates, re-read the row, write the
-//        generated story + endingReady in one commit
-//
-// Unlike the lobby runner this emits NO failure event: panels already
-// carry readable template prose, and generated captions either fully
-// replace them or never land — a half-generated story reads like two
-// authors fighting, so a rejected result is only logged.
+// reserve -> send boundary ("post" slot + gates in one txn) -> generate
+// under the deadline -> consume the grant -> apply txn re-verifies the
+// same gates and commits the story + endingReady. Unlike the lobby
+// runner this emits NO failure event: panels already carry readable
+// template prose, and generated captions either fully replace them or
+// never land — a half-generated story reads like two authors fighting,
+// so a rejected result is only logged.
 import {
   buildEndingPrompt,
   type EndingGenerationInput,
@@ -82,6 +76,9 @@ const endingInput = (sql: SqlStorage, story: EndingStory): EndingGenerationInput
     panels: story.panels.map(
       (p): EndingPanelInput => ({ kind: p.kind, eventId: p.eventId, quotes: p.quotes }),
     ),
+    // The room's shared-text language — the model writes the whole story
+    // in it; buildEndingPrompt reads this field off the input.
+    language: lobby.settings.language,
   };
 };
 

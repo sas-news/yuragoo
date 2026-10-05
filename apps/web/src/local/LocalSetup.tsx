@@ -2,9 +2,10 @@
 // the start button — a chamfered ivory plate on the flat paper world, same
 // outline idiom as the seat chips and the input dock. URL params seed the
 // initial values; this panel only edits them before the first match.
+import { useLocale, useT } from "../i18n";
 import { Button } from "../ui/Button";
 import styles from "./LocalGame.module.css";
-import { LOCAL_PERSONA, LOCAL_SCENARIO } from "./scenario";
+import { localPersona, localScenario } from "./scenario";
 import type { LocalSetup } from "./session";
 
 export interface LocalSetupProps {
@@ -17,14 +18,18 @@ const COUNTS = [2, 3, 4, 5, 6] as const;
 
 export function LocalSetupPanel(props: LocalSetupProps) {
   const { setup, onChange, onStart } = props;
+  const t = useT();
+  const lang = useLocale();
   return (
     <div className={styles.setupWrap}>
-      <section className={styles.card} data-testid="setup-panel" aria-label="ゲームの設定">
+      <section className={styles.card} data-testid="setup-panel" aria-label={t("ゲームの設定")}>
         <h1 className={styles.title}>ゆらぐー！</h1>
-        <p className={styles.scenario}>{LOCAL_SCENARIO}</p>
-        <p className={styles.persona}>生きもの：{LOCAL_PERSONA}</p>
+        <p className={styles.scenario}>{localScenario(lang)}</p>
+        <p className={styles.persona}>
+          {t("生きもの：{persona}", { persona: localPersona(lang) })}
+        </p>
         <fieldset className={styles.group}>
-          <legend className={styles.label}>にんずう</legend>
+          <legend className={styles.label}>{t("にんずう")}</legend>
           {COUNTS.map((count) => (
             <button
               key={count}
@@ -34,12 +39,12 @@ export function LocalSetupPanel(props: LocalSetupProps) {
               aria-pressed={setup.players === count}
               onClick={() => onChange({ ...setup, players: count })}
             >
-              {count}人
+              {t("{n}人", { n: count })}
             </button>
           ))}
         </fieldset>
         <fieldset className={styles.group}>
-          <legend className={styles.label}>モード</legend>
+          <legend className={styles.label}>{t("モード")}</legend>
           <button
             type="button"
             className={styles.chipButton}
@@ -47,7 +52,7 @@ export function LocalSetupPanel(props: LocalSetupProps) {
             aria-pressed={setup.mode === "turn"}
             onClick={() => onChange({ ...setup, mode: "turn" })}
           >
-            じゅんばん
+            {t("じゅんばん")}
           </button>
           <button
             type="button"
@@ -56,11 +61,11 @@ export function LocalSetupPanel(props: LocalSetupProps) {
             aria-pressed={setup.mode === "live"}
             onClick={() => onChange({ ...setup, mode: "live" })}
           >
-            いっせいに
+            {t("いっせいに")}
           </button>
         </fieldset>
         <Button variant="big" data-testid="start-button" onClick={onStart}>
-          はじめる
+          {t("はじめる")}
         </Button>
       </section>
     </div>

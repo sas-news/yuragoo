@@ -19,10 +19,11 @@ import { useSeatAnchors } from "../game/seats";
 import { slotColor } from "../game/slots";
 import { usePostReaction } from "../game/usePostReaction";
 import { useVisualViewportHeight } from "../ui/useVisualViewport";
+import { useLocale, useT } from "../i18n";
 import arena from "../game/arena.module.css";
 import { LocalResult } from "./LocalResult";
 import { LocalSetupPanel } from "./LocalSetup";
-import { choicesFor, LOCAL_PERSONA, LOCAL_SCENARIO, localNameOf } from "./scenario";
+import { choicesFor, localNameOf, localPersona, localScenario } from "./scenario";
 import type { DockStatus } from "./loop";
 import type { LocalSetup } from "./session";
 
@@ -67,6 +68,9 @@ function ArenaView(
   },
 ) {
   const { game, status, presentation, onSubmit, onRematch, onStageReady } = props;
+  const t = useT();
+  const lang = useLocale();
+  const nameOf = (id: PlayerId): string => localNameOf(id, lang);
   const [runtime, setRuntime] = useState<CreatureRuntime | null>(null);
   // LIVE acting seat: a click-selected chip (defaults to the first roster
   // seat). In TURN the acting seat is always the current turn player.
@@ -86,7 +90,7 @@ function ArenaView(
   const actingSlot = game.roster.find((p) => p.id === acting)?.slot;
   // Each seat's assigned goal = the choice on its slot (choice i rides
   // slot i); the dock echoes the acting seat's one.
-  const goals = choicesFor(game.roster.length);
+  const goals = choicesFor(game.roster.length, lang);
   const actingGoal = actingSlot === undefined ? undefined : goals[actingSlot];
 
   const onReady = (rt: CreatureRuntime): void => {
@@ -125,9 +129,9 @@ function ArenaView(
   const canPost = game.phase === "playing" && acting !== undefined;
   const disabledReason =
     game.phase !== "playing"
-      ? "このゲームはおわったよ"
+      ? t("このゲームはおわったよ")
       : status === "pending"
-        ? "こたえをかんがえちゅう…"
+        ? t("こたえをかんがえちゅう…")
         : undefined;
 
   return (
@@ -146,22 +150,22 @@ function ArenaView(
           />
         </div>
         <ScenarioStrip>
-          {LOCAL_SCENARIO}（{LOCAL_PERSONA}）
+          {localScenario(lang)}（{localPersona(lang)}）
         </ScenarioStrip>
         <div className={arena.hudWrap}>
-          <GameHud state={hud} youId={acting} now={now} nameOf={localNameOf} />
+          <GameHud state={hud} youId={acting} now={now} nameOf={nameOf} />
         </div>
         <PlayerSeats
           roster={game.roster}
           positions={seats}
           currentId={acting}
-          nameOf={localNameOf}
+          nameOf={nameOf}
           goals={goals}
           onSelect={isLive ? setActingId : undefined}
         />
         <BubbleLayer posts={game.posts} roster={game.roster} seats={seats} />
         <div className={arena.feedWrap}>
-          <MessageFeed posts={game.posts} roster={game.roster} nameOf={localNameOf} />
+          <MessageFeed posts={game.posts} roster={game.roster} nameOf={nameOf} />
         </div>
         {game.phase === "finished" ? <LocalResult game={game} onRematch={onRematch} /> : null}
       </div>
@@ -169,7 +173,9 @@ function ArenaView(
         canPost={canPost}
         status={status}
         disabledReason={disabledReason}
-        seatLabel={acting === undefined ? undefined : `いまの席：${localNameOf(acting)}`}
+        seatLabel={
+          acting === undefined ? undefined : t("いまの席：{name}", { name: nameOf(acting) })
+        }
         goalLabel={actingGoal === undefined ? undefined : `${actingGoal.symbol}${actingGoal.label}`}
         sendColor={actingSlot === undefined ? undefined : slotColor(actingSlot)}
         onSubmit={(text) => {

@@ -2,6 +2,7 @@
 // connection dot and the lobbyWaiting badge — every member sees the same
 // list, in joinOrder. Task 27: dot/star/glyph states also render as
 // screen-reader text — no state rides on color or a bare symbol alone.
+import { useT } from "../i18n";
 import type { RoomView } from "./room-view";
 import { memberName } from "./view-members";
 import styles from "./Roster.module.css";
@@ -15,9 +16,10 @@ interface RosterProps {
 }
 
 export function Roster({ view, selfId, onTransferHost }: RosterProps) {
+  const t = useT();
   const ready = new Set(view.lobby.ready);
   return (
-    <ul className={styles.roster} aria-label="メンバー">
+    <ul className={styles.roster} aria-label={t("メンバー")}>
       {view.players.map((p) => (
         <li
           key={p.playerId}
@@ -29,23 +31,23 @@ export function Roster({ view, selfId, onTransferHost }: RosterProps) {
         >
           <span
             className={p.connected ? styles.dotOn : styles.dotOff}
-            title={p.connected ? "接続中" : "切断"}
+            title={p.connected ? t("接続中") : t("切断")}
             aria-hidden="true"
           />
-          <span className={styles.srOnly}>{p.connected ? "接続中" : "切断"}</span>
+          <span className={styles.srOnly}>{p.connected ? t("接続中") : t("切断")}</span>
           {p.avatarUrl !== undefined && p.avatarUrl !== "" && (
             <img src={p.avatarUrl} className={styles.avatar} alt="" />
           )}
-          <span className={styles.chipName} title={memberName(view.players, p.playerId)}>
-            {memberName(view.players, p.playerId)}
-            {p.playerId === selfId && <span className={styles.selfMark}>（あなた）</span>}
+          <span className={styles.chipName} title={memberName(view.players, p.playerId, t)}>
+            {memberName(view.players, p.playerId, t)}
+            {p.playerId === selfId && <span className={styles.selfMark}>{t("（あなた）")}</span>}
           </span>
           {p.playerId === view.hostPlayerId ? (
             <>
-              <span className={styles.hostMark} title="ホスト" aria-hidden="true">
+              <span className={styles.hostMark} title={t("ホスト")} aria-hidden="true">
                 ★
               </span>
-              <span className={styles.srOnly}>ホスト</span>
+              <span className={styles.srOnly}>{t("ホスト")}</span>
             </>
           ) : (
             onTransferHost !== undefined &&
@@ -56,22 +58,24 @@ export function Roster({ view, selfId, onTransferHost }: RosterProps) {
                 data-testid={`host-give-${p.playerId}`}
                 onClick={() => onTransferHost(p.playerId)}
               >
-                ホストにする
+                {t("ホストにする")}
               </button>
             )
           )}
           {p.lobbyWaiting ? (
-            <span className={styles.waitBadge}>観戦待ち</span>
+            <span className={styles.waitBadge}>{t("観戦待ち")}</span>
           ) : (
             <>
               <span
                 className={ready.has(p.playerId) ? styles.readyOn : styles.readyOff}
-                title={ready.has(p.playerId) ? "準備OK" : "未準備"}
+                title={ready.has(p.playerId) ? t("準備OK") : t("未準備")}
                 aria-hidden="true"
               >
                 {ready.has(p.playerId) ? "✓" : "・"}
               </span>
-              <span className={styles.srOnly}>{ready.has(p.playerId) ? "準備OK" : "未準備"}</span>
+              <span className={styles.srOnly}>
+                {ready.has(p.playerId) ? t("準備OK") : t("未準備")}
+              </span>
             </>
           )}
         </li>

@@ -8,6 +8,7 @@
 // stays the single authority on turns, text bounds and rejection.
 import { useState } from "react";
 import { InputDock } from "../game/InputDock";
+import { useLocale, useT } from "../i18n";
 import { commandErrorText } from "./lobby-errors";
 import { slotColor } from "../game/slots";
 import { roomHud } from "./room-arena";
@@ -26,10 +27,11 @@ interface RoomDockProps {
   readonly pass: () => Promise<unknown> | undefined;
 }
 
-const nameOf = (view: RoomView, id: string | undefined): string =>
-  id === undefined ? "だれか" : memberName(view.players, id);
-
 export function RoomDock({ view, selfId, now, submitText, pass }: RoomDockProps) {
+  const t = useT();
+  const lang = useLocale();
+  const nameOf = (v: RoomView, id: string | undefined): string =>
+    id === undefined ? t("だれか") : memberName(v.players, id, t);
   const mode = view.lobby.settings.mode;
   const turn = view.turn;
   const myTurn = turn !== null && turn.playerId === selfId;
@@ -50,11 +52,11 @@ export function RoomDock({ view, selfId, now, submitText, pass }: RoomDockProps)
 
   const canPost = inRoster && !spentThisTurn && (mode === "live" || myTurn);
   const disabledReason = !inRoster
-    ? "観戦中です"
+    ? t("観戦中です")
     : spentThisTurn
-      ? "うけつけました"
+      ? t("うけつけました")
       : mode === "turn" && !myTurn
-        ? `${nameOf(view, turn?.playerId)} のターンです`
+        ? t("{name} のターンです", { name: nameOf(view, turn?.playerId) })
         : undefined;
 
   const settle = (send: Promise<unknown> | undefined): void => {
@@ -67,7 +69,7 @@ export function RoomDock({ view, selfId, now, submitText, pass }: RoomDockProps)
       })
       .catch((e: Error) => {
         setStatus("idle");
-        setError(commandErrorText(e));
+        setError(commandErrorText(e, lang));
       });
   };
 
@@ -93,7 +95,11 @@ export function RoomDock({ view, selfId, now, submitText, pass }: RoomDockProps)
         deadlineAtMs={canPost ? hud.deadlineAtMs : undefined}
         nowMs={canPost ? now : undefined}
         disabledReason={disabledReason}
-        seatLabel={actingId === undefined ? undefined : `いまの席：${nameOf(view, actingId)}`}
+        seatLabel={
+          actingId === undefined
+            ? undefined
+            : t("いまの席：{name}", { name: nameOf(view, actingId) })
+        }
         goalLabel={goal === undefined || goal === "" ? undefined : goal}
         sendColor={actingSlot === undefined ? undefined : slotColor(actingSlot)}
         trailing={
@@ -104,7 +110,7 @@ export function RoomDock({ view, selfId, now, submitText, pass }: RoomDockProps)
               disabled={status === "pending"}
               onClick={() => settle(pass())}
             >
-              パスする
+              {t("パスする")}
             </button>
           ) : undefined
         }
@@ -113,7 +119,7 @@ export function RoomDock({ view, selfId, now, submitText, pass }: RoomDockProps)
       <div
         className={styles.dockDeadline}
         role="progressbar"
-        aria-label="残り時間"
+        aria-label={t("残り時間")}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(ratio * 100)}

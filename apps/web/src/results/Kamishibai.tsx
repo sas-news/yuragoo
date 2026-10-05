@@ -4,6 +4,7 @@
 // result. Paging is local state; the set itself is server-authoritative.
 import { useMemo, useState } from "react";
 import type { EndingStory } from "@yuragoo/protocol";
+import { useT } from "../i18n";
 import { Button } from "../ui/Button";
 import { Panel } from "./Panel";
 import styles from "./Results.module.css";
@@ -13,6 +14,7 @@ export interface KamishibaiProps {
 }
 
 export function Kamishibai({ story }: KamishibaiProps) {
+  const t = useT();
   const [index, setIndex] = useState(0);
   // The wire order already follows the ledger, but events drafted out of
   // turn (a reversal picked on a later seq than the impact pick) must
@@ -25,7 +27,7 @@ export function Kamishibai({ story }: KamishibaiProps) {
   if (panel === undefined) return null;
   const last = index === panels.length - 1;
   return (
-    <section className={styles.kamishibai} aria-label="おわりの紙芝居">
+    <section className={styles.kamishibai} aria-label={t("おわりの紙芝居")}>
       <p className={styles.storyTitle} data-testid="story-title">
         {story.title}
       </p>
@@ -37,7 +39,7 @@ export function Kamishibai({ story }: KamishibaiProps) {
           disabled={index === 0}
           onClick={() => setIndex((i) => Math.max(0, i - 1))}
         >
-          まえ
+          {t("まえ")}
         </Button>
         <span className={styles.pageCount} data-testid="page-count" aria-live="polite">
           {index + 1} / {panels.length}
@@ -48,7 +50,7 @@ export function Kamishibai({ story }: KamishibaiProps) {
           disabled={last}
           onClick={() => setIndex((i) => Math.min(panels.length - 1, i + 1))}
         >
-          つぎ
+          {t("つぎ")}
         </Button>
       </div>
     </section>

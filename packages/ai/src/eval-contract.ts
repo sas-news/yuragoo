@@ -1,6 +1,11 @@
 // Eval suite contract: strict validation for the JSON suite files under
 // tests/jev-evals. Pure — no I/O; callers hand in already-parsed JSON.
-import { choiceIdSchema, type DecisionChoice } from "@yuragoo/protocol";
+import {
+  choiceIdSchema,
+  type DecisionChoice,
+  type RoomLanguage,
+  roomLanguageSchema,
+} from "@yuragoo/protocol";
 
 export interface EvalExpectation {
   readonly top?: readonly string[]; // some argmax choiceId must be in this set
@@ -14,6 +19,9 @@ export interface EvalCase {
   readonly persona: string;
   readonly activeContext: readonly string[];
   readonly choices: readonly DecisionChoice[]; // 2..6 unique ids
+  // Shared-content language of the case — rides into the DecisionState so
+  // the en suite exercises the English instructions/criteria. Absent = ja.
+  readonly language?: RoomLanguage;
   readonly expect: EvalExpectation;
 }
 export interface EvalGate {
@@ -100,7 +108,16 @@ const expectation = (v: unknown, ids: ReadonlySet<string>, w: string): EvalExpec
 const evalCase = (v: unknown, i: number): EvalCase => {
   const slot = `cases[${i}]`;
   const o = obj(v, slot);
-  const fields = ["id", "description", "scenario", "persona", "activeContext", "choices", "expect"];
+  const fields = [
+    "id",
+    "description",
+    "scenario",
+    "persona",
+    "activeContext",
+    "choices",
+    "language",
+    "expect",
+  ];
   keys(o, fields, slot);
   const caseId = o.id;
   if (typeof caseId !== "string" || !CASE_ID.test(caseId)) {
@@ -124,6 +141,7 @@ const evalCase = (v: unknown, i: number): EvalCase => {
   });
   const ids = new Set(choices.map((c) => String(c.id)));
   if (ids.size !== choices.length) fail(`${w}.choices ids must be unique`);
+  const lang = o.language === undefined ? undefined : roomLanguageSchema.parse(o.language);
   return {
     id: caseId,
     description: text(o.description, `${w}.description`),
@@ -131,6 +149,7 @@ const evalCase = (v: unknown, i: number): EvalCase => {
     persona: text(o.persona, `${w}.persona`),
     activeContext: ctx as string[],
     choices,
+    ...(lang === undefined ? {} : { language: lang }),
     expect: expectation(o.expect, ids, w),
   };
 };

@@ -4,6 +4,7 @@
 // safety — a client must never trust a frame that does not match, and a
 // corrupt persisted snapshot must fail loudly instead of half-parsing.
 import { z } from "zod";
+import { roomLanguageSchema } from "./language";
 
 const safeInt = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 
@@ -45,6 +46,7 @@ export const resolvedSettingsSchema = z.strictObject({
   hostId: z.string(),
   earlyDecision: z.boolean(),
   hostDecision: z.boolean(),
+  language: roomLanguageSchema,
 });
 
 export const gameStateSchema = z.strictObject({

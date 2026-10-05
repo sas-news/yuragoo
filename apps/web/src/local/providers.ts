@@ -5,7 +5,7 @@
 // test can reset mid-eval); ?failEval=1 makes every call throw (the pending
 // post then forces noContest at settle — 障害時は凍らせずnoContest).
 import { type MockDecisionFixture, MockDecisionProvider } from "@yuragoo/ai";
-import type { DecisionResult, DecisionState } from "@yuragoo/protocol";
+import type { DecisionResult, DecisionState, RoomLanguage } from "@yuragoo/protocol";
 import { delay } from "../dev/decision-flow";
 import { createLiveEvaluate, LabEvaluationError } from "../dev/decision-providers";
 import type { LocalChoice } from "./scenario";
@@ -41,9 +41,16 @@ export const buildMockEvaluate = (choices: readonly LocalChoice[]): LocalEvaluat
   return async (state) => ({ result: await provider.evaluate(state), source: "mock" });
 };
 
-const failingEvaluate: LocalEvaluate = async () => {
-  throw new LabEvaluationError("forced", "評価は失敗する設定です (?failEval=1)");
-};
+const failingEvaluate =
+  (lang: RoomLanguage): LocalEvaluate =>
+  async () => {
+    throw new LabEvaluationError(
+      "forced",
+      lang === "en"
+        ? "Evaluation is configured to fail (?failEval=1)"
+        : "評価は失敗する設定です (?failEval=1)",
+    );
+  };
 
 export const selectEvaluate = (
   params: LocalParams,
@@ -54,7 +61,7 @@ export const selectEvaluate = (
     params.evalKind === "live"
       ? createLiveEvaluate(LOCAL_GATEWAY_URL, sessionId)
       : buildMockEvaluate(choices);
-  const provider = params.failEval ? failingEvaluate : base;
+  const provider = params.failEval ? failingEvaluate(params.language) : base;
   if (params.evalDelayMs <= 0) return provider;
   const delayMs = params.evalDelayMs;
   return async (state) => {

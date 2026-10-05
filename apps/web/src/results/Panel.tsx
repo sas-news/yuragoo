@@ -5,6 +5,7 @@
 import { useMemo } from "react";
 import { CANONICAL_SLOT_ANGLES, canonicalPose } from "@yuragoo/creature";
 import type { StoryPanel as WirePanel } from "@yuragoo/protocol";
+import { useT } from "../i18n";
 import styles from "./Results.module.css";
 
 // The panel still mirrors the live rig in packages/creature/src/render:
@@ -56,6 +57,7 @@ export interface PanelProps {
 }
 
 export function Panel({ panel }: PanelProps) {
+  const t = useT();
   const pose = useMemo(() => canonicalPose(panel.pull), [panel.pull]);
   const ticks = useMemo(() => attractorTicks(panel.pull), [panel.pull]);
   const centerX = pose.centroid.x * SCALE;
@@ -69,7 +71,12 @@ export function Panel({ panel }: PanelProps) {
   const mouthPath = `M ${(faceX + 6.1).toFixed(1)} ${(faceY + 19.3).toFixed(1)} A 7.4 7.4 0 0 1 ${(faceX - 6.1).toFixed(1)} ${(faceY + 19.3).toFixed(1)}`;
   return (
     <figure className={styles.panel} data-testid="kamishibai-panel" data-kind={panel.kind}>
-      <svg className={styles.art} viewBox="0 0 160 160" role="img" aria-label="いきもののすがた">
+      <svg
+        className={styles.art}
+        viewBox="0 0 160 160"
+        role="img"
+        aria-label={t("いきもののすがた")}
+      >
         <g transform={`translate(${SCENE_X} ${SCENE_Y})`}>
           {ticks.map((t) => (
             <circle
@@ -123,10 +130,10 @@ export function Panel({ panel }: PanelProps) {
           {panel.caption}
         </p>
         {panel.quotes.length > 0 && (
-          <ul className={styles.quotes} aria-label="この場面のことば">
+          <ul className={styles.quotes} aria-label={t("この場面のことば")}>
             {panel.quotes.map((q) => (
               <li key={q.postId} className={styles.quote} data-testid="panel-quote">
-                「{q.text}」
+                {t("「{text}」", { text: q.text })}
               </li>
             ))}
           </ul>

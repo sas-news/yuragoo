@@ -8,7 +8,7 @@ import {
   GenerationProviderError,
   parseChoiceLabels,
 } from "@yuragoo/ai";
-import { countGraphemes, LOBBY_SEAT_COUNT } from "@yuragoo/protocol";
+import { countGraphemes, LOBBY_SEAT_COUNT, type RoomLanguage } from "@yuragoo/protocol";
 import { latencyBucket, logEvent } from "../observability";
 import { utcDay } from "../control/budgets";
 import type { RoomPlayer } from "./auth-storage";
@@ -34,6 +34,9 @@ export interface ChoiceGenRequest {
   readonly lobbyRevision: number;
   readonly scenario: string;
   readonly labelCount: number;
+  // Shared-text language the labels are generated in — captured from the
+  // lobby settings inside the same commit that accepted the command.
+  readonly language: RoomLanguage;
 }
 
 // The synchronous gate the command dispatch runs before accepting the
@@ -68,24 +71,34 @@ export const planChoiceGeneration = (
     lobbyRevision: lobby.revision,
     scenario: lobby.scenario,
     labelCount,
+    language: lobby.settings.language,
   };
+};
+
+// Failure copy rides the room language — the toast lands on the requester's
+// screen but the phrasing matches what the room is playing in.
+const FAIL_MESSAGE: Record<RoomLanguage, string> = {
+  ja: "選択肢の生成に失敗しました — もう一度試すか手入力で続けられます",
+  en: "Choice generation failed — try again or type them in yourself",
 };
 
 const fail = (
   host: GenerationHost,
+  lang: RoomLanguage,
   code: string,
   spent: boolean,
   elapsedMs?: number,
-  message = "選択肢の生成に失敗しました — もう一度試すか手入力で続けられます",
-): void => failOutcome(host, { code, spent, message, elapsedMs });
+  message?: string,
+): void => failOutcome(host, { code, spent, message: message ?? FAIL_MESSAGE[lang], elapsedMs });
 
 export const runChoiceGeneration = async (
   host: GenerationHost,
   deps: GenerationDeps,
   req: ChoiceGenRequest,
 ): Promise<void> => {
+  const lang = req.language;
   if (deps.control === null || deps.provider === null) {
-    fail(host, "generation-unavailable", false);
+    fail(host, lang, "generation-unavailable", false);
     return;
   }
   const { control, provider } = deps;
@@ -98,18 +111,22 @@ export const runChoiceGeneration = async (
       day: utcDay(deps.nowMs()),
     });
   } catch {
-    fail(host, "generation-unavailable", false);
+    fail(host, lang, "generation-unavailable", false);
     return;
   }
   if (!grant.ok) {
-    fail(host, `generation-${grant.reason ?? "denied"}`, false);
+    fail(host, lang, `generation-${grant.reason ?? "denied"}`, false);
     return;
   }
   const verdict = claimFlight(host, deps);
   if (verdict !== "send") {
     await control.release({ token: req.token }).catch(() => {});
     if (verdict === "busy") {
-      fail(host, "generation-busy", false, undefined, "いま生成中です — 少し待ってください");
+      const busy =
+        lang === "en"
+          ? "Generation is running — give it a moment"
+          : "いま生成中です — 少し待ってください";
+      fail(host, lang, "generation-busy", false, undefined, busy);
     }
     return;
   }
@@ -119,7 +136,7 @@ export const runChoiceGeneration = async (
   try {
     const raw = await callProvider(provider, deps, {
       kind: "choices",
-      prompt: buildChoicePrompt(req.scenario, req.labelCount),
+      prompt: buildChoicePrompt(req.scenario, req.labelCount, lang),
       jsonSchema: choiceLabelsJsonSchema(req.labelCount),
       count: req.labelCount,
     });
@@ -151,7 +168,7 @@ export const runChoiceGeneration = async (
     });
   } else {
     releaseFlight(host);
-    fail(host, code, false, deps.nowMs() - sentAt);
+    fail(host, lang, code, false, deps.nowMs() - sentAt);
   }
 };
 

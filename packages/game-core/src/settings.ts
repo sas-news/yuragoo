@@ -2,6 +2,7 @@
 // the documented defaults, enforces roster/mode caps and returns a frozen,
 // fully-resolved object that GameState carries immutably for the whole
 // match — no action can ever change settings mid-game.
+import { ROOM_LANGUAGE_DEFAULT, type RoomLanguage } from "@yuragoo/protocol";
 import { GameRuleError, type PlayerId } from "./state";
 
 export type GameMode = "turn" | "live";
@@ -23,6 +24,9 @@ export interface GameSettings {
   // early-end actions outright while a flag is off.
   readonly earlyDecision?: boolean;
   readonly hostDecision?: boolean;
+  // Shared-text language: AI generation + story templates write every
+  // member-visible string (captions, ending copy) in this language.
+  readonly language?: RoomLanguage;
 }
 
 // validateSettings' return type: every optional knob resolved to a concrete
@@ -38,6 +42,7 @@ export interface ResolvedGameSettings extends GameSettings {
   readonly hostId: PlayerId;
   readonly earlyDecision: boolean;
   readonly hostDecision: boolean;
+  readonly language: RoomLanguage;
 }
 
 export const ROSTER_SIZE_MAX = 6;
@@ -171,5 +176,6 @@ export const validateSettings = (
     hostId: resolveHostId(settings.hostId, playerIds),
     earlyDecision: settings.earlyDecision === true,
     hostDecision: settings.hostDecision === true,
+    language: settings.language === "en" ? "en" : ROOM_LANGUAGE_DEFAULT,
   });
 };

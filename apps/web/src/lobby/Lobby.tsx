@@ -2,18 +2,18 @@
 // editable by the host only, the public roster/assignment, ready toggles
 // and the host's gated start button. Draft-merge rule (also enforced by
 // the server via expectedLobbyRevision): a focused/dirty field is NEVER
-// overwritten by an incoming lobbyChanged — clean fields adopt the server
-// value, dirty fields keep the local text and show 他の変更あり until the
-// server echoes the same value back (which drops the draft).
+// overwritten by an incoming lobbyChanged — dirty fields keep the local
+// text and show 他の変更あり until the server echoes the value back.
 import { useEffect, useState } from "react";
 import type { LobbySettings } from "@yuragoo/protocol";
+import { useLocale, useT } from "../i18n";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
 import { ChoiceEditor } from "./ChoiceEditor";
 import { GameSettings } from "./GameSettings";
 import { GenerationControls } from "./GenerationControls";
 import { InviteButton } from "./InviteButton";
-import { commandErrorText } from "./lobby-errors";
+import { commandErrorText, serverErrorText } from "./lobby-errors";
 import { startGateReason } from "./lobby-gate";
 import { Roster } from "./Roster";
 import type { RoomView } from "./room-view";
@@ -29,19 +29,14 @@ interface LobbyProps {
   readonly inviteUrl: string | null;
   readonly lastError: string | null;
   readonly sendPatch: (
-    patch: {
-      scenario?: string;
-      choices?: Array<{ choiceId: string; label: string }>;
-    },
+    patch: { scenario?: string; choices?: Array<{ choiceId: string; label: string }> },
     expectedLobbyRevision: number,
   ) => Promise<unknown> | undefined;
   readonly setReady: (ready: boolean) => Promise<unknown> | undefined;
   readonly startGame: () => Promise<unknown> | undefined;
-  // Task 26: host-only settings patch — the shared view + ready reset
-  // come back as the lobbyChanged broadcast.
+  // Task 26: host-only settings patch; the view reset comes back as the lobbyChanged broadcast.
   readonly updateSettings: (patch: LobbySettings) => Promise<unknown> | undefined;
-  // Host-only hand-off to another connected member (Roster renders the
-  // per-member button; the server broadcasts hostChanged).
+  // Host-only hand-off (Roster renders the button; server broadcasts).
   readonly transferHost: (playerId: string) => Promise<unknown> | undefined;
   // Task 25: one-shot AI generation — request kick + proposal dismiss.
   readonly generateChoices: () => Promise<unknown> | undefined;
@@ -64,6 +59,8 @@ export function Lobby({
   dismissProposal,
   onLeave,
 }: LobbyProps) {
+  const t = useT();
+  const lang = useLocale();
   const members = seatedMembers(view);
   const lobby = view.lobby;
   const isHost = view.hostPlayerId === selfId;
@@ -78,7 +75,7 @@ export function Lobby({
   // Busy spans request->outcome event; it is the double-click guard too.
   const [genBusy, setGenBusy] = useState(false);
   // Command rejections arrive as "code: english" — translate before toast.
-  const reportError = (e: Error): void => setSendError(commandErrorText(e));
+  const reportError = (e: Error): void => setSendError(commandErrorText(e, lang));
   const { drafts, fieldValue, fieldConflict, onEdit } = useLobbyDrafts(
     lobby,
     sendPatch,
@@ -91,9 +88,8 @@ export function Lobby({
     if (proposal !== null || generationError !== null) setGenBusy(false);
   }, [proposal, generationError]);
 
-  // Task 25: click-only generation. The apply step is a normal lobby edit
-  // on the CURRENT revision — the revision check stays the single gate,
-  // so applying never overwrites a lobby that moved underneath us.
+  // Task 25: click-only generation. Applying is a normal lobby edit on
+  // the CURRENT revision — the revision check stays the single gate.
   const onGenerate = (): void => {
     setGenBusy(true);
     void generateChoices()?.catch((e: Error) => {
@@ -126,41 +122,44 @@ export function Lobby({
 
   // Client mirror of the server gate — only for the disabled reason; the
   // server re-checks everything authoritatively on startGame.
-  const gateReason = startGateReason(lobby, members);
+  const gateReason = startGateReason(lobby, members, t);
 
   // generationFailed is a room event everyone receives, but the error
   // surface is host-only — members never see the proposal flow at all.
-  const genErrorText =
-    generationError === null ? null : `${generationError.message}（${generationError.code}）`;
+  const genErrorText = generationError === null ? null : serverErrorText(generationError, lang);
   const error = sendError ?? lastError ?? (isHost ? genErrorText : null) ?? null;
 
   return (
     <section className={styles.lobby} data-lobby-revision={lobby.revision}>
       <header className={styles.header}>
         <h1 className={styles.title}>
-          へや <code className={styles.code}>{roomId.slice(0, 8)}</code>
+          {t("へや")} <code className={styles.code}>{roomId.slice(0, 8)}</code>
         </h1>
         <div className={styles.headerButtons}>
           <InviteButton inviteUrl={inviteUrl} isHost={isHost} onError={setSendError} />
           <button type="button" onClick={() => setConfirmLeave(true)}>
-            へやを出る
+            {t("へやを出る")}
           </button>
         </div>
       </header>
 
       {confirmLeave && (
-        <Dialog label="退出の確認" onClose={() => setConfirmLeave(false)} testId="leave-confirm">
+        <Dialog
+          label={t("退出の確認")}
+          onClose={() => setConfirmLeave(false)}
+          testId="leave-confirm"
+        >
           <h2 className={styles.dialogTitle} data-autofocus tabIndex={-1}>
-            へやを出ますか？
+            {t("へやを出ますか？")}
           </h2>
           <p className={styles.note}>
-            いまのへやから退出します。もどるには招待リンクがひつようです。
+            {t("いまのへやから退出します。もどるには招待リンクがひつようです。")}
           </p>
           <div className={styles.dialogButtons}>
             <Button variant="primary" onClick={onLeave} data-testid="leave-confirm-yes">
-              出る
+              {t("出る")}
             </Button>
-            <Button onClick={() => setConfirmLeave(false)}>やめる</Button>
+            <Button onClick={() => setConfirmLeave(false)}>{t("やめる")}</Button>
           </div>
         </Dialog>
       )}
@@ -177,6 +176,7 @@ export function Lobby({
         editable={isHost}
         value={fieldValue("scenario", lobby.scenario)}
         conflict={fieldConflict("scenario")}
+        roomLanguage={lobby.settings.language}
         onEdit={(v) => onEdit("scenario", v)}
       />
 
@@ -213,14 +213,14 @@ export function Lobby({
 
       <footer className={styles.footer}>
         {self?.lobbyWaiting === true ? (
-          <p className={styles.note}>ゲームが始まっています — 観戦待ちです</p>
+          <p className={styles.note}>{t("ゲームが始まっています — 観戦待ちです")}</p>
         ) : (
           <button
             type="button"
             aria-pressed={ready}
             onClick={() => void setReady(!ready)?.catch(reportError)}
           >
-            {ready ? "準備OK！" : "準備OKにする"}
+            {ready ? t("準備OK！") : t("準備OKにする")}
           </button>
         )}
         {isHost ? (
@@ -231,12 +231,12 @@ export function Lobby({
               disabled={gateReason !== null}
               onClick={() => void startGame()?.catch(reportError)}
             >
-              はじめる
+              {t("はじめる")}
             </button>
             {gateReason !== null && <p className={styles.gateReason}>{gateReason}</p>}
           </div>
         ) : (
-          <p className={styles.note}>ホストがはじめるのを待っています</p>
+          <p className={styles.note}>{t("ホストがはじめるのを待っています")}</p>
         )}
       </footer>
       {error !== null && (

@@ -1,6 +1,7 @@
 import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { I18nRoot, tx, resolveLocale } from "./i18n";
 import { platformKind } from "./platform/bootstrap";
 import "./styles.css";
 import "./styles/responsive.css";
@@ -68,14 +69,16 @@ const ClientId =
   import.meta.env.VITE_DISCORD_CLIENT_ID ?? (import.meta.env.MODE === "e2e" ? "e2e-client" : "");
 createRoot(el).render(
   <StrictMode>
-    {Page ? (
-      <Suspense fallback={<main>読み込み中…</main>}>
-        <Page />
-      </Suspense>
-    ) : DiscordGatePage !== null ? (
-      <DiscordGatePage clientId={ClientId} />
-    ) : (
-      <App />
-    )}
+    <I18nRoot>
+      {Page ? (
+        <Suspense fallback={<main>{tx(resolveLocale(), "読み込み中…")}</main>}>
+          <Page />
+        </Suspense>
+      ) : DiscordGatePage !== null ? (
+        <DiscordGatePage clientId={ClientId} />
+      ) : (
+        <App />
+      )}
+    </I18nRoot>
   </StrictMode>,
 );

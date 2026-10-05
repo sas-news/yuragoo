@@ -22,6 +22,7 @@ const DEFAULTS = {
   liveSeconds: 120,
   earlyDecision: false,
   hostDecision: false,
+  language: "ja",
 };
 
 const twoSocks = async () => {

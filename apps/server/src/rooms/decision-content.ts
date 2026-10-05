@@ -4,12 +4,21 @@
 // the returned distribution stays keyed to them, which is exactly what
 // roomSamples looks up.
 import type { GameState, PostedInput } from "@yuragoo/game-core";
-import { type DecisionState, parseChoiceId, parseDecisionRevision } from "@yuragoo/protocol";
+import {
+  type DecisionState,
+  parseChoiceId,
+  parseDecisionRevision,
+  type RoomLanguage,
+} from "@yuragoo/protocol";
 import { readLobby } from "./lobby";
 
 // The creature's fixed disposition — rooms author the scenario and the
 // committed choices; the persona is the creature itself, not host content.
-const ROOM_PERSONA = "素直で気まぐれな生きもの。みんなの言葉に素直に引かれる。";
+// Written per room language so the model reads one consistent voice.
+const ROOM_PERSONA: Record<RoomLanguage, string> = {
+  ja: "素直で気まぐれな生きもの。みんなの言葉に素直に引かれる。",
+  en: "An honest, whimsical creature. It is drawn to whatever the group says.",
+};
 
 export const buildDecisionState = (
   sql: SqlStorage,
@@ -17,10 +26,11 @@ export const buildDecisionState = (
   post: PostedInput,
 ): DecisionState => {
   const lobby = readLobby(sql);
+  const language = state.settings.language;
   return {
     revision: parseDecisionRevision(post.seq),
     scenario: lobby.scenario,
-    persona: ROOM_PERSONA,
+    persona: ROOM_PERSONA[language],
     activeContext: state.posts
       .filter((p) => p.seq <= post.seq)
       .slice(-12)
@@ -29,5 +39,6 @@ export const buildDecisionState = (
       id: parseChoiceId(c.choiceId),
       label: c.label,
     })),
+    language,
   };
 };

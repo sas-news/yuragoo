@@ -41,7 +41,8 @@ export const upgradeFetch = async (host: UpgradeHost, request: Request): Promise
     ) {
       return new Response("room-gone", { status: 410 });
     }
-    return new Response("unauthorized", { status: 401 });
+    const code = error instanceof RoomError ? error.code : "internal";
+    return new Response(`unauthorized:${code}`, { status: 401 });
   }
 };
 

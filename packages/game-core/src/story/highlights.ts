@@ -2,11 +2,10 @@
 // event ledger and picks the 3-5 events worth a kamishibai page — the
 // start, the biggest lead reversal, the biggest distribution impact, the
 // last decision before the end and the result. Every pick cites its
-// events.seq so a panel always traces back to a fact, and every tie
-// resolves to the earlier seq so the same ledger yields the same story.
-//
-// The panel set is deliberately the ONLY structured view of a match that
-// downstream generation may see — the raw event log never leaves here.
+// events.seq (a panel always traces to a fact) and every tie resolves to
+// the earlier seq, so the same ledger yields the same story. The panel
+// set is the ONLY structured view generation may see.
+import type { RoomLanguage } from "@yuragoo/protocol";
 import type { GameOutcome } from "../outcome";
 import type { PanelDraft } from "./panels";
 
@@ -28,11 +27,13 @@ export interface StorySource {
   // Display name of the winning player, resolved by the caller (player
   // ids are wire keys, never readable copy). null outside a winner.
   readonly winnerName: string | null;
+  // Room language for the template copy — absent means "ja" (the
+  // pre-i18n voice). Sourced from the frozen game settings.
+  readonly language?: RoomLanguage;
 }
 
-// One landed decisionUpdated row. revision is the seq of the post the
-// evaluation covered — coverage windows are measured in post seqs, while
-// ordering and citation use event seqs.
+// One landed decisionUpdated row: revision is the covered post's seq,
+// while ordering and citation use event seqs.
 export interface LandedDecision {
   readonly seq: number;
   readonly postId: string;

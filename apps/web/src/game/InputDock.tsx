@@ -16,6 +16,7 @@ import {
   useState,
 } from "react";
 import { countGraphemes, POST_TEXT_MAX_GRAPHEMES, validatePostText } from "@yuragoo/protocol";
+import { useT } from "../i18n";
 import styles from "./InputDock.module.css";
 
 export interface InputDockProps {
@@ -63,6 +64,7 @@ export function InputDock(props: InputDockProps) {
     nowMs,
     onSubmit,
   } = props;
+  const t = useT();
   const [text, setText] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const composingRef = useRef(false);
@@ -80,7 +82,9 @@ export function InputDock(props: InputDockProps) {
   // the empty error only appears after a submit attempt. The live text
   // carries the over-count so the counter's state is announced, not just
   // shown (Task 27).
-  const shownError = overLimit ? `文字数オーバー（${-remaining}字おおい）` : submitError;
+  const shownError = overLimit
+    ? t("文字数オーバー（{over}字おおい）", { over: -remaining })
+    : submitError;
   const blocked = !canPost || status === "pending";
 
   // Ack semantics: the parent drives status pending -> idle once the post
@@ -99,13 +103,13 @@ export function InputDock(props: InputDockProps) {
     if (!canPost || status === "pending" || inFlightRef.current) return;
     const result = validatePostText(text);
     if (!result.ok) {
-      setSubmitError(result.reason === "empty" ? "なにか書いてね" : "文字数オーバー");
+      setSubmitError(result.reason === "empty" ? t("なにか書いてね") : t("文字数オーバー"));
       return;
     }
     inFlightRef.current = true;
     setSubmitError(null);
     onSubmit(result.text);
-  }, [canPost, status, text, onSubmit]);
+  }, [canPost, status, text, onSubmit, t]);
 
   // Deadline auto-send: the parent only hands us a deadline while posting
   // is possible, so reaching it means "whatever is in the box ships".
@@ -163,7 +167,7 @@ export function InputDock(props: InputDockProps) {
   return (
     <form
       className={`${styles.dock}${flushBottom === true ? ` ${styles.dockFlush}` : ""}`}
-      aria-label="投稿ドック"
+      aria-label={t("投稿ドック")}
       style={sendColor === undefined ? undefined : ({ "--send-color": sendColor } as CSSProperties)}
       onSubmit={(event) => {
         event.preventDefault();
@@ -173,8 +177,12 @@ export function InputDock(props: InputDockProps) {
       <div className={styles.whoBox}>
         {seatLabel !== undefined ? <span className={styles.seat}>{seatLabel}</span> : null}
         {goalLabel !== undefined ? (
-          <span className={styles.goal} data-testid="dock-goal" title={`ねらい：${goalLabel}`}>
-            ねらい：{goalLabel}
+          <span
+            className={styles.goal}
+            data-testid="dock-goal"
+            title={t("ねらい：{goal}", { goal: goalLabel })}
+          >
+            {t("ねらい：{goal}", { goal: goalLabel })}
           </span>
         ) : null}
         {!canPost && disabledReason !== undefined ? (
@@ -189,9 +197,9 @@ export function InputDock(props: InputDockProps) {
             className={styles.input}
             data-testid="game-input"
             rows={2}
-            placeholder="ひとことで世界をゆさぶる…"
+            placeholder={t("ひとことで世界をゆさぶる…")}
             disabled={!canPost}
-            aria-label="投稿テキスト"
+            aria-label={t("投稿テキスト")}
             aria-invalid={shownError !== null}
             aria-describedby={`${counterId} ${errorId}`}
             value={text}
@@ -217,13 +225,13 @@ export function InputDock(props: InputDockProps) {
             data-warn={remaining <= WARN_REMAINING || undefined}
             data-over={overLimit || undefined}
           >
-            残り {remaining}
+            {t("残り {n}", { n: remaining })}
           </span>
         </div>
       </div>
       {trailing}
       <button type="submit" className={styles.send} data-testid="send-button" disabled={blocked}>
-        おくる
+        {t("おくる")}
       </button>
     </form>
   );

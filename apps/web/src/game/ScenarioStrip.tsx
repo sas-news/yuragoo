@@ -3,9 +3,11 @@
 // the full text (要求は「見切れたとき押すと全部見える」). A strip that fits
 // stays a plain decorative div so it never pretends to be interactive.
 import { type ReactNode, useEffect, useState } from "react";
+import { useT } from "../i18n";
 import arena from "./arena.module.css";
 
 export function ScenarioStrip({ children }: { readonly children: ReactNode }) {
+  const t = useT();
   const [el, setEl] = useState<HTMLElement | null>(null);
   const [truncated, setTruncated] = useState(false);
   const [open, setOpen] = useState(false);
@@ -37,7 +39,7 @@ export function ScenarioStrip({ children }: { readonly children: ReactNode }) {
       data-testid="scenario-strip"
       data-open={open || undefined}
       aria-expanded={open}
-      title={open ? "たたむ" : "全文を表示"}
+      title={open ? t("たたむ") : t("全文を表示")}
       onClick={() => setOpen(!open)}
     >
       {children}

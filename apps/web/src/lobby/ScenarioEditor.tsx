@@ -5,24 +5,35 @@
 // The お題をえらぶ button opens a preset picker dialog (Task 46) — the
 // whole list, tapped row writes the field directly.
 import { useState } from "react";
+import type { RoomLanguage } from "@yuragoo/protocol";
+import { useT } from "../i18n";
 import { Dialog } from "../ui/Dialog";
 import styles from "./Lobby.module.css";
-import { SCENARIO_PRESETS } from "./scenario-presets";
+import { scenarioPresets } from "./scenario-presets";
 
 interface ScenarioEditorProps {
   readonly editable: boolean;
   readonly value: string;
   readonly conflict: boolean;
+  // Presets fill the shared field — the room language picks the list.
+  readonly roomLanguage: RoomLanguage;
   readonly onEdit: (value: string) => void;
 }
 
-export function ScenarioEditor({ editable, value, conflict, onEdit }: ScenarioEditorProps) {
+export function ScenarioEditor({
+  editable,
+  value,
+  conflict,
+  roomLanguage,
+  onEdit,
+}: ScenarioEditorProps) {
+  const t = useT();
   const [picking, setPicking] = useState(false);
   return (
-    <section className={styles.plate} aria-label="シナリオ">
+    <section className={styles.plate} aria-label={t("シナリオ")}>
       <div className={styles.plateHeader}>
-        <h2 className={styles.sectionTitle}>シナリオ</h2>
-        {conflict && <span className={styles.conflictBadge}>他の変更あり</span>}
+        <h2 className={styles.sectionTitle}>{t("シナリオ")}</h2>
+        {conflict && <span className={styles.conflictBadge}>{t("他の変更あり")}</span>}
       </div>
       {editable ? (
         <>
@@ -31,8 +42,8 @@ export function ScenarioEditor({ editable, value, conflict, onEdit }: ScenarioEd
             value={value}
             rows={4}
             maxLength={1200}
-            aria-label="シナリオを編集"
-            placeholder="お題のせつめいを書いてね（全員に同じものが見えます）"
+            aria-label={t("シナリオを編集")}
+            placeholder={t("お題のせつめいを書いてね（全員に同じものが見えます）")}
             onChange={(e) => onEdit(e.target.value)}
           />
           <div className={styles.scenarioButtons}>
@@ -42,20 +53,20 @@ export function ScenarioEditor({ editable, value, conflict, onEdit }: ScenarioEd
               data-testid="scenario-preset"
               onClick={() => setPicking(true)}
             >
-              お題をえらぶ
+              {t("お題をえらぶ")}
             </button>
           </div>
           {picking && (
             <Dialog
-              label="お題をえらぶ"
+              label={t("お題をえらぶ")}
               onClose={() => setPicking(false)}
               testId="scenario-preset-dialog"
             >
               <h2 className={styles.dialogTitle} data-autofocus tabIndex={-1}>
-                お題をえらぶ
+                {t("お題をえらぶ")}
               </h2>
               <ul className={styles.presetList}>
-                {SCENARIO_PRESETS.map((preset) => (
+                {scenarioPresets(roomLanguage).map((preset) => (
                   <li key={preset}>
                     <button
                       type="button"
@@ -72,7 +83,7 @@ export function ScenarioEditor({ editable, value, conflict, onEdit }: ScenarioEd
               </ul>
               <div className={styles.dialogButtons}>
                 <button type="button" onClick={() => setPicking(false)}>
-                  やめる
+                  {t("やめる")}
                 </button>
               </div>
             </Dialog>
@@ -80,7 +91,7 @@ export function ScenarioEditor({ editable, value, conflict, onEdit }: ScenarioEd
         </>
       ) : (
         <p className={styles.scenarioRead}>
-          {value.trim() === "" ? "（ホストがシナリオを書いています）" : value}
+          {value.trim() === "" ? t("（ホストがシナリオを書いています）") : value}
         </p>
       )}
     </section>
