@@ -18,9 +18,9 @@
 
 ### ユーザー側の残作業（Discord Developer Portal）
 
-1. URL Mappings `/`・`/api` → `yuragoo.sasnews.dev` に張替（`/` が `/api` も拾うが両方書いてOK）
+1. URL Mappings `/` → `yuragoo.sasnews.dev` に張替（`/` だけで `/api` も拾う）
 2. General Information: Terms of Service URL=`https://yuragoo.sasnews.dev/terms`、Privacy Policy URL=`https://yuragoo.sasnews.dev/privacy`
-3. App Icon に `apps/web/public/icon-512.png` をアップ（任意）
+3. App Icon に `docs/brand/discord-icon-512.png`（背景あり版）、背景には `background-1024x576.png`、カバーアートに `cover-1024x576.png`、動画プレビューに `preview-640x360.mp4`（38KB/8.2s — 実プレイ画面の録画）— 生成元は `docs/brand/src/` のスクリプト2本
 4. **staging の Activity は張替時点で使えなくなる**（同一アプリ選択のため）
 
 ### 運用

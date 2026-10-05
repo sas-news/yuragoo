@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 576" role="img" aria-label="ゆらぐー！ カバーアート">
+    <title>ゆらぐー！ カバーアート</title>
+    <rect width="1024" height="576" fill="#fff7e8"/>
+    <circle cx="742" cy="268" r="183" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.34"/><circle cx="742" cy="268" r="230" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.26"/><circle cx="742" cy="268" r="283" fill="none" stroke="#27a98b" stroke-width="3" opacity="0.18000000000000002"/>
+    
+  <g transform="translate(570 66) scale(0.78)">
+    
+    <defs>
+      <radialGradient id="body57066" cx="42%" cy="32%" r="80%">
+        <stop offset="0%" stop-color="#b2f4e3"/>
+        <stop offset="55%" stop-color="#78dfc5"/>
+        <stop offset="100%" stop-color="#54c7a8"/>
+      </radialGradient>
+      <clipPath id="clip57066">
+        <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z"/>
+      </clipPath>
+    </defs>
+    <ellipse cx="258" cy="452" rx="152" ry="20" fill="#72546a" opacity="0.18"/>
+    <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" fill="url(#body57066)"/>
+    <g clip-path="url(#clip57066)">
+      <ellipse cx="256" cy="410" rx="220" ry="90" fill="#27a98b" opacity="0.22"/>
+    </g>
+    <path d="M256 86 C334 78 408 128 430 208 C448 276 426 358 358 402 C298 440 208 442 148 404 C82 362 62 276 84 208 C108 130 178 94 256 86 Z" fill="none" stroke="#27a98b" stroke-width="5" opacity="0.55"/>
+    <ellipse cx="150" cy="168" rx="42" ry="20" fill="#ffffff" opacity="0.35" transform="rotate(-32 150 168)"/>
+    <ellipse cx="190" cy="226" rx="31" ry="38" fill="#f4fff9"/>
+    <ellipse cx="324" cy="226" rx="31" ry="38" fill="#f4fff9"/>
+    <circle cx="194" cy="230" r="14" fill="#402f3b"/>
+    <circle cx="328" cy="230" r="14" fill="#402f3b"/>
+    <circle cx="200" cy="222" r="5" fill="#ffffff"/>
+    <circle cx="334" cy="222" r="5" fill="#ffffff"/>
+    <path d="M232 314 Q256 334 280 314" stroke="#402f3b" stroke-width="11" stroke-linecap="round" fill="none"/>
+  </g>
+    <g fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M470 120 C520 150 552 172 580 198 M580 198 l-32 -8 M580 198 l-6 32" stroke="#e0709a"/>
+      <path d="M470 268 C518 268 546 268 572 266 M572 266 l-26 -16 M572 266 l-24 18" stroke="#f0a03c"/>
+      <path d="M470 416 C520 386 552 362 578 336 M578 336 l-30 8 M578 336 l-10 -30" stroke="#5f7fdb"/>
+    </g>
+    <g font-family="'M PLUS Rounded 1c','BIZ UDPGothic','Hiragino Maru Gothic ProN','Yu Gothic',sans-serif">
+      <text x="72" y="268" font-size="104" font-weight="800" fill="#402f3b">ゆらぐー！</text>
+      <text x="76" y="332" font-size="28" font-weight="700" fill="#715e6b">なまえのない生命体を、みんなのひとことで</text>
+      <text x="76" y="374" font-size="28" font-weight="700" fill="#715e6b">引っ張るパーティーゲーム</text>
+      <text x="76" y="444" font-size="22" font-weight="700" fill="#27a98b">2〜6人であそべるよ</text>
+    </g>
+    <circle cx="60" cy="438" r="8" fill="#e0709a" stroke="#402f3b" stroke-width="2"/>
+  </svg>
