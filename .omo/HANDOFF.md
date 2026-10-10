@@ -365,3 +365,15 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - **eval**: `tests/jev-evals/en-v1.json`（ja-v1の英語ミラー12件、language:"en"）。ライブ実行で 12/12 pass
 - **キー管理**: `bun scripts/extract-i18n-keys.mjs --write` で `.omo/i18n-keys.json` 再生成、`check-i18n-keys.mjs` が `bun run check` に組込み済み（missing>0 で fail）。漢字のみのキーも拾う（Han含む）
 - **残判断**: 日英混在ルームの扱いは未設計（自由テキスト入力なので英語話者同士なら language=en で完結する想定）
+
+### Task 49 — スマホ対応: PIP誤爆の修正 + セーフエリア（viewport-fit=cover）
+
+ユーザーFB: スマホだと PIP（眺め専用）になって遊べない + フロントカメラ/ジェスチャーバーと被る。原因は `PIP_QUERY` が `(max-width:460px), (max-height:480px)` の **OR** — 縦持ちは幅・横持ちは高さが必ず当たるので全スマホが PIP だった。
+
+- **PIP の発火を「大画面端末の小ウィンドウ」に限定**: `use-pip-mode.ts` に `smallDeviceScreen()`（`min(screen.width,screen.height) <= 500` → 端末自体が小さい＝フォン）。`mediaPip = mq.matches && !smallDeviceScreen()` — スマホは両向きで除外。端末画面はリサイズでも変わるので `window.resize` でも再評価（回転/デスクトップズーム）。Discord `watchLayout` 経由の PIP は不変
+- **ドックのコンパクトティアを AND 条件化**: InputDock.module.css の `(max-width:460px)` → `(max-width:460px) and (max-height:480px)` — 片辺しか小さくないフォンは `<=640px` 折り返しティアに留まる（本物のタップターゲット＋16px入力でiOSオートズームも回避）
+- **セーフエリア**: `index.html` に `viewport-fit=cover` + `interactive-widget=resizes-content`。各レイヤで `env(safe-area-inset-*)` 分パディング（biome の noDuplicateProperties 対策で `env(x, 0px)` フォールバック入り単一宣言に統一）: `.app-shell`（ホーム/DiscordGate 4辺）、arena `.page`（上/左右）、Lobby `.page`（16px+4辺）、ui `.overlay`（fixedダイアログ16px+4辺）、公開 privacy/terms（body padding calc）
+- **ドック下端はドック自身が吸収**: InputDock `.dock` の padding-bottom を `calc(14px + env(safe-area-inset-bottom))`（<=640pxは12px+env、コンパクトは8px+env）— プレートは画面端まで突き抜け、コントロールだけがジェスチャーバーの上に。`dockDeadline` は `calc(7px + env(...))` でバー自身が下端のまま紙色チラ見えなし
+- **Playwright `screen` オプションで端末サイズをエミュレート可能**: `newContext({viewport:{w,h}})` のみ＝screen==viewport→フォン扱い、`screen:{1280,800}`+viewport 400x400＝本物ポップアウト。`tests/e2e/lobby/pip.spec.ts` 新規（両向きでフルロビー＋`data-pip`無し / 小窓は PIP 維持、テキスト依存しないアサーション）
+- **検証**: check 0 violations（arena.module.css の noDescendingSpecificity 警告1件はmaster由来）、unit 204 pass、pip.spec 2件 pass、editor/accessibility 系は headless=en ロケールで JA セレクタがタイムアウトする**既存の環境起因 fail**（master stash で同 fail 確認済み、非回帰）
+- **iOS 未検証**: env()/visualViewport は iOS 想定済みだが実機確認は macOS セッション等で別途
