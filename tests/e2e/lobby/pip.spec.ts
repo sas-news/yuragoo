@@ -35,9 +35,7 @@ test("phone-sized screens keep the editable lobby — PIP stays a window mode", 
   }
 });
 
-test("a small window on a big screen still flips to the PIP glance lobby", async ({
-  browser,
-}) => {
+test("a small window on a big screen still flips to the PIP glance lobby", async ({ browser }) => {
   const room = await createRoom();
   // 400x400 window on a 1280x800 screen: the pixel tier matches AND the
   // device is not small — the pop-out glance surface takes over, so no
