@@ -2,14 +2,20 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta name="description" content="ゆらぐー！の利用規約" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <title>利用規約 — ゆらぐー！</title>
     <style>
       body {
         margin: 0;
-        padding: 2rem 1rem 4rem;
+        padding: calc(2rem + env(safe-area-inset-top))
+          calc(1rem + env(safe-area-inset-right))
+          calc(4rem + env(safe-area-inset-bottom))
+          calc(1rem + env(safe-area-inset-left));
         font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
         background: #f5f2ea;
         color: #3c382f;
