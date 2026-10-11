@@ -13,6 +13,11 @@
    hard offset shadow can poke past the box. */
 .bubble {
   position: absolute;
+  /* Never transition: the reduced-motion global clamps
+     transition-duration to 100ms on `*`, which pairs with the default
+     transition-property `all` and would slide left/top changes — the
+     bubble must teleport to its anchor, not travel (fade only). */
+  transition: none;
   inline-size: max-content;
   min-inline-size: 96px;
   max-inline-size: min(340px, 88%);

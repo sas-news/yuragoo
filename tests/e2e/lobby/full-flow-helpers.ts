@@ -121,7 +121,25 @@ export const actTurn = async (
 ): Promise<void> => {
   const watcher = pages[0] as Page;
   const prev = await watcher.locator("[data-turn-player]").getAttribute("data-turn-player");
-  const actor = await turnOwner(pages);
+  // data-turn-self rides each page's own socket snapshot, so pages lag
+  // differently: the previous actor can still carry the marker while its
+  // dock already reads spentThisTurn (input disabled). Poll for a page
+  // whose marker AND live dock agree the turn is actually actionable.
+  let actor: Page | undefined;
+  await expect
+    .poll(
+      async () => {
+        actor = undefined;
+        for (const p of pages) {
+          const marked = (await p.locator("[data-turn-self]").count()) > 0;
+          if (marked && (await p.getByTestId("game-input").isEnabled())) actor = p;
+        }
+        return actor;
+      },
+      { timeout: 30_000 },
+    )
+    .not.toBeUndefined();
+  if (actor === undefined) throw new Error("turn owner never became actionable");
   if (kind === "pass") {
     await actor.getByRole("button", { name: "パスする" }).click();
   } else {
