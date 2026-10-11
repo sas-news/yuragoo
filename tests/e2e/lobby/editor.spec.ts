@@ -226,8 +226,9 @@ test("visual: lobby reads correctly at 480/768/1280 in every state", async ({ br
   const member = await seat(browser, room.roomId, room.inviteSecret, "メンバー");
   await waitMemberCount(host, 2);
   let ready = false;
-  // 375px flips the lobby into the PIP glance view — the editable layout
-  // this spec exercises starts at 461px, so the narrow rung is 480.
+  // 375px used to flip the lobby into the PIP glance view — since Task 49
+  // that only happens for a small window on a big screen (a phone keeps
+  // the editable lobby now), but 480 stays the honest narrow rung.
   for (const width of [480, 768, 1280]) {
     await host.setViewportSize({ width, height: 900 });
     await host.screenshot({ path: join(EVIDENCE_DIR, `task-24-lobby-${width}-default.png`) });

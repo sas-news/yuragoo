@@ -54,6 +54,12 @@ button[aria-pressed="true"] {
   flex-direction: column;
   flex: 1;
   min-block-size: 100dvh;
+  box-sizing: border-box;
+  /* viewport-fit=cover reaches under the notch/status bar and the gesture
+     area — content steps back inside the safe area while the paper keeps
+     painting to the edge (env() is 0 where there is no cutout). */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
 }
 
 .status-strip {

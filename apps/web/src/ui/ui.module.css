@@ -127,7 +127,11 @@
   z-index: 40;
   display: grid;
   place-items: center;
-  padding: 16px;
+  /* Fixed-position dialogs ignore the page's safe-area padding — pad the
+     overlay itself so a panel can never slide under the camera cutout
+     or the gesture bar. env()'s 0px fallback keeps the 16px rhythm. */
+  padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
+    calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
   box-sizing: border-box;
 }
 

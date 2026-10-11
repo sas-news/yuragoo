@@ -128,8 +128,9 @@ test("happy: keyboard-only /play — setup, post, result, rematch", async ({ pag
 
 test("happy: leave confirm traps focus, Esc closes, focus returns", async ({ browser }) => {
   const room = await createRoom();
-  // 480px keeps the editable lobby — at <=460 the PIP view replaces it and
-  // its 出る button skips the confirm dialog this spec exercises.
+  // 480px keeps the editable lobby — under Task 49 the PIP view only
+  // replaces it for a small window on a big screen, but 480 stays the
+  // safest rung above the 460px pixel tier.
   const member = await seat(browser, contexts, room.roomId, room.inviteSecret, "メンバー", 480);
   await member.getByRole("button", { name: "へやを出る" }).click();
   const dialog = member.getByTestId("leave-confirm");
@@ -182,7 +183,8 @@ test("failure: 360px, 200% zoom, soft keyboard — dock and controls hold", asyn
 test("happy: six seats — symbol+label identity, long text, no overflow", async ({ browser }) => {
   test.setTimeout(120_000);
   const room = await createRoom();
-  // 480px keeps the editable lobby rows; <=460 collapses into the PIP view.
+  // 480px keeps the editable lobby rows (the <=460 pixel tier would now
+  // only reach the PIP view on a big-screen window anyway — Task 49).
   const host = await seat(browser, contexts, room.roomId, room.inviteSecret, "ホスト", 480);
   const member = await seat(
     browser,

@@ -10,6 +10,17 @@ import { discordClientId, getDiscordSdk, platformKind } from "./bootstrap";
 
 // Keep in sync with seats.ts TINY_W/TINY_H and the PlayerSeats media tier.
 const PIP_QUERY = "(max-width: 460px), (max-height: 480px)";
+// A tiny viewport only means "pop-out" when the DEVICE screen is bigger:
+// on a phone the small viewport IS the whole screen — firing the glance
+// surface there replaces the editable lobby with PipLobby and hides the
+// input dock outright, which is what made phones unplayable. The short
+// edge of the screen discriminates "small window on a big display" from
+// "the device itself is small" (portrait phones ~390, landscape swaps
+// the axes — min() covers both, plus extreme desktop zoom where the CSS
+// screen shrinks to phone size and the glance surface is just as wrong).
+const SMALL_DEVICE_EDGE = 500;
+const smallDeviceScreen = (): boolean =>
+  Math.min(window.screen.width, window.screen.height) <= SMALL_DEVICE_EDGE;
 
 export const usePipMode = (
   // Discord rooms pass a reporter so participant events double as the
@@ -36,11 +47,14 @@ export const usePipMode = (
 
     const mq = window.matchMedia(PIP_QUERY);
     const onMedia = (): void => {
-      mediaPip = mq.matches;
+      mediaPip = mq.matches && !smallDeviceScreen();
       apply();
     };
     onMedia();
     mq.addEventListener("change", onMedia);
+    // Rotating a phone (or zooming a desktop) changes the screen read —
+    // re-evaluate without waiting for a pixel-tier crossing.
+    window.addEventListener("resize", onMedia);
 
     let watcher: { stop(): void } | null = null;
     if (platformKind() === "discord") {
@@ -69,6 +83,7 @@ export const usePipMode = (
 
     return () => {
       mq.removeEventListener("change", onMedia);
+      window.removeEventListener("resize", onMedia);
       watcher?.stop();
       delete root.dataset.pip;
     };

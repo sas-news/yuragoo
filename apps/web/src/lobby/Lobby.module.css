@@ -7,7 +7,12 @@
   flex-direction: column;
   align-items: center;
   min-block-size: 100dvh;
-  padding: 16px;
+  /* The lobby is a scroll page — all four insets pad the content so the
+     camera cutout never sits on the header and the gesture bar never
+     sits on the last control. env() carries a 0px fallback for runtimes
+     without cutouts; every Discord-capable webview supports env(). */
+  padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
+    calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
   box-sizing: border-box;
   background: var(--paper);
   color: var(--ink);

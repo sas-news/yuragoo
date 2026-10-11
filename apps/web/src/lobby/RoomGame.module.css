@@ -12,11 +12,13 @@
 
 /* The remaining-time bar: thin draining track at the screen's very bottom,
    directly under the input tray (the HUD strip's bar lives here on the
-   room screen). Sharp corners — the fill itself is the shape, no rim. */
+   room screen). Sharp corners — the fill itself is the shape, no rim.
+   The track stretches over the gesture-bar inset so the dock's controls
+   stay clear while the bar still IS the bottom edge (no paper sliver). */
 .dockDeadline {
   inline-size: min(960px, 100%);
   margin: 0 auto;
-  block-size: 7px;
+  block-size: calc(7px + env(safe-area-inset-bottom, 0px));
   background: rgb(30 141 116 / 0.18);
   overflow: hidden;
 }

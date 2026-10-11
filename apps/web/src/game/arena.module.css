@@ -6,6 +6,13 @@
   display: flex;
   flex-direction: column;
   block-size: 100dvh;
+  box-sizing: border-box;
+  /* Top + side safe-area insets: the arena (stage, seats, HUD, strip,
+     feed) shrinks inside the camera cutout while the page's own paper
+     background still covers it. The bottom inset is NOT taken here —
+     the dock absorbs it internally so the tray stays flush with the
+     screen's bottom edge (InputDock .dock / RoomGame .dockDeadline). */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
   overflow: hidden;
   color: var(--ink);
   background: var(--paper);
