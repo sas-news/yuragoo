@@ -375,3 +375,12 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - **修正（テスト側）**: `fireUntilPhase(fresh, "finished", ...)` に変更し終端状態を検証 — `endCause==="deadline"` で match 行が自分の時計で発火したことを、`outcome {kind:"winner",playerId:"p1",slot:0}` で eviction を越えた ai_results から claim が導出されたことを pin。サーバー側は仕様どおりで無変更。タイムアウト延長/retry/skip 不使用
 - **関連**: 同ファイルの settle 系テストが常時パスするのは `control:null` で pending を残すため maybeSettle が発火せず 8s の settle 窓が実在するから
 - 検証: room-restart 3連続パス、check 0 violations、workers 134 / unit 204 全パス
+
+### CI e2e 全滅（ロケール）— フレーク修正で顕在化した別バグ
+
+room-restart 修正を CI に載せた途端 test:e2e が 51 failed / 62 passed で赤。調査すると**テストが日本語文言を期待しているのに UI が英語で描画**されていた（"It's X's turn" / "Say something" / "Tallying the results" 等を取得）。
+
+- **原因**: i18n（016d58b）導入後、`resolveLocale` は `?lang=` → localStorage → Discord hint → `navigator.languages` → fallback "en" の順で解決する。e2e スイートは `lang=` を一切使わず ja UI 前提で書かれており、作者ローカル（ja 環境）では通るが CI ランナー（en-US）では navigator=en-US → 英語 UI → 全滅。playwright.config の `use` に locale 指定もなかった
+- **なぜ今まで出なかった**: test:workers の room-restart が CI で決定的に死んでいたため e2e ステップに到達しなかった。フレーク修正で初めて e2e が走り、i18n 以降ずっと latent だった環境差が露出した — main でも同じく壊れている
+- **修正**: `playwright.config.ts` `use` に `locale: "ja-JP"` を pin（テスト執筆環境の明示化。将来 en を試すテストは `?lang=en` で上書き可能）。input.spec.ts で 7 failed → 12/12 pass を確認
+- **教訓**: locale/環境依存の暗黙前提は config に pin すること。`?lang=` 未指定の e2e はブラウザロケールまるごと環境依存になる

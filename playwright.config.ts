@@ -16,6 +16,11 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL: "http://127.0.0.1:4173",
+    // The suite's text assertions are all written against the ja UI —
+    // resolveLocale falls back to navigator.languages, which is en-US on a
+    // stock CI runner and turns every ja assertion red. Pin the authoring
+    // environment; ?lang= still overrides per-test when needed.
+    locale: "ja-JP",
     screenshot: "only-on-failure",
     trace: "on-first-retry",
   },
