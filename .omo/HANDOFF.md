@@ -393,3 +393,9 @@ locale pin で決定的だった 51 件は解消したが、ローカル全ス�
 - `tests/e2e/rooms/multiplayer.spec.ts:100` resync waitForFunction 15s timeout — CI では通過（1.3s）、ローカル高負荷環境で1回のみ失敗。環境依存の timeout flake 疑い
 
 両方とも本PRの変更（workers テスト + playwright locale pin）とは無関係の既存件。AGENTS.md の既知 flake 一覧への追加はユーザー判断事項。
+
+### e2e 残フレーク2件の切り分け結果（本ブランチで修正済み）
+
+**bubbles.spec.ts:218 = アプリ側バグ**。`styles/responsive.css` の `@media (prefers-reduced-motion) { * { transition-duration: 100ms !important } }` が `transition-property` 初期値 `all` と合体し、reduced-motion 環境では**全要素の全スタイル変更が 100ms でアニメート**される。バブルは mount 時 `top=seatY`(hidden)→place 確定後 `top=cy` と 2回書かれるため、`top` が 90→224 に滑り、ユーザーにも「座席からすべり降りるバブル」として見える（no travel/fade only の設計意図違反）。boundingBox を滑り途中に読むと 10〜130px の移動形態・座席通過中の overlap 形態の2モードで落ちていた。実測: `el.style.top=224px` で `getComputedStyle().top` が 167→224 に遷移、`transitionProperty=all/transDur=0.1s`。修正: `.bubble { transition: none }`（ライフサイクルは animation 駆動、transition は元々不使用）。検証 6/6 pass。`.seat` 等の他要素も理論上は同じ滑りをするが、配置変更が稀で実害なし → 未対応。
+
+**full-flow.spec.ts:98 = テスト側 race**。`actTurn` が `data-turn-self` を持つ最初のページを1回だけ掴むが、この attr は各ページの socket snapshot 由来で到達がズレる。前行動者のページに marker が残ったまま掴まれると、そのページの dock は `spentThisTurn` で `game-input` が disabled（投稿済みは正しい挙動）→ Playwright の fill が永久 retry → 30s turn deadline でサーバーが match を進めて dock が unmount →「element is not enabled → detached」。修正: actTurn を「marker AND game-input enabled の両立」を 30s poll する形に変更（full-flow-helpers.ts）。multiplayer:100 の resync 15s timeout は CI で通る環境依存件として AGENTS.md の既知 flake に登録。
