@@ -377,3 +377,38 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - **Playwright `screen` オプションで端末サイズをエミュレート可能**: `newContext({viewport:{w,h}})` のみ＝screen==viewport→フォン扱い、`screen:{1280,800}`+viewport 400x400＝本物ポップアウト。`tests/e2e/lobby/pip.spec.ts` 新規（両向きでフルロビー＋`data-pip`無し / 小窓は PIP 維持、テキスト依存しないアサーション）
 - **検証**: check 0 violations（arena.module.css の noDescendingSpecificity 警告1件はmaster由来）、unit 204 pass、pip.spec 2件 pass、editor/accessibility 系は headless=en ロケールで JA セレクタがタイムアウトする**既存の環境起因 fail**（master stash で同 fail 確認済み、非回帰）
 - **iOS 未検証**: env()/visualViewport は iOS 想定済みだが実機確認は macOS セッション等で別途
+- **追記（後続で解消）**: 上の「JA セレクタ fail」は次セクションの e2e ロケール全滅と同根因で、`playwright.config` の `locale:"ja-JP"` pin により解消済み
+
+### room-restart happy-path flake 根本原因解明 + 修正（既知 flake 解消）
+
+`tests/workers/room-restart.test.ts` の happy-path が CI で 100% timeout していた件。調査の結論: **alarm/deadline/復元のどれも壊れていなかった — "complete" は設計上 transient で観測不能だった**。
+
+- **再現**: evictDurableObject 後に events/deadlines/meta をダンプする投機仕様で再現 → 最初の due な `deliverAlarm` で seq6 `complete {cutoffSeq:2,cause:"deadline"}` → seq7 `finished {kind:"winner"}` → seq8 `endingReady` が**同一 alarm 内で連続 commit** されていた
+- **原因**: `handleAlarm` (alarm.ts) の末尾が `host.waitUntil(host.driveDecisionJobs())` → `drainDecisionJobs` (decision-jobs.ts) の `finally { maybeSettle(host,deps) }`。`maybeSettle` (decision-commit.ts) は phase==="complete" かつ cutoff 内 pending 0 件のとき即 `settle` を commit する**意図的設計**（コードコメント: "entering 'complete' with the cutoff already fully evaluated emits ZERO evaluate commands, so nothing else would ever derive the claim and every such game would die at the window"）。このテストは両投稿を `drive()` 済み（全件 evaluated）なので match deadline 発火の瞬間に settle まで走り切る → "complete" の寿命は µs〜ms 級で、テストの 200ms ポーリングではほぼ絶対に観測できない。たまたま RPC が complete↔finished の間に割り込めば通る = 環境依存 flake の正体
+- **修正（テスト側）**: `fireUntilPhase(fresh, "finished", ...)` に変更し終端状態を検証 — `endCause==="deadline"` で match 行が自分の時計で発火したことを、`outcome {kind:"winner",playerId:"p1",slot:0}` で eviction を越えた ai_results から claim が導出されたことを pin。サーバー側は仕様どおりで無変更。タイムアウト延長/retry/skip 不使用
+- **関連**: 同ファイルの settle 系テストが常時パスするのは `control:null` で pending を残すため maybeSettle が発火せず 8s の settle 窓が実在するから
+- 検証: room-restart 3連続パス、check 0 violations、workers 134 / unit 204 全パス
+
+### CI e2e 全滅（ロケール）— フレーク修正で顕在化した別バグ
+
+room-restart 修正を CI に載せた途端 test:e2e が 51 failed / 62 passed で赤。調査すると**テストが日本語文言を期待しているのに UI が英語で描画**されていた（"It's X's turn" / "Say something" / "Tallying the results" 等を取得）。
+
+- **原因**: i18n（016d58b）導入後、`resolveLocale` は `?lang=` → localStorage → Discord hint → `navigator.languages` → fallback "en" の順で解決する。e2e スイートは `lang=` を一切使わず ja UI 前提で書かれており、作者ローカル（ja 環境）では通るが CI ランナー（en-US）では navigator=en-US → 英語 UI → 全滅。playwright.config の `use` に locale 指定もなかった
+- **なぜ今まで出なかった**: test:workers の room-restart が CI で決定的に死んでいたため e2e ステップに到達しなかった。フレーク修正で初めて e2e が走り、i18n 以降ずっと latent だった環境差が露出した — main でも同じく壊れている
+- **修正**: `playwright.config.ts` `use` に `locale: "ja-JP"` を pin（テスト執筆環境の明示化。将来 en を試すテストは `?lang=en` で上書き可能）。input.spec.ts で 7 failed → 12/12 pass を確認
+- **教訓**: locale/環境依存の暗黙前提は config に pin すること。`?lang=` 未指定の e2e はブラウザロケールまるごと環境依存になる
+
+### 残存 e2e フレーク（別件・未対応）
+
+locale pin で決定的だった 51 件は解消したが、ローカル全スイート（111 pass / 2 fail）で別フレークが残った:
+
+- `tests/e2e/game/bubbles.spec.ts:218` reduced-motion — **多モードのタイミング flake**。観測した失敗2形態: (a) 初回 boundingBox 取得後 1.2s で中心が 10〜26px 移動（座席は不動、バブル w/h 不変 — ResizeObserver による設計上の再配置の可能性）、(b) 初回配置時点で既に `overlaps(box, seatBox)=true`（post 前に取った seatBox と spawn 時 chip がズレ = chip 側の settle 競合か、transient overlap というアプリ側バグの可能性も）。<2px の絶対凍結は厳しすぎる可能性が高いが、overlap 形態は別の根因で、一括りの修正は収束しない。専用の調査が要る。CI（en-US走行時）でも同テストが落ちている
+- `tests/e2e/rooms/multiplayer.spec.ts:100` resync waitForFunction 15s timeout — CI では通過（1.3s）、ローカル高負荷環境で1回のみ失敗。環境依存の timeout flake 疑い
+
+両方とも本PRの変更（workers テスト + playwright locale pin）とは無関係の既存件。AGENTS.md の既知 flake 一覧への追加はユーザー判断事項。
+
+### e2e 残フレーク2件の切り分け結果（本ブランチで修正済み）
+
+**bubbles.spec.ts:218 = アプリ側バグ**。`styles/responsive.css` の `@media (prefers-reduced-motion) { * { transition-duration: 100ms !important } }` が `transition-property` 初期値 `all` と合体し、reduced-motion 環境では**全要素の全スタイル変更が 100ms でアニメート**される。バブルは mount 時 `top=seatY`(hidden)→place 確定後 `top=cy` と 2回書かれるため、`top` が 90→224 に滑り、ユーザーにも「座席からすべり降りるバブル」として見える（no travel/fade only の設計意図違反）。boundingBox を滑り途中に読むと 10〜130px の移動形態・座席通過中の overlap 形態の2モードで落ちていた。実測: `el.style.top=224px` で `getComputedStyle().top` が 167→224 に遷移、`transitionProperty=all/transDur=0.1s`。修正: `.bubble { transition: none }`（ライフサイクルは animation 駆動、transition は元々不使用）。検証 6/6 pass。`.seat` 等の他要素も理論上は同じ滑りをするが、配置変更が稀で実害なし → 未対応。
+
+**full-flow.spec.ts:98 = テスト側 race**。`actTurn` が `data-turn-self` を持つ最初のページを1回だけ掴むが、この attr は各ページの socket snapshot 由来で到達がズレる。前行動者のページに marker が残ったまま掴まれると、そのページの dock は `spentThisTurn` で `game-input` が disabled（投稿済みは正しい挙動）→ Playwright の fill が永久 retry → 30s turn deadline でサーバーが match を進めて dock が unmount →「element is not enabled → detached」。修正: actTurn を「marker AND game-input enabled の両立」を 30s poll する形に変更（full-flow-helpers.ts）。multiplayer:100 の resync 15s timeout は CI で通る環境依存件として AGENTS.md の既知 flake に登録。

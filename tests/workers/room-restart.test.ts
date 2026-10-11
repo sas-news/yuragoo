@@ -1,6 +1,5 @@
-// Task 23: DO restart/recovery gate. evictDurableObject() stands in for
-// the lost isolate; the fresh stub must continue the SAME game — epoch/
-// seq/revision, dedupe, deadlines and interrupted ai_jobs all recover.
+// Task 23: DO restart/recovery gate — the fresh stub must continue the
+// SAME game: epoch/seq/revision, dedupe, deadlines, interrupted ai_jobs.
 import { env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { utcDay } from "../../apps/server/src/control/budgets";
@@ -34,8 +33,7 @@ import {
 beforeEach(() => injectDeps({ fetch: okUpstream({ sent: 0 }) }));
 afterEach(() => restoreDefaultDeps());
 
-// A deadline row fires only when run_at is due and nowMs is past the
-// state's own deadline — wait for the clock, then nudge.
+// A deadline row fires only when run_at is due — wait for the clock, then nudge.
 const fireUntilPhase = async (
   stub: RoomStub,
   phase: string,
@@ -80,8 +78,7 @@ test("happy: mid-playing restart keeps epoch/state/seq/dedupe and re-arms the de
   expect(after.stateRevision).toBe(before.stateRevision);
   expect(after.state).toEqual(before.state);
 
-  // Dedupe survived: the same commandId replays its stored ack (the whole
-  // ApplyResult round-trips), a different payload under it is a conflict.
+  // Dedupe survived: same commandId replays its stored ack; changed payload conflicts.
   expect(await post(fresh, "p1", 0, t0 + 9_000)).toEqual(first);
   await expect(
     fresh.apply({
@@ -92,11 +89,14 @@ test("happy: mid-playing restart keeps epoch/state/seq/dedupe and re-arms the de
     }),
   ).rejects.toThrow(/idempotency-conflict/);
 
-  // The match deadline row survived and the room alarm is armed again —
-  // the SAME game still flows into the settle window on its own clock.
+  // Deadline row + alarm survived: the SAME game still ends on its own
+  // clock — "complete" is a transient hop (a fully-evaluated cutoff
+  // auto-settles inside the same alarm), so assert "finished" + endCause.
   expect(await poll(async () => (await readAlarm(fresh)) !== null)).toBe(true);
-  await fireUntilPhase(fresh, "complete", must(before.state.deadlineAtMs, "deadlineAtMs"));
-  expect((await fresh.snapshot()).state.endCause).toBe("deadline");
+  await fireUntilPhase(fresh, "finished", must(before.state.deadlineAtMs, "deadlineAtMs"));
+  const fin = (await fresh.snapshot()).state;
+  expect(fin.endCause).toBe("deadline");
+  expect(fin.outcome).toEqual({ kind: "winner", playerId: "p1", slot: 0 });
 });
 
 test("failure: restart suppresses orphaned reserved/sent jobs and re-drives pending work", async () => {

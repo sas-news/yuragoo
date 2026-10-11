@@ -31,4 +31,4 @@ bun run test:e2e       # playwright(自前で wrangler dev + vite preview)
 
 ## 既知の flake
 
-- `tests/workers/room-restart.test.ts` の happy-path が環境によってタイムアウトすることがある（masterでも再現する既存件。回帰と誤認しないこと）
+- `tests/e2e/rooms/multiplayer.spec.ts:100` の resync waitForFunction が環境（高負荷）によって 15s タイムアウトすることがある（CI では通る。回帰と誤認しないこと）
