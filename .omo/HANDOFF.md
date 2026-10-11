@@ -384,3 +384,12 @@ room-restart 修正を CI に載せた途端 test:e2e が 51 failed / 62 passed 
 - **なぜ今まで出なかった**: test:workers の room-restart が CI で決定的に死んでいたため e2e ステップに到達しなかった。フレーク修正で初めて e2e が走り、i18n 以降ずっと latent だった環境差が露出した — main でも同じく壊れている
 - **修正**: `playwright.config.ts` `use` に `locale: "ja-JP"` を pin（テスト執筆環境の明示化。将来 en を試すテストは `?lang=en` で上書き可能）。input.spec.ts で 7 failed → 12/12 pass を確認
 - **教訓**: locale/環境依存の暗黙前提は config に pin すること。`?lang=` 未指定の e2e はブラウザロケールまるごと環境依存になる
+
+### 残存 e2e フレーク（別件・未対応）
+
+locale pin で決定的だった 51 件は解消したが、ローカル全スイート（111 pass / 2 fail）で別フレークが残った:
+
+- `tests/e2e/game/bubbles.spec.ts:218` reduced-motion — **多モードのタイミング flake**。観測した失敗2形態: (a) 初回 boundingBox 取得後 1.2s で中心が 10〜26px 移動（座席は不動、バブル w/h 不変 — ResizeObserver による設計上の再配置の可能性）、(b) 初回配置時点で既に `overlaps(box, seatBox)=true`（post 前に取った seatBox と spawn 時 chip がズレ = chip 側の settle 競合か、transient overlap というアプリ側バグの可能性も）。<2px の絶対凍結は厳しすぎる可能性が高いが、overlap 形態は別の根因で、一括りの修正は収束しない。専用の調査が要る。CI（en-US走行時）でも同テストが落ちている
+- `tests/e2e/rooms/multiplayer.spec.ts:100` resync waitForFunction 15s timeout — CI では通過（1.3s）、ローカル高負荷環境で1回のみ失敗。環境依存の timeout flake 疑い
+
+両方とも本PRの変更（workers テスト + playwright locale pin）とは無関係の既存件。AGENTS.md の既知 flake 一覧への追加はユーザー判断事項。
