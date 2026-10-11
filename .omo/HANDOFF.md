@@ -365,3 +365,13 @@ bun run eval:jev -- --suite ja-v1 --max-attempts 60   # live Jev（JEV_API_KEY�
 - **eval**: `tests/jev-evals/en-v1.json`（ja-v1の英語ミラー12件、language:"en"）。ライブ実行で 12/12 pass
 - **キー管理**: `bun scripts/extract-i18n-keys.mjs --write` で `.omo/i18n-keys.json` 再生成、`check-i18n-keys.mjs` が `bun run check` に組込み済み（missing>0 で fail）。漢字のみのキーも拾う（Han含む）
 - **残判断**: 日英混在ルームの扱いは未設計（自由テキスト入力なので英語話者同士なら language=en で完結する想定）
+
+### room-restart happy-path flake 根本原因解明 + 修正（既知 flake 解消）
+
+`tests/workers/room-restart.test.ts` の happy-path が CI で 100% timeout していた件。調査の結論: **alarm/deadline/復元のどれも壊れていなかった — "complete" は設計上 transient で観測不能だった**。
+
+- **再現**: evictDurableObject 後に events/deadlines/meta をダンプする投機仕様で再現 → 最初の due な `deliverAlarm` で seq6 `complete {cutoffSeq:2,cause:"deadline"}` → seq7 `finished {kind:"winner"}` → seq8 `endingReady` が**同一 alarm 内で連続 commit** されていた
+- **原因**: `handleAlarm` (alarm.ts) の末尾が `host.waitUntil(host.driveDecisionJobs())` → `drainDecisionJobs` (decision-jobs.ts) の `finally { maybeSettle(host,deps) }`。`maybeSettle` (decision-commit.ts) は phase==="complete" かつ cutoff 内 pending 0 件のとき即 `settle` を commit する**意図的設計**（コードコメント: "entering 'complete' with the cutoff already fully evaluated emits ZERO evaluate commands, so nothing else would ever derive the claim and every such game would die at the window"）。このテストは両投稿を `drive()` 済み（全件 evaluated）なので match deadline 発火の瞬間に settle まで走り切る → "complete" の寿命は µs〜ms 級で、テストの 200ms ポーリングではほぼ絶対に観測できない。たまたま RPC が complete↔finished の間に割り込めば通る = 環境依存 flake の正体
+- **修正（テスト側）**: `fireUntilPhase(fresh, "finished", ...)` に変更し終端状態を検証 — `endCause==="deadline"` で match 行が自分の時計で発火したことを、`outcome {kind:"winner",playerId:"p1",slot:0}` で eviction を越えた ai_results から claim が導出されたことを pin。サーバー側は仕様どおりで無変更。タイムアウト延長/retry/skip 不使用
+- **関連**: 同ファイルの settle 系テストが常時パスするのは `control:null` で pending を残すため maybeSettle が発火せず 8s の settle 窓が実在するから
+- 検証: room-restart 3連続パス、check 0 violations、workers 134 / unit 204 全パス
